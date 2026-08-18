@@ -29,6 +29,8 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src/**/*", "web/**/*", "werkzeuge/**/*", "test/**/*"],
-  "exclude": ["node_modules", "dist"]
+  // Die Oberflaeche wird von tsconfig.web.json erfasst: sie laeuft im Browser,
+  // wird von Vite gebuendelt und braucht daher eine andere Modulaufloesung.
+  "include": ["src/**/*", "werkzeuge/**/*", "test/**/*"],
+  "exclude": ["node_modules", "dist", "web"]
 }

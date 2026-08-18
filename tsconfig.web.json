@@ -1,0 +1,20 @@
+{
+  // Die Oberflaeche laeuft im Browser und wird von Vite gebuendelt. Deshalb
+  // "bundler" statt "NodeNext": Vite loest Importe selbst auf, Dateiendungen
+  // gehoeren dort nicht in den Quelltext.
+  //
+  // Aus `src/` darf die Oberflaeche ausschliesslich Typen einbinden
+  // (`import type`). Die werden beim Bauen entfernt, sodass kein Node-Code im
+  // Browser landet.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+    "jsx": "react-jsx",
+    "noEmit": true
+  },
+  "include": ["web/**/*", "vite.config.ts"],
+  "exclude": ["node_modules", "dist"]
+}

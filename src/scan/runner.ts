@@ -53,7 +53,9 @@ export interface ScanAuftrag {
   katalog?: Katalog;
   browser?: Browser;
   protokoll?: Protokoll;
-  /** Fortschrittsmeldung je Seite — Grundlage der spaeteren Ereignisse (SSE). */
+  /** Abbruch durch den Nutzer (K-11). Wirkt zwischen zwei Seiten. */
+  abbruch?: AbortSignal;
+  /** Fortschrittsmeldung je Seite — Grundlage der Ereignisse (SSE, ARCHITEKTUR 6). */
   beiFortschritt?: (meldung: FortschrittMeldung) => void;
 }
 
@@ -63,6 +65,8 @@ export interface FortschrittMeldung {
   nummer: number;
   gesamt: number;
   text?: string;
+  /** Bei `seite-fertig` und `fehler`: das Ergebnis dieser Seite. */
+  ergebnis?: SeitenErgebnis;
 }
 
 /**
@@ -87,6 +91,11 @@ export async function fuehreScanAus(auftrag: ScanAuftrag): Promise<ScanErgebnis>
   try {
     let nummer = 0;
     for (const seitenAuftrag of auftrag.seiten) {
+      if (auftrag.abbruch?.aborted) {
+        protokoll.info('scan', `Abgebrochen nach ${nummer} von ${auftrag.seiten.length} Seiten`);
+        break;
+      }
+
       nummer += 1;
       auftrag.beiFortschritt?.({
         art: 'seite-begonnen',
@@ -113,6 +122,7 @@ export async function fuehreScanAus(auftrag: ScanAuftrag): Promise<ScanErgebnis>
         url: seitenAuftrag.url,
         nummer,
         gesamt: auftrag.seiten.length,
+        ergebnis,
         ...(ergebnis.fehler ? { text: ergebnis.fehler } : {}),
       });
     }

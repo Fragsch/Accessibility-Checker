@@ -131,9 +131,14 @@ accessibility-checker/
 │   ├── beiwerk-kopieren.mjs ✓ kopiert SQL-Dateien nach dist/
 │   └── scan.ts             ✓ Scan von der Befehlszeile
 │
+├── vite.config.ts          ✓ Bau der Oberfläche
+├── tsconfig.web.json       ✓ eigene Typprüfung für den Browser-Teil
+│
 ├── src/
 │   ├── protokoll.ts        ✓ Technisches Protokoll (5.6)
-│   ├── server/                 ← Fastify, Routen
+│   ├── server/             ✓ Fastify, Routen
+│   │   ├── index.ts        ✓
+│   │   └── scanverwaltung.ts ✓ laufende Scans, Ereignisstrom
 │   ├── katalog/            ✓ Laden, Validieren, Filtern nach Standard
 │   │   ├── laden.ts        ✓
 │   │   └── schema.ts       ✓ Laufzeitschema, gespiegelt aus katalog/schema.json
@@ -174,7 +179,11 @@ accessibility-checker/
 │   │   └── pfade.ts        ✓
 │   └── typen/              ✓ Gemeinsame TypeScript-Typen
 │
-├── web/                        ← React-Oberfläche
+├── web/                    ✓ React-Oberfläche
+│   ├── App.tsx             ✓ Auftrag → Fortschritt → Ergebnis
+│   ├── api.ts              ✓ Zugriff auf die Schnittstelle, SSE
+│   ├── stil.css            ✓ eigenes CSS, kein Rahmenwerk
+│   └── bausteine/          ✓
 │
 ├── test/
 │   ├── *.test.ts           ✓ Tests, laufen über `npm test`
@@ -400,6 +409,17 @@ Fastify, JSON, kein Authentifizierungsverfahren — das Werkzeug lauscht nur auf
 | `GET` | `/api/system/ollama` | Zustand der Ollama-Installation (L-40) |
 | `POST` | `/api/system/ollama/einrichten` | Geführte Einrichtung (L-41) |
 
+### Stand nach Phase 2
+
+Gebaut sind `GET /api/katalog`, `POST /api/scan`, `GET /api/scan/:id`, `GET /api/scan/:id/ereignisse`, `POST /api/scan/:id/abbrechen`, `DELETE /api/scan/:id` sowie ergänzend `GET /api/scans`.
+
+Die übrigen Routen der Tabelle sind angelegt und antworten mit **501** samt Angabe der Phase, die sie bringt. Das hält die Schnittstelle sichtbar, ohne etwas vorzutäuschen — und die Oberfläche kann die Meldung unverändert anzeigen.
+
+**Zwei Fallstricke, die Zeit gekostet haben:**
+
+- Die Weiterleitung im Entwicklungsbetrieb muss auf `^/api/` verankert sein, nicht auf `/api`. Als bloßes Präfix fängt sie auch `web/api.ts` ab; der Browser bekommt dann HTML statt eines Moduls und die Oberfläche bleibt leer — ohne verwertbare Fehlermeldung.
+- Die Datenbank kennt neben `befund` eine Tabelle `hinweis`. Abschnitt 4.2 führt sie nicht auf, 5.6 verlangt sie aber: „konnte nicht geprüft werden" muss in der Oberfläche beim Kriterium erscheinen. Ohne eigene Tabelle geht diese Ebene beim Speichern verloren.
+
 **Server-Sent Events statt Abfrage im Takt.** Ein Scan läuft minutenlang, auf schwacher Hardware länger. Die Oberfläche muss Ergebnisse der Stufe 1 sofort zeigen und die der Stufe 2 nachreichen (NF-10) — das ist mit einem Ereignisstrom sauber lösbar und mit wiederholten Abfragen nicht.
 
 Ereignistypen: `seite-begonnen`, `seite-fertig`, `befund`, `stufe-fertig`, `fortschritt`, `anmeldung-noetig`, `sitzung-verloren`, `fehler`, `fertig`.
@@ -414,6 +434,16 @@ Verbindlich von Anfang an, nicht nachträglich:
 - Statusmeldungen über `aria-live`
 - Keine reine Farbcodierung — die vier Status tragen zusätzlich Form und Text
 - Der eigene Scanner prüft die eigene Oberfläche als Teil der Abnahme in Phase 8
+
+**Das Werkzeug dafür steht bereits:** `npm run pruefe:selbst` (`werkzeuge/selbstpruefung.ts`). Es bedient die Oberfläche, statt nur ihre Startadresse zu laden — Auftrag ausfüllen, Fehlermeldung erzwingen, Prüfung starten, alle Kriterien aufklappen — und misst in jedem dieser Zustände. Eine Prüfung der bloßen Startadresse sähe nur das Formular und damit den kleinsten Teil des Markups.
+
+Der Lauf hat sich sofort bezahlt gemacht. Gefunden wurden:
+
+- `<pre>`-Blöcke mit seitlichem Scrollen: ein scrollbarer Bereich muss mit der Tastatur erreichbar sein (2.1.1). Behoben durch Umbruch statt Scrollen — das hilft zugleich bei 1.4.10
+- `aria-errormessage` ohne Möglichkeit, die Meldung anzusagen: wirkungslos ohne `role="alert"` (3.3.1)
+- eine große, fette Zahl in einem Absatz, die axe als verkleidete Überschrift wertet (1.3.1). Behoben durch eine Definitionsliste — die richtige Auszeichnung für Begriff und Wert
+
+Alle drei waren echte Mängel, keine Fehlalarme.
 
 ## 8. Bereits vorhandene Werkzeuge
 

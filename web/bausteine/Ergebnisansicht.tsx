@@ -1,0 +1,174 @@
+/**
+ * Ergebnis eines Scans: Uebersicht, Filter, Kriterienliste.
+ *
+ * Die Reihenfolge ist bewusst: erst die Zahlen, dann das Dringende. Wer die
+ * Seite oeffnet, soll ohne Suchen sehen, was belegt schiefliegt — und daneben,
+ * wie viel noch offen ist.
+ */
+
+import { useMemo, useState } from 'react';
+
+import type { Kriterium, ScanErgebnis, SeitenErgebnis, Status } from '../typen';
+import { PRINZIP_TEXT, STATUS_ERLAEUTERUNG, STATUS_REIHENFOLGE, STATUS_TEXT, STATUS_ZEICHEN } from '../typen';
+import { Kriteriumszeile } from './Kriteriumszeile';
+
+interface Eigenschaften {
+  ergebnis: ScanErgebnis;
+  kriterien: Kriterium[];
+  entwurf: boolean;
+}
+
+export function Ergebnisansicht({ ergebnis, kriterien, entwurf }: Eigenschaften): React.ReactElement {
+  const [seitenNummer, setzeSeitenNummer] = useState(0);
+  const [gezeigteStatus, setzeGezeigteStatus] = useState<Status[]>([
+    'nicht_erfuellt',
+    'pruefung_erforderlich',
+    'erfuellt',
+  ]);
+
+  const gepruefteSeiten = ergebnis.seiten.filter((s) => s.zustand === 'fertig');
+  const seite: SeitenErgebnis | undefined = gepruefteSeiten[seitenNummer];
+
+  const zaehlung = useMemo(() => zaehle(seite), [seite]);
+
+  const nachKriterium = useMemo(() => new Map(kriterien.map((k) => [k.id, k])), [kriterien]);
+
+  if (!seite) {
+    return (
+      <div className="meldung meldung--fehler">
+        <h2>Keine Seite konnte geprüft werden</h2>
+        <p>
+          {ergebnis.seiten.map((s) => s.fehler).find(Boolean) ??
+            'Die angegebenen Adressen ließen sich nicht laden. Bitte prüfen Sie die Schreibweise.'}
+        </p>
+      </div>
+    );
+  }
+
+  const sichtbar = seite.bewertungen.filter((b) => gezeigteStatus.includes(b.status));
+
+  function schalteStatus(status: Status): void {
+    setzeGezeigteStatus((bisher) =>
+      bisher.includes(status) ? bisher.filter((s) => s !== status) : [...bisher, status],
+    );
+  }
+
+  return (
+    <>
+      {entwurf && (
+        <div className="meldung meldung--entwurf">
+          <h2>Dieses Ergebnis ist ein Entwurf</h2>
+          <p>
+            Solange Kriterien den Status „Prüfung erforderlich“ tragen, ist die Prüfung nicht abgeschlossen. Offene
+            Kriterien werden nie als konform ausgegeben.
+          </p>
+        </div>
+      )}
+
+      {ergebnis.seiten.length > 1 && (
+        <fieldset className="feldgruppe">
+          <legend>Geprüfte Seite</legend>
+          <div className="auswahl">
+            {ergebnis.seiten.map((s, nummer) => (
+              <label key={s.url}>
+                <input
+                  type="radio"
+                  name="seite"
+                  value={nummer}
+                  checked={gepruefteSeiten[seitenNummer]?.url === s.url}
+                  disabled={s.zustand !== 'fertig'}
+                  onChange={() => setzeSeitenNummer(gepruefteSeiten.findIndex((g) => g.url === s.url))}
+                />
+                {s.bezeichnung ?? s.url}
+                {s.zustand === 'fehler' && ' (nicht ladbar)'}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
+
+      <h2>
+        Übersicht
+        <span className="nur-fuer-screenreader"> für {seite.url}</span>
+      </h2>
+      <p className="hilfetext">
+        {seite.titel ? `„${seite.titel}“ — ` : ''}
+        {seite.url}
+      </p>
+
+      {/*
+        Eine Definitionsliste, kein Kachelraster aus Absaetzen: Status und
+        Anzahl sind Begriff und Wert. Eine grosse fette Zahl in einem Absatz
+        waere ausserdem eine Ueberschrift, die keine ist (1.3.1) — das hat die
+        Selbstpruefung prompt gemeldet.
+      */}
+      <dl className="zaehlung">
+        {STATUS_REIHENFOLGE.map((status) => (
+          <div key={status} className={`zaehlung__feld status--${status}`}>
+            <dt className="status">
+              <span className="status__zeichen" aria-hidden="true">
+                {STATUS_ZEICHEN[status]}
+              </span>
+              {STATUS_TEXT[status]}
+            </dt>
+            <dd className="zahl">{zaehlung[status]}</dd>
+            <dd className="hilfetext">{STATUS_ERLAEUTERUNG[status]}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <fieldset className="feldgruppe">
+        <legend>Anzeigen</legend>
+        <div className="auswahl">
+          {STATUS_REIHENFOLGE.map((status) => (
+            <label key={status}>
+              <input
+                type="checkbox"
+                checked={gezeigteStatus.includes(status)}
+                onChange={() => schalteStatus(status)}
+              />
+              {STATUS_TEXT[status]} ({zaehlung[status]})
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <h2>
+        Kriterien <span className="hilfetext">({sichtbar.length} von {seite.bewertungen.length} angezeigt)</span>
+      </h2>
+
+      {sichtbar.length === 0 ? (
+        <p>Kein Kriterium in der gewählten Auswahl. Bitte oben andere Status hinzunehmen.</p>
+      ) : (
+        Object.entries(PRINZIP_TEXT).map(([prinzip, ueberschrift]) => {
+          const desPrinzips = sichtbar.filter((b) => nachKriterium.get(b.kriterium)?.prinzip === prinzip);
+          if (desPrinzips.length === 0) return null;
+
+          return (
+            <section key={prinzip}>
+              <h3>{ueberschrift}</h3>
+              <ul className="kriterienliste">
+                {desPrinzips.map((bewertung) => {
+                  const kriterium = nachKriterium.get(bewertung.kriterium);
+                  if (!kriterium) return null;
+                  return <Kriteriumszeile key={bewertung.kriterium} kriterium={kriterium} bewertung={bewertung} />;
+                })}
+              </ul>
+            </section>
+          );
+        })
+      )}
+    </>
+  );
+}
+
+function zaehle(seite: SeitenErgebnis | undefined): Record<Status, number> {
+  const zaehlung: Record<Status, number> = {
+    nicht_erfuellt: 0,
+    pruefung_erforderlich: 0,
+    erfuellt: 0,
+    nicht_anwendbar: 0,
+  };
+  for (const bewertung of seite?.bewertungen ?? []) zaehlung[bewertung.status] += 1;
+  return zaehlung;
+}

@@ -13,28 +13,35 @@
     "dev": "node --run dev:server & node --run dev:web",
     "dev:server": "tsx watch src/server/index.ts",
     "dev:web": "vite",
-    "build": "tsc -p tsconfig.json && node werkzeuge/beiwerk-kopieren.mjs",
-    "start": "node dist/server/index.js",
-    "typen:pruefen": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.json && node werkzeuge/beiwerk-kopieren.mjs && vite build",
+    "start": "node dist/src/server/index.js",
+    "typen:pruefen": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.web.json --noEmit",
     "scan": "tsx werkzeuge/scan.ts",
     "test": "node --run katalog:pruefen && node --run axe:abgleich && node --run typen:pruefen && node --import tsx --test \"test/*.test.ts\"",
     "katalog:pruefen": "node werkzeuge/katalog-pruefen.mjs",
     "axe:abgleich": "node werkzeuge/axe-abgleich.mjs",
-    "pruefe:selbst": "node dist/werkzeuge/selbstpruefung.js"
+    "pruefe:selbst": "tsx werkzeuge/selbstpruefung.ts"
   },
   "dependencies": {
     "@axe-core/playwright": "^4.13.0",
+    "@fastify/static": "^10.1.3",
     "axe-core": "^4.13.0",
     "better-sqlite3": "^13.0.3",
     "fastify": "^5.12.0",
     "playwright": "^1.62.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.0.5",
     "tsx": "^4.23.12",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite": "^8.2.1"
   },
   "allowScripts": {
     "better-sqlite3@13.0.3": true,

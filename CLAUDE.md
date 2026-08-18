@@ -61,27 +61,26 @@ node werkzeuge/katalog-pruefen.mjs   # Katalog prüfen — läuft ohne Abhängig
 
 ## Reihenfolge der Umsetzung
 
-Die Phasen aus `PRD.md` Abschnitt 9 sind bindend. Aktueller Stand: **Phase 1 abgeschlossen** — eine echte Webseite wird geprüft, jedes Kriterium trägt einen Status.
+Die Phasen aus `PRD.md` Abschnitt 9 sind bindend. Aktueller Stand: **Phase 1 und 2 abgeschlossen** — ein Mensch kann eine Adresse eingeben und das Ergebnis lesen.
 
-Erledigt:
+Alle zehn Schritte aus `ARCHITEKTUR.md` 9 sind erledigt:
 
-1. ✓ Katalog einlesen und validieren — `src/katalog/`
-2. ✓ Typen aus `ARCHITEKTUR.md` 4.1 — `src/typen/`
-3. ✓ Datenbankschema — `src/db/`
-4. ✓ Playwright-Kapselung — `src/scan/browser.ts`
-5. ✓ axe-Abgleich — `npm run axe:abgleich`
-6. ✓ axe-core anbinden, Befunde zuordnen — `src/stufe1/`
-7. ✓ Anwendbarkeitserkennung — `src/scan/anwendbarkeit.ts`
-8. ✓ Statusableitung — `src/scan/statusableitung.ts`
+| # | Schritt | Wo |
+|---|---|---|
+| 1 | Katalog einlesen und validieren | `src/katalog/` |
+| 2 | Typen aus 4.1 | `src/typen/` |
+| 3 | Datenbankschema | `src/db/` |
+| 4 | Playwright-Kapselung | `src/scan/browser.ts` |
+| 5 | axe-Abgleich | `npm run axe:abgleich` |
+| 6 | axe anbinden, Befunde zuordnen | `src/stufe1/` |
+| 7 | Anwendbarkeitserkennung | `src/scan/anwendbarkeit.ts` |
+| 8 | Statusableitung | `src/scan/statusableitung.ts` |
+| 9 | Fastify-Routen | `src/server/` |
+| 10 | Oberfläche | `web/` |
 
-Als Nächstes Phase 2, Schritte 9 und 10 aus `ARCHITEKTUR.md` 9:
+**Als Nächstes Phase 3:** weitere Prüf-Engines, Viewports, Tastatur-Durchlauf, Textabstände, Spracherkennung, OCR, Pixel-Kontrast. Die Anschlussstelle dafür ist `VORHANDENE_ENGINES` in `src/scan/runner.ts` — was dort nicht steht, erzeugt einen Hinweis statt eines stillen Bestehens.
 
-- Fastify-Routen nach `ARCHITEKTUR.md` 6
-- Oberfläche: Übersicht → Detail → Empfehlung
-
-**Ziel von Phase 2:** Ein Mensch kann eine URL eingeben und das Ergebnis lesen. Alles Weitere ist Ausbau.
-
-Bis dahin wird über die Befehlszeile geprüft: `npm run scan -- https://example.org`.
+**Bevor Sie an der Oberfläche etwas ändern:** `npm run build && npm run pruefe:selbst`. Der eigene Scanner läuft über alle drei Ansichten und meldet jeden Verstoß. Das ist keine Kür — die Oberfläche ist Abnahmekriterium (NF-01).
 
 ## Wichtig beim Einstieg
 
