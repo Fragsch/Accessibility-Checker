@@ -517,6 +517,81 @@ button.zweitrangig:hover:not(:disabled) {
   word-break: break-all;
 }
 
+/* ------------------------------------------------------------ Prüfliste */
+
+.fragenliste {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.frage {
+  border: 1px solid var(--linie);
+  border-left: 6px solid var(--pruefung-erforderlich);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.frage--beantwortet {
+  border-left-color: var(--linie-kraeftig);
+  background: var(--grund-gedaempft);
+}
+
+.frage h4 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.frage__text {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+}
+
+.frage .feldgruppe {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+}
+
+.antwortlegende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.5rem;
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: var(--schrift-gedaempft);
+}
+
+.antwortlegende dt {
+  font-weight: 600;
+  color: var(--schrift);
+}
+
+.antwortlegende dd {
+  margin: 0;
+}
+
+.probenliste {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+}
+
+.probenliste li {
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--linie);
+  overflow-wrap: anywhere;
+}
+
+.status--erfuellt,
+.status--nicht_erfuellt,
+.status--nicht_anwendbar {
+  font-weight: 600;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;

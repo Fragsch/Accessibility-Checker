@@ -29,6 +29,8 @@ import { projektWurzel, protokollDatei } from '../plattform/pfade.js';
 import { erkenneHardware, schlageModellVor } from '../plattform/hardware.js';
 import { erstelleBericht, messeGeschwindigkeit } from '../stufe2/einrichtung.js';
 import { ladePrompts } from '../stufe2/prompts.js';
+import { fasseZusammen } from '../stufe3/fragen.js';
+import { lesAntworten, loescheAntwort, speichereAntwort } from '../stufe3/antworten.js';
 import { Scanverwaltung } from './scanverwaltung.js';
 
 export interface ServerOptionen {
@@ -47,6 +49,15 @@ const scanAnfrage = z.object({
   modell: z.string().min(1).optional(),
 });
 
+/** Antwort auf eine geführte Frage (M-02). */
+const antwortAnfrage = z.object({
+  url: z.string().min(1),
+  kriterium: z.string().regex(/^[1-4]\.[0-9]+\.[0-9]+$/),
+  frageHash: z.string().min(8),
+  antwort: z.enum(['erfuellt', 'nicht_erfuellt', 'nicht_anwendbar']),
+  notiz: z.string().max(2000).nullable().default(null),
+});
+
 const standardAnfrage = z.object({
   standard: z.enum(['2.1', '2.2']).default('2.1'),
 });
@@ -58,8 +69,6 @@ const SPAETERE_ROUTEN: { methode: 'GET' | 'POST' | 'PUT' | 'DELETE'; pfad: strin
   { methode: 'PUT', pfad: '/api/profile/:id', phase: '6 — Pruefprofile' },
   { methode: 'DELETE', pfad: '/api/profile/:id', phase: '6 — Pruefprofile' },
   { methode: 'POST', pfad: '/api/profile/vorschlag', phase: '6 — Gesamtpruefung per Crawl' },
-  { methode: 'GET', pfad: '/api/scan/:id/fragen', phase: '5 — gefuehrte manuelle Pruefliste' },
-  { methode: 'POST', pfad: '/api/scan/:id/antwort', phase: '5 — gefuehrte manuelle Pruefliste' },
   { methode: 'POST', pfad: '/api/scan/:id/anmeldung-fertig', phase: '6 — Anmeldung durch den Nutzer' },
   { methode: 'GET', pfad: '/api/scan/:id/bericht', phase: '7 — Bericht nach WCAG-EM' },
 ];
@@ -172,6 +181,103 @@ export function baueServer(optionen: ServerOptionen = {}): FastifyInstance {
     });
 
     anfrage.raw.on('close', () => abmelden?.());
+  });
+
+  // ----------------------------------------- Stufe 3 (geführte Prüfliste)
+
+  /**
+   * Offene Fragen eines Scans (M-01, M-06, M-07).
+   *
+   * Gleichlautende Fragen mehrerer Seiten werden zusammengefasst: Wer sie
+   * einmal beantwortet, hat sie überall beantwortet. Ohne das ist eine Liste
+   * über 25 Seiten nicht abzuarbeiten.
+   */
+  server.get<{ Params: { id: string } }>('/api/scan/:id/fragen', async (anfrage, antwort) => {
+    const scanId = Number(anfrage.params.id);
+    const ergebnis = verwaltung.ergebnis(scanId);
+    if (!ergebnis) return antwort.code(404).send({ fehler: `Scan ${anfrage.params.id} ist nicht bekannt.` });
+
+    const proSeite = ergebnis.seiten
+      .filter((seite) => seite.zustand === 'fertig')
+      .map((seite) => ({
+        url: seite.url,
+        fragen: seite.bewertungen.flatMap((b) => b.offeneFragen),
+      }));
+
+    const beantwortet = ergebnis.seiten
+      .filter((seite) => seite.zustand === 'fertig')
+      .flatMap((seite) =>
+        seite.bewertungen.flatMap((b) =>
+          (b.beantworteteFragen ?? []).map((eintrag) => ({ url: seite.url, ...eintrag })),
+        ),
+      );
+
+    const offen = fasseZusammen(proSeite);
+
+    return {
+      scanId,
+      offen,
+      beantwortet,
+      // Wie weit ist die Liste? Die Zahl steht in der Oberflaeche ueber der
+      // Liste — ohne sie weiss niemand, ob sich das Abarbeiten noch lohnt.
+      fortschritt: {
+        offen: offen.length,
+        beantwortet: beantwortet.length,
+        gesamt: offen.length + beantwortet.length,
+      },
+    };
+  });
+
+  /**
+   * Antwort auf eine Frage (M-02, M-03).
+   *
+   * Gespeichert wird je Adresse und Fragekennung, nicht je Scan. Ein späterer
+   * Scan derselben Seite übernimmt die Antwort, solange sich der Kontext nicht
+   * geändert hat (M-04).
+   */
+  server.post<{ Params: { id: string } }>('/api/scan/:id/antwort', async (anfrage, antwort) => {
+    const gelesen = antwortAnfrage.safeParse(anfrage.body);
+    if (!gelesen.success) {
+      return antwort.code(400).send({ fehler: 'Die Antwort ist unvollständig oder unzulässig.' });
+    }
+
+    const scanId = Number(anfrage.params.id);
+    if (!verwaltung.zustand(scanId)) {
+      return antwort.code(404).send({ fehler: `Scan ${anfrage.params.id} ist nicht bekannt.` });
+    }
+
+    speichereAntwort(db, {
+      url: gelesen.data.url,
+      kriterium: gelesen.data.kriterium,
+      frageHash: gelesen.data.frageHash,
+      antwort: gelesen.data.antwort,
+      notiz: gelesen.data.notiz,
+      beantwortetAm: new Date().toISOString(),
+    });
+
+    verwaltung.uebernehmeAntworten(scanId);
+    return { gespeichert: true };
+  });
+
+  /** Nimmt eine Antwort zurück — auch das muss möglich sein. */
+  server.delete<{ Params: { id: string }; Querystring: { url?: string; frageHash?: string } }>(
+    '/api/scan/:id/antwort',
+    async (anfrage, antwort) => {
+      const { url, frageHash } = anfrage.query;
+      if (!url || !frageHash) return antwort.code(400).send({ fehler: 'Adresse und Fragekennung werden gebraucht.' });
+
+      const geloescht = loescheAntwort(db, url, frageHash);
+      if (!geloescht) return antwort.code(404).send({ fehler: 'Zu dieser Frage ist keine Antwort gespeichert.' });
+
+      verwaltung.uebernehmeAntworten(Number(anfrage.params.id));
+      return { geloescht: true };
+    },
+  );
+
+  /** Alle Antworten zu einer Adresse — für die Übernahme in einen neuen Scan. */
+  server.get<{ Querystring: { url?: string } }>('/api/antworten', async (anfrage, antwort) => {
+    if (!anfrage.query.url) return antwort.code(400).send({ fehler: 'Eine Adresse wird gebraucht.' });
+    return { antworten: [...lesAntworten(db, anfrage.query.url).values()] };
   });
 
   // ------------------------------------------------------ Stufe 2 (System)

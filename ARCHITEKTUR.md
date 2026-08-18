@@ -191,7 +191,10 @@ accessibility-checker/
 │   │   ├── vorfilter.ts    ✓ spart Modellaufrufe
 │   │   ├── cache.ts        ✓ Inhaltshash (L-28)
 │   │   └── pruefungen.ts   ✓ Ablauf
-│   ├── stufe3/                 ← Fragenerzeugung, Antwortspeicherung
+│   ├── stufe3/             ✓ Gefuehrte manuelle Pruefliste
+│   │   ├── fragen.ts       ✓ Erzeugung, Kennung, Zusammenfassung (M-01, M-07)
+│   │   ├── antworten.ts    ✓ Ablage je Adresse (M-03)
+│   │   └── uebernahme.ts   ✓ Status nach einer Antwort neu ableiten
 │   ├── bericht/                ← WCAG-EM/ACR-Erzeugung, HTML, PDF, EARL
 │   ├── db/
 │   │   ├── index.ts        ✓ Öffnen, Migrationen
@@ -470,6 +473,43 @@ Ein anderes Modell urteilt anders. Ein Ergebnis von `phi4-mini` unter der Flagge
 
 Ausschließlich Text. Keine Bilder, keine Screenshots. **Passwortfelder werden nicht eingesammelt**, und Feldwerte gehen nie mit — nur Beschriftungen (Regel 2, S-03).
 
+## 5.10 Die geführte manuelle Prüfliste
+
+| Baustein | Datei | Zweck |
+|---|---|---|
+| Fragen | `src/stufe3/fragen.ts` | Erzeugung samt Kontext, Kennung, Zusammenfassung |
+| Antworten | `src/stufe3/antworten.ts` | Ablage je Adresse und Fragekennung |
+| Übernahme | `src/stufe3/uebernahme.ts` | rechnet den Status nach einer Antwort neu |
+
+### Die Fragekennung enthält den Kontext, aber nicht die Adresse
+
+Beides ist Absicht.
+
+**Ohne Adresse**, weil dieselbe Frage auf zwanzig Seiten dieselbe Frage ist. Nur so lassen sich gleichlautende Fragen zusammenfassen (M-07) — und eine Liste über 25 Seiten wird von unbearbeitbar zu erledigbar.
+
+**Mit Kontext**, weil eine Antwort nur so lange gilt, wie sie sich auf denselben Inhalt bezieht. Ändert sich der Text, entsteht eine neue Kennung und die alte Antwort greift nicht mehr (M-04). Ein Urteil über einen Text, den es nicht mehr gibt, wäre schlimmer als gar keines.
+
+### Eine Antwort kann die Automatik nicht überstimmen
+
+Die Reihenfolge aus 5.2 bleibt unangetastet: **Ein belegter Verstoß schlägt alles.** Eine Antwort kann hinzufügen, was die Automatik nicht sieht — sie kann nichts wegräumen, was diese belegt hat. Wer einen Befund loswerden will, ändert die Seite.
+
+Neu dazugekommen sind zwei Schritte zwischen Befund und offener Frage:
+
+```
+1. nicht anwendbar                                → nicht_anwendbar
+2. mindestens ein automatischer Verstoss          → nicht_erfuellt
+3. eine Antwort "nicht erfuellt"                  → nicht_erfuellt
+4. alle Fragen mit "nicht anwendbar" beantwortet  → nicht_anwendbar
+5. offene Frage, Hinweis, LLM "problem"/"unsicher"→ pruefung_erforderlich
+6. sonst                                          → erfuellt
+```
+
+Eine gegebene Antwort zählt dabei als gelaufene Prüfung: Wer hingesehen und „erfüllt" gesagt hat, hat geprüft.
+
+### Antworten wirken sofort
+
+Nach jeder Antwort wird der Status neu abgeleitet, ohne neuen Scan. Ein Scan dauert Minuten, eine Antwort Sekunden; beides zu koppeln wäre der sicherste Weg, die Liste unbenutzbar zu machen.
+
 ## 6. Schnittstelle zwischen Oberfläche und Server
 
 Fastify, JSON, kein Authentifizierungsverfahren — das Werkzeug lauscht nur auf `127.0.0.1`.
@@ -498,6 +538,8 @@ Fastify, JSON, kein Authentifizierungsverfahren — das Werkzeug lauscht nur auf
 ### Stand nach Phase 2
 
 Gebaut sind `GET /api/katalog`, `POST /api/scan`, `GET /api/scan/:id`, `GET /api/scan/:id/ereignisse`, `POST /api/scan/:id/abbrechen`, `DELETE /api/scan/:id` sowie ergänzend `GET /api/scans`.
+
+Mit Phase 4 kamen `GET /api/system/hardware`, `GET /api/system/ollama` und `POST /api/system/ollama/einrichten` dazu, mit Phase 5 `GET /api/scan/:id/fragen`, `POST /api/scan/:id/antwort`, `DELETE /api/scan/:id/antwort` und ergänzend `GET /api/antworten`.
 
 Die übrigen Routen der Tabelle sind angelegt und antworten mit **501** samt Angabe der Phase, die sie bringt. Das hält die Schnittstelle sichtbar, ohne etwas vorzutäuschen — und die Oberfläche kann die Meldung unverändert anzeigen.
 

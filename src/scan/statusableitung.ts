@@ -11,6 +11,7 @@
 
 import type {
   AcrBewertung,
+  BeantworteteFrage,
   Befund,
   Bewertung,
   Hinweis,
@@ -38,6 +39,8 @@ export interface AbleitungEingabe {
   befunde: readonly Befund[];
   hinweise: readonly Hinweis[];
   offeneFragen: readonly OffeneFrage[];
+  /** Bereits vom Menschen beantwortete Fragen (M-02, M-03). */
+  beantworteteFragen?: readonly BeantworteteFrage[];
   llmUrteile?: readonly LlmUrteil[];
   /**
    * Belegt, dass mindestens eine automatische Pruefung tatsaechlich gelaufen
@@ -53,14 +56,35 @@ export interface AbleitungEingabe {
  *
  * 1. nicht anwendbar                                   → nicht_anwendbar
  * 2. mindestens ein automatischer Verstoss             → nicht_erfuellt
- * 3. offene manuelle Frage, Hinweis, LLM "problem"
+ * 3. eine manuelle Antwort "nicht erfuellt"            → nicht_erfuellt
+ * 4. alle Fragen mit "nicht anwendbar" beantwortet     → nicht_anwendbar
+ * 5. offene manuelle Frage, Hinweis, LLM "problem"
  *    oder "unsicher"                                   → pruefung_erforderlich
- * 4. sonst                                             → erfuellt
+ * 6. sonst                                             → erfuellt
+ *
+ * Die Schritte 3 und 4 sind mit Phase 5 dazugekommen. Sie fuegen sich in die
+ * bindende Reihenfolge aus ARCHITEKTUR 5.2 ein, ohne sie umzustossen: Ein
+ * automatischer Verstoss schlaegt weiterhin alles. Ein Mensch kann einen
+ * belegten Verstoss nicht wegantworten — er kann nur hinzufuegen, was die
+ * Automatik nicht sieht.
  */
 export function leiteStatusAb(eingabe: AbleitungEingabe): Status {
   if (!eingabe.anwendbar) return 'nicht_anwendbar';
 
   if (eingabe.befunde.length > 0) return 'nicht_erfuellt';
+
+  const antworten = eingabe.beantworteteFragen ?? [];
+  if (antworten.some((a) => a.antwort === 'nicht_erfuellt')) return 'nicht_erfuellt';
+
+  // Gegenstandslos ist ein Kriterium erst, wenn *jede* Frage dazu so
+  // beantwortet wurde — und keine mehr offen ist.
+  if (
+    antworten.length > 0 &&
+    eingabe.offeneFragen.length === 0 &&
+    antworten.every((a) => a.antwort === 'nicht_anwendbar')
+  ) {
+    return 'nicht_anwendbar';
+  }
 
   if (eingabe.offeneFragen.length > 0) return 'pruefung_erforderlich';
   if (eingabe.hinweise.length > 0) return 'pruefung_erforderlich';
@@ -70,7 +94,10 @@ export function leiteStatusAb(eingabe: AbleitungEingabe): Status {
 
   // Kein Befund, keine offene Frage — aber auch keine gelaufene Pruefung.
   // Das ist kein bestandener Test, sondern ein ungeprueftes Kriterium.
-  if (!eingabe.autoPruefungGelaufen) return 'pruefung_erforderlich';
+  //
+  // Eine menschliche Antwort zaehlt dabei als gelaufene Pruefung: Wer
+  // hingesehen und "erfuellt" gesagt hat, hat geprueft.
+  if (!eingabe.autoPruefungGelaufen && antworten.length === 0) return 'pruefung_erforderlich';
 
   return 'erfuellt';
 }
@@ -91,6 +118,7 @@ export function baueBewertung(eingabe: AbleitungEingabe): Bewertung {
     befunde: [...eingabe.befunde],
     hinweise,
     offeneFragen: [...eingabe.offeneFragen],
+    ...(eingabe.beantworteteFragen?.length ? { beantworteteFragen: [...eingabe.beantworteteFragen] } : {}),
   };
 }
 

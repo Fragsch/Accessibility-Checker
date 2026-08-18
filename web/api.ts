@@ -5,7 +5,7 @@
  * was der Server nicht wissen kann — etwa dass er gar nicht antwortet.
  */
 
-import type { Kriterium, ScanZustand, Standard, Stufe2Zustand } from './typen';
+import type { Antwortwert, Fragenliste, Kriterium, ScanZustand, Standard, Stufe2Zustand } from './typen';
 
 export class ApiFehler extends Error {
   readonly status: number;
@@ -55,6 +55,33 @@ export async function ladeStufe2Zustand(standard: Standard): Promise<Stufe2Zusta
 
 export async function ladeScan(scanId: number): Promise<ScanZustand> {
   return hole<ScanZustand>(`/api/scan/${scanId}`);
+}
+
+/** Offene und beantwortete Fragen eines Scans (M-01, M-06, M-07). */
+export async function ladeFragen(scanId: number): Promise<Fragenliste> {
+  return hole<Fragenliste>(`/api/scan/${scanId}/fragen`);
+}
+
+export interface AntwortEingabe {
+  url: string;
+  kriterium: string;
+  frageHash: string;
+  antwort: Antwortwert;
+  notiz: string | null;
+}
+
+/** Beantwortet eine Frage (M-02). Die Antwort bleibt gespeichert (M-03). */
+export async function beantworteFrage(scanId: number, eingabe: AntwortEingabe): Promise<void> {
+  await hole(`/api/scan/${scanId}/antwort`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(eingabe),
+  });
+}
+
+export async function nimmAntwortZurueck(scanId: number, url: string, frageHash: string): Promise<void> {
+  const abfrage = new URLSearchParams({ url, frageHash });
+  await hole(`/api/scan/${scanId}/antwort?${abfrage.toString()}`, { method: 'DELETE' });
 }
 
 export async function brichScanAb(scanId: number): Promise<void> {

@@ -6,7 +6,7 @@ Prüft Webseiten und Webanwendungen gegen alle Erfolgskriterien, zeigt je Kriter
 
 ## Stand
 
-**Phase 4 abgeschlossen — die Sprachmodell-Stufe läuft.** Neben den sechs automatischen Prüf-Engines bewertet jetzt optional ein lokales Sprachmodell über Ollama, was sich nur inhaltlich beurteilen lässt: Ist der Linktext aussagekräftig? Beschreibt die Überschrift den Abschnitt? Nennt die Fehlermeldung einen Behebungsweg?
+**Phase 5 abgeschlossen — die Bewertung ist vollständig.** Was die Automatik und das Sprachmodell nicht entscheiden können, landet jetzt in einer geführten Prüfliste: eine Frage nach der anderen, mit dem Kontext daneben, beantwortbar mit *erfüllt* / *nicht erfüllt* / *nicht anwendbar* samt Notiz.
 
 ```bash
 npm run einrichten       # einmalig
@@ -14,11 +14,13 @@ npm run build
 npm start                # http://127.0.0.1:3000
 ```
 
-Die Sprachmodell-Stufe ist **abschaltbar und standardmäßig aus**. Ohne sie bleiben zehn Kriterien inhaltlich unbewertet — sie tragen dann `Prüfung erforderlich` und wandern in die manuelle Liste. Die Oberfläche benennt, welche das sind. Einrichtung: `ANLEITUNG-OLLAMA.md`.
+Antworten bleiben je Adresse gespeichert. Ein späterer Scan derselben Seite übernimmt sie — solange sich der Inhalt der betroffenen Stellen nicht geändert hat. Gleichlautende Fragen mehrerer Seiten werden zu einer zusammengefasst.
+
+Die Sprachmodell-Stufe ist **abschaltbar und standardmäßig aus**; jedes ihrer unsicheren Urteile wandert samt Begründung in die Prüfliste. Einrichtung: `ANLEITUNG-OLLAMA.md`.
 
 Gemessen an den Referenzseiten: **74 % der eingebauten Verstöße belegt erkannt, kein einziger Fehlalarm, kein einziges übersehenes Kriterium.** Nachzuvollziehen mit `npm run verifikation`.
 
-Noch nicht gebaut: geführte manuelle Liste (Phase 5), Prüfprofile und Crawl (Phase 6), Bericht (Phase 7).
+Noch nicht gebaut: Prüfprofile und Crawl (Phase 6), Bericht nach WCAG-EM (Phase 7).
 
 ## Was das Werkzeug können soll
 

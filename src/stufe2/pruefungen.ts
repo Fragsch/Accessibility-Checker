@@ -19,7 +19,8 @@
  *   Scan läuft weiter (L-26, Fallstrick 3).
  */
 
-import type { Hinweis, Kriterium, Standard } from '../typen/index.js';
+import type { Hinweis, Kriterium, OffeneFrage, Standard } from '../typen/index.js';
+import { baueLlmFrage } from '../stufe3/fragen.js';
 import type { Protokoll } from '../protokoll.js';
 import type { Messung, ModellAdapter, Urteil } from './adapter/typ.js';
 import type { Prompt, Prompts } from './prompts.js';
@@ -34,6 +35,13 @@ import { fluechtigerSpeicher, inhaltsHash } from './cache.js';
 export interface Stufe2Ergebnis {
   /** Hinweise je Kriterium — sie halten das Kriterium offen. */
   hinweise: Hinweis[];
+  /**
+   * Fragen aus unsicheren Urteilen (M-06).
+   *
+   * Jedes „unsicher" wird zur Frage an den Menschen — genau dafür ist das
+   * Urteil da. Die Begründung des Modells geht als Entscheidungshilfe mit.
+   */
+  offeneFragen: OffeneFrage[];
   /** Urteile je Kriterium, für die Statusableitung (ARCHITEKTUR 5.2). */
   urteileJeKriterium: Map<string, Urteil[]>;
   /** Prüfungen, die tatsächlich gelaufen sind. */
@@ -64,6 +72,7 @@ export async function fuehreStufe2Aus(optionen: Stufe2Optionen): Promise<Stufe2E
   const speicher = optionen.speicher ?? fluechtigerSpeicher();
   const ergebnis: Stufe2Ergebnis = {
     hinweise: [],
+    offeneFragen: [],
     urteileJeKriterium: new Map(),
     gelaufenePruefungen: [],
     messungen: [],
@@ -259,6 +268,19 @@ function ergaenze(
       `${vorspann}${stelle ? ` bei ${stelle}` : ''}: ${begruendung ?? 'ohne Begründung'} ` +
       '(Hinweis zur Nachprüfung, keine Feststellung.)',
   });
+
+  /*
+    M-06: Nur „unsicher" wird zur Frage, nicht „problem".
+
+    Das ist kein Widerspruch dazu, dass auch ein „problem" das Kriterium offen
+    hält. Es ist eine Frage der Arbeitsökonomie: Bei „unsicher" sagt das Modell
+    ausdrücklich, dass ihm der Kontext fehlt — da ist eine Entscheidung von
+    Hand fällig. Ein „problem" ist ein konkreter Hinweis, den man zusammen mit
+    den übrigen Befunden des Kriteriums abarbeitet.
+  */
+  if (urteil === 'unsicher') {
+    ergebnis.offeneFragen.push(baueLlmFrage(kriterium, pruefungsId, stelle ?? 'diese Stelle', begruendung));
+  }
 }
 
 /**

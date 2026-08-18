@@ -14,6 +14,7 @@
  */
 
 import type {
+  BeantworteteFrage,
   Befund,
   Betriebsart,
   Bewertung,
@@ -46,6 +47,8 @@ import { ladePrompts } from '../stufe2/prompts.js';
 import type { Prompts } from '../stufe2/prompts.js';
 import type { ModellAdapter } from '../stufe2/adapter/typ.js';
 import type { Zwischenspeicher } from '../stufe2/cache.js';
+import { baueKatalogFragen } from '../stufe3/fragen.js';
+import type { ManuelleAntwort } from '../typen/index.js';
 
 export const WERKZEUG_VERSION = '0.1.0';
 
@@ -83,6 +86,12 @@ export interface ScanAuftrag {
   stufe2Adapter?: ModellAdapter;
   /** Zwischenspeicher fuer bereits bewertete Textbausteine (L-28). */
   stufe2Speicher?: Zwischenspeicher;
+  /**
+   * Bereits gegebene manuelle Antworten, nach Adresse und Fragekennung
+   * (M-04). Passende Antworten werden uebernommen, statt die Frage erneut
+   * zu stellen.
+   */
+  fruehereAntworten?: Map<string, Map<string, ManuelleAntwort>>;
   katalog?: Katalog;
   browser?: Browser;
   protokoll?: Protokoll;
@@ -156,6 +165,7 @@ export async function fuehreScanAus(auftrag: ScanAuftrag): Promise<ScanErgebnis>
         ...(auftrag.viewport ? { viewport: auftrag.viewport } : {}),
         mehrereViewports: auftrag.mehrereViewports ?? false,
         stufe2Aktiv,
+        ...(auftrag.fruehereAntworten ? { fruehereAntworten: auftrag.fruehereAntworten } : {}),
         ...(stufe2Aktiv && prompts && auftrag.stufe2Adapter
           ? {
               stufe2: {
@@ -249,6 +259,7 @@ interface SeitenPruefungOptionen {
   viewport?: Viewport;
   mehrereViewports: boolean;
   stufe2Aktiv: boolean;
+  fruehereAntworten?: Map<string, Map<string, ManuelleAntwort>>;
   stufe2?: {
     adapter: ModellAdapter;
     prompts: Prompts;
@@ -378,6 +389,32 @@ async function pruefeSeite(optionen: SeitenPruefungOptionen): Promise<SeitenPrue
     const befundeNachKriterium = gruppiere(normalisiert.befunde, (b) => b.kriterium);
     const hinweiseNachKriterium = gruppiere([...normalisiert.hinweise, ...(stufe2?.hinweise ?? [])], (h) => h.kriterium);
 
+    /*
+      Fragen der Stufe 3 vorbereiten (M-01).
+
+      Das geschieht hier und nicht erst bei der Bewertung, weil dafuer die
+      Seite noch offen sein muss: Zu jeder Frage gehoert der Kontext, und der
+      steht im DOM. Eine Frage ohne Kontext ist fuer den, der sie beantworten
+      soll, kaum brauchbar.
+    */
+    const fragenNachKriterium = new Map<string, OffeneFrage[]>();
+    for (const kriterium of kriterien) {
+      if (!(anwendbarkeit.get(kriterium.id)?.anwendbar ?? true)) continue;
+      if (!kriterium.pruefungen.some((p) => p.typ === 'manuell')) continue;
+
+      const fragen = await baueKatalogFragen(kriterium, { seite: geladen.seite, protokoll });
+      if (fragen.length > 0) fragenNachKriterium.set(kriterium.id, fragen);
+    }
+
+    for (const frage of stufe2?.offeneFragen ?? []) {
+      const bisher = fragenNachKriterium.get(frage.kriterium) ?? [];
+      bisher.push(frage);
+      fragenNachKriterium.set(frage.kriterium, bisher);
+    }
+
+    // Frueher gegebene Antworten zu dieser Adresse (M-04).
+    const antworten = optionen.fruehereAntworten?.get(geladen.url) ?? new Map<string, ManuelleAntwort>();
+
     const bewertungen: Bewertung[] = kriterien.map((kriterium) =>
       bewerteKriterium({
         kriterium,
@@ -388,6 +425,8 @@ async function pruefeSeite(optionen: SeitenPruefungOptionen): Promise<SeitenPrue
         vorhandeneEngines: vorhanden,
         gescheiterteEngines,
         stufe2Aktiv: optionen.stufe2Aktiv,
+        fragen: fragenNachKriterium.get(kriterium.id) ?? [],
+        antworten,
         ...(stufe2 ? { stufe2 } : {}),
       }),
     );
@@ -499,6 +538,10 @@ interface KriteriumOptionen {
   vorhandeneEngines: Set<EngineName>;
   gescheiterteEngines: Map<EngineName, string>;
   stufe2Aktiv: boolean;
+  /** Vorbereitete Fragen dieses Kriteriums (M-01, M-06). */
+  fragen: OffeneFrage[];
+  /** Frueher gegebene Antworten zu dieser Adresse (M-04). */
+  antworten: Map<string, ManuelleAntwort>;
   stufe2?: Stufe2Ergebnis;
 }
 
@@ -513,6 +556,7 @@ function bewerteKriterium(optionen: KriteriumOptionen): Bewertung {
   const { kriterium } = optionen;
   const hinweise = [...optionen.hinweise];
   const offeneFragen: OffeneFrage[] = [];
+  const beantwortet: BeantworteteFrage[] = [];
   const herkuenfte = new Set<string>();
 
   if (!optionen.anwendbarkeit.anwendbar) {
@@ -591,13 +635,33 @@ function bewerteKriterium(optionen: KriteriumOptionen): Bewertung {
       continue;
     }
 
-    offeneFragen.push({
-      kriterium: kriterium.id,
-      frage: pruefung.frage,
-      kontextSelektor: pruefung.kontextSelektor ?? null,
-      betroffeneElemente: null,
-    });
+    // Die Fragen sind bereits samt Kontext vorbereitet worden; hier zaehlt
+    // nur noch, dass dieses Kriterium eine manuelle Pruefung hat.
     herkuenfte.add('manuell');
+  }
+
+  /*
+    Fragen aufteilen: beantwortet oder offen (M-02, M-04).
+
+    Eine Antwort, die zu keiner aktuellen Frage passt, wird nicht angewendet.
+    Das ist wichtig: Die Fragekennung enthaelt den Kontext, und wenn der sich
+    geaendert hat, ist die alte Antwort ueberholt. Sie stehen zu lassen hiesse,
+    ein Urteil ueber einen Text zu faellen, den es nicht mehr gibt.
+  */
+  for (const frage of optionen.fragen) {
+    const antwort = optionen.antworten.get(frage.id);
+    if (antwort) {
+      beantwortet.push({
+        frage,
+        antwort: antwort.antwort,
+        notiz: antwort.notiz,
+        beantwortetAm: antwort.beantwortetAm,
+      });
+      herkuenfte.add('manuell');
+    } else {
+      offeneFragen.push(frage);
+      herkuenfte.add('manuell');
+    }
   }
 
   const llmUrteile: LlmUrteil[] = optionen.stufe2?.urteileJeKriterium.get(kriterium.id) ?? [];
@@ -608,6 +672,7 @@ function bewerteKriterium(optionen: KriteriumOptionen): Bewertung {
     befunde: optionen.befunde,
     hinweise,
     offeneFragen,
+    beantworteteFragen: beantwortet,
     llmUrteile,
     autoPruefungGelaufen,
     herkunft: herkuenfte.size ? [...herkuenfte].sort().join(' + ') : 'ungeprueft',

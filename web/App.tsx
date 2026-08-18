@@ -8,11 +8,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { ApiFehler, brichScanAb, hoereAufScan, ladeKatalog, ladeScan, starteScan } from './api';
-import type { Kriterium, ScanZustand, Standard } from './typen';
+import { ApiFehler, brichScanAb, hoereAufScan, ladeFragen, ladeKatalog, ladeScan, starteScan } from './api';
+import type { Fragenliste, Kriterium, ScanZustand, Standard } from './typen';
 import { Ergebnisansicht } from './bausteine/Ergebnisansicht';
 import { Fortschritt } from './bausteine/Fortschritt';
 import { Pruefauftrag } from './bausteine/Pruefauftrag';
+import { Pruefliste } from './bausteine/Pruefliste';
 
 type Ansicht = 'auftrag' | 'laeuft' | 'ergebnis';
 
@@ -21,6 +22,8 @@ export function App(): React.ReactElement {
   const [zustand, setzeZustand] = useState<ScanZustand | null>(null);
   const [kriterien, setzeKriterien] = useState<Kriterium[]>([]);
   const [gepruefteSeiten, setzeGepruefteSeiten] = useState<string[]>([]);
+  const [fragen, setzeFragen] = useState<Fragenliste | null>(null);
+  const [sicht, setzeSicht] = useState<'befunde' | 'pruefliste'>('befunde');
   const [fehler, setzeFehler] = useState<string | null>(null);
 
   const ueberschrift = useRef<HTMLHeadingElement>(null);
@@ -38,7 +41,10 @@ export function App(): React.ReactElement {
     try {
       const stand = await ladeScan(scanId);
       setzeZustand(stand);
-      if (!stand.laeuft) setzeAnsicht('ergebnis');
+      if (!stand.laeuft) {
+        setzeAnsicht('ergebnis');
+        setzeFragen(await ladeFragen(scanId).catch(() => null));
+      }
     } catch (e) {
       setzeFehler(e instanceof ApiFehler ? e.message : String(e));
       setzeAnsicht('ergebnis');
@@ -104,6 +110,8 @@ export function App(): React.ReactElement {
     abmelden.current?.();
     abmelden.current = null;
     setzeZustand(null);
+    setzeFragen(null);
+    setzeSicht('befunde');
     setzeFehler(null);
     setzeAnsicht('auftrag');
   }
@@ -169,7 +177,46 @@ export function App(): React.ReactElement {
                 </div>
               )}
 
-              {zustand?.ergebnis ? (
+              {/*
+                Zwei Sichten auf dasselbe Ergebnis: was gefunden wurde, und
+                was noch zu tun ist. Als Radiogruppe, nicht als Reiterleiste —
+                semantisches HTML vor ARIA, und mit der Tastatur bedienbar,
+                ohne dass jemand ein Tastenverhalten nachbauen muss.
+              */}
+              {fragen && fragen.fortschritt.gesamt > 0 && (
+                <fieldset className="feldgruppe">
+                  <legend>Ansicht</legend>
+                  <div className="auswahl">
+                    <label>
+                      <input
+                        type="radio"
+                        name="sicht"
+                        checked={sicht === 'befunde'}
+                        onChange={() => setzeSicht('befunde')}
+                      />
+                      Befunde je Kriterium
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name="sicht"
+                        checked={sicht === 'pruefliste'}
+                        onChange={() => setzeSicht('pruefliste')}
+                      />
+                      Manuelle Prüfliste ({fragen.fortschritt.offen} offen)
+                    </label>
+                  </div>
+                </fieldset>
+              )}
+
+              {sicht === 'pruefliste' && fragen && zustand ? (
+                <Pruefliste
+                  scanId={zustand.scanId}
+                  liste={fragen}
+                  kriterien={kriterien}
+                  beiAenderung={() => void holeStand(zustand.scanId)}
+                />
+              ) : zustand?.ergebnis ? (
                 <Ergebnisansicht
                   ergebnis={zustand.ergebnis}
                   kriterien={kriterien}

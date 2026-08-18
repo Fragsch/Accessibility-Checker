@@ -69,10 +69,11 @@ Die Phasen aus `PRD.md` Abschnitt 9 sind bindend. Aktueller Stand: **Phase 1 bis
 | 2 | ✓ Server und Oberfläche | `src/server/`, `web/` |
 | 3 | ✓ Automatik ausgereizt — sechs Engines, 124 Regeln | `src/stufe1/` |
 | 4 | ✓ Sprachmodell-Stufe über Ollama, optional zuschaltbar | `src/stufe2/` |
+| 5 | ✓ Geführte manuelle Prüfliste mit Persistenz | `src/stufe3/` |
 
-**Als Nächstes Phase 5:** die geführte manuelle Prüfliste mit Persistenz. Die Anschlussstellen stehen: `OffeneFrage` in `src/typen/`, die Tabelle `manuelle_antwort` in `src/db/schema.sql`, und die Routen `GET /api/scan/:id/fragen` und `POST /api/scan/:id/antwort` antworten heute mit 501.
+**Als Nächstes Phase 6:** Prüfprofile, Verdichtung und Musterkennung, Gesamtprüfung per Crawl, Anmeldung durch den Nutzer, Scan-Verwaltung. Die Tabellen `profil` und `profil_seite` stehen bereits, die Profil-Routen antworten heute mit 501.
 
-### Vier Regeln aus Phase 3 und 4, die weitergelten
+### Fünf Regeln aus Phase 3 bis 5, die weitergelten
 
 ### Drei Regeln aus Phase 3, die weitergelten
 
@@ -80,6 +81,7 @@ Die Phasen aus `PRD.md` Abschnitt 9 sind bindend. Aktueller Stand: **Phase 1 bis
 2. **Nach jeder Änderung an einer Engine: `npm run verifikation`.** Sie misst gegen `test/referenzseiten/soll.json`. Zwei Zahlen zählen — *übersehen* muss 0 bleiben, *Fehlalarme* müssen 0 bleiben.
 3. **Nach jeder Änderung an der Oberfläche: `npm run pruefe:selbst`.** Der eigene Scanner läuft über alle drei Ansichten.
 4. **Ein Urteil des Sprachmodells ist nie ein Verstoß.** `problem` und `unsicher` führen beide zu `pruefung_erforderlich`, niemals zu `nicht_erfuellt` (L-25). Wer das ändert, stellt Feststellungen in den Bericht, die niemand geprüft hat.
+5. **Eine manuelle Antwort kann keinen belegten Verstoß wegräumen.** Sie kann hinzufügen, was die Automatik nicht sieht — nicht überstimmen, was diese belegt hat. Die Reihenfolge aus `ARCHITEKTUR.md` 5.2 bleibt bindend.
 
 ## Wichtig beim Einstieg
 

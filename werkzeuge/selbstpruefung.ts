@@ -64,12 +64,44 @@ const ANSICHTEN: Ansicht[] = [
       // Auch die nicht anwendbaren einblenden, damit jede Zeile im DOM steht.
       await seite.getByLabel(/^nicht anwendbar/).check();
 
-      for (const aufklappen of await seite.locator('details.kriterium').all()) {
-        await aufklappen.evaluate((element) => element.setAttribute('open', ''));
-      }
+      await klappeAllesAuf(seite);
+    },
+  },
+  {
+    name: 'Manuelle Prüfliste',
+    vorbereiten: async (seite) => {
+      const beispiel = pathToFileURL(path.join(projektWurzel(), 'test', 'referenzseiten', 'mangelhaft.html')).href;
+
+      await seite.getByLabel('Zu prüfende Adressen').fill(beispiel);
+      await seite.getByRole('button', { name: 'Prüfung starten' }).click();
+      await seite.getByRole('heading', { name: /^Ergebnis/ }).waitFor({ timeout: 120_000 });
+
+      await seite.getByLabel(/^Manuelle Prüfliste/).check();
+      await seite.getByRole('heading', { name: 'Manuelle Prüfliste' }).waitFor();
+
+      // Eine Frage beantworten, damit auch der beantwortete Zweig im DOM steht.
+      await seite.getByRole('button', { name: 'erfüllt', exact: true }).first().click();
+      await seite.getByRole('heading', { name: /^Beantwortet/ }).waitFor({ timeout: 20_000 });
+
+      await klappeAllesAuf(seite);
     },
   },
 ];
+
+/**
+ * Klappt jedes `details` in einem Zug auf.
+ *
+ * Einzeln ueber Locators zu gehen scheitert, sobald sich die Liste zwischen
+ * zwei Schritten neu aufbaut — etwa nachdem eine Frage beantwortet wurde.
+ */
+async function klappeAllesAuf(seite: Page): Promise<void> {
+  await seite.evaluate(() => {
+    for (const element of Array.from(document.querySelectorAll('details'))) {
+      element.setAttribute('open', '');
+    }
+  });
+  await seite.waitForTimeout(200);
+}
 
 async function hauptlauf(): Promise<void> {
   const katalog = Katalog.laden();

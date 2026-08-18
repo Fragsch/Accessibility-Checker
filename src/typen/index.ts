@@ -124,13 +124,49 @@ export interface Hinweis {
   herkunft: string;
 }
 
-/** Eine offene Frage der Stufe 3 an den Menschen. */
+/** Woher eine offene Frage stammt. */
+export type FrageHerkunft = 'katalog' | 'llm';
+
+/**
+ * Eine offene Frage der Stufe 3 an den Menschen (PRD 6.4).
+ *
+ * Zwei Quellen speisen die Liste: die manuellen Pruefungen des Katalogs und
+ * jeder mit `unsicher` bewertete Punkt der Sprachmodell-Stufe (M-06). Beide
+ * landen in derselben Liste — fuer den, der sie abarbeitet, ist die Herkunft
+ * nachrangig.
+ */
 export interface OffeneFrage {
+  /**
+   * Stabile Kennung der Frage.
+   *
+   * Sie bildet sich aus Kriterium, Fragetext und Kontext — nicht aus der
+   * Reihenfolge. Nur so laesst sich eine Antwort bei einem spaeteren Scan
+   * wiederfinden (M-03, M-04).
+   */
+  id: string;
   kriterium: string;
   frage: string;
   kontextSelektor: string | null;
   /** Anzahl der Elemente, auf die sich die Frage bezieht; `null`, wenn unbekannt. */
   betroffeneElemente: number | null;
+  herkunft: FrageHerkunft;
+  /** Begruendung des Sprachmodells als Entscheidungshilfe (M-06). */
+  begruendung?: string | null;
+  /** Vorbereiteter Kontext: Textproben der betroffenen Stellen (M-01). */
+  kontext?: string[];
+}
+
+/** Antwortmoeglichkeiten der manuellen Pruefung (M-02). */
+export type Antwortwert = 'erfuellt' | 'nicht_erfuellt' | 'nicht_anwendbar';
+
+/** Eine gegebene Antwort, dauerhaft gespeichert je Adresse (M-03). */
+export interface ManuelleAntwort {
+  url: string;
+  kriterium: string;
+  frageHash: string;
+  antwort: Antwortwert;
+  notiz: string | null;
+  beantwortetAm: string;
 }
 
 /** Bewertung eines Kriteriums auf genau einer Seite. */
@@ -142,6 +178,16 @@ export interface Bewertung {
   befunde: Befund[];
   hinweise: Hinweis[];
   offeneFragen: OffeneFrage[];
+  /** Bereits beantwortete Fragen samt Antwort (M-03, M-04). */
+  beantworteteFragen?: BeantworteteFrage[];
+}
+
+/** Eine Frage, die bereits beantwortet wurde. */
+export interface BeantworteteFrage {
+  frage: OffeneFrage;
+  antwort: Antwortwert;
+  notiz: string | null;
+  beantwortetAm: string;
 }
 
 /** Ergebnis einer einzelnen geprueften Seite. */

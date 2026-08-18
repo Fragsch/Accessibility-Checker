@@ -23,6 +23,8 @@ import { ladeScan, legeScanAn, schliesseScanAb, speichereSeitenErgebnis } from '
 import { OllamaAdapter } from '../stufe2/adapter/ollama.js';
 import { datenbankSpeicher } from '../stufe2/cache.js';
 import { erkenneHardware, schlageModellVor } from '../plattform/hardware.js';
+import { lesAntwortenFuer } from '../stufe3/antworten.js';
+import { wendeAntwortenAn } from '../stufe3/uebernahme.js';
 
 export type ScanZustand = 'laeuft' | 'fertig' | 'abgebrochen' | 'fehler';
 
@@ -195,6 +197,26 @@ export class Scanverwaltung {
     };
   }
 
+  /**
+   * Traegt die gespeicherten Antworten in das Ergebnis nach (M-02).
+   *
+   * Wird nach jeder Antwort aufgerufen. Der Status aendert sich damit sofort,
+   * ohne dass ein neuer Scan noetig waere — sonst waere die manuelle Liste
+   * nicht abzuarbeiten.
+   */
+  uebernehmeAntworten(scanId: number): number {
+    const ergebnis = this.#laeufe.get(scanId)?.ergebnis;
+    if (!ergebnis) return 0;
+
+    const antworten = lesAntwortenFuer(this.#db, ergebnis.seiten.map((s) => s.url));
+    const geaendert = wendeAntwortenAn(ergebnis, antworten);
+
+    if (geaendert > 0) {
+      ergebnis.projektebene = verdichte(ergebnis.seiten, this.#katalog.fuerStandard(ergebnis.standard));
+    }
+    return geaendert;
+  }
+
   ereignisseSeit(scanId: number, letzteNummer: number): Ereignis[] {
     return this.#laeufe.get(scanId)?.ereignisse.filter((e) => e.nummer > letzteNummer) ?? [];
   }
@@ -253,8 +275,12 @@ export class Scanverwaltung {
         }
       }
 
+      // Frueher gegebene Antworten zu diesen Adressen mitgeben (M-04).
+      const fruehereAntworten = lesAntwortenFuer(this.#db, eingang.urls);
+
       const ergebnis = await fuehreScanAus({
         seiten: eingang.urls.map((url) => ({ url })),
+        fruehereAntworten,
         standard: eingang.standard,
         betriebsart,
         katalog: this.#katalog,

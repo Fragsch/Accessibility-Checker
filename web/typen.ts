@@ -7,15 +7,42 @@
  */
 
 import type {
+  Antwortwert,
+  BeantworteteFrage,
   Bewertung,
   Kriterium,
+  OffeneFrage,
   ScanErgebnis,
   SeitenErgebnis,
   Standard,
   Status,
 } from '../src/typen/index';
 
-export type { Bewertung, Kriterium, ScanErgebnis, SeitenErgebnis, Standard, Status };
+export type {
+  Antwortwert,
+  BeantworteteFrage,
+  Bewertung,
+  Kriterium,
+  OffeneFrage,
+  ScanErgebnis,
+  SeitenErgebnis,
+  Standard,
+  Status,
+};
+
+/** Eine Frage, die auf mehreren Seiten gleich lautet (M-07). */
+export interface GebuendelteFrage {
+  frage: OffeneFrage;
+  seiten: string[];
+}
+
+/** Die geführte Prüfliste eines Scans. */
+export interface Fragenliste {
+  scanId: number;
+  offen: GebuendelteFrage[];
+  beantwortet: (BeantworteteFrage & { url: string })[];
+  fortschritt: { offen: number; beantwortet: number; gesamt: number };
+}
 
 export interface Stufe2Zustand {
   hardware: {

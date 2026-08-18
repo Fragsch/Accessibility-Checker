@@ -33,7 +33,14 @@ const BEFUND: Befund = {
 };
 
 const HINWEIS: Hinweis = { kriterium: '1.1.1', text: 'nicht pruefbar', herkunft: 'axe' };
-const FRAGE: OffeneFrage = { kriterium: '1.1.1', frage: 'Stimmt der Text?', kontextSelektor: null, betroffeneElemente: null };
+const FRAGE: OffeneFrage = {
+  id: 'abc123',
+  kriterium: '1.1.1',
+  frage: 'Stimmt der Text?',
+  kontextSelektor: null,
+  betroffeneElemente: null,
+  herkunft: 'katalog',
+};
 
 function eingabe(teil: Partial<AbleitungEingabe> = {}): AbleitungEingabe {
   return {
