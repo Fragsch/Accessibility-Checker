@@ -83,6 +83,8 @@ Prüfen Sie nach der Installation die tatsächlichen Hauptversionen und halten S
 | `tesseract.js` | 7.x | Ab Phase 3 |
 | `@tesseract.js-data/deu` | 1.0.0 | **Notwendig.** Ohne dieses Paket lädt tesseract.js seine Sprachdaten aus dem Netz — ein Datenabfluss (NF-02) |
 | `sharp` | 0.34.x | Ab Phase 3 |
+| `ollama` | 0.6.x | Ab Phase 4. Der Adapter spricht die HTTP-Schnittstelle direkt an; das Paket liegt für den Cloud-Adapter bereit |
+| ~~`zod-to-json-schema`~~ | — | **Nicht nötig.** Zod 4 erzeugt das Schema über `z.toJSONSchema()` |
 | ~~`tsx`~~ | — | **Entfernt in Phase 3** — siehe unten |
 
 **npm gibt Installationsskripte nicht mehr von selbst frei.** `better-sqlite3` und `esbuild` bauen beim Installieren native Teile. Ohne Freigabe bleiben sie unvollständig und brechen erst zur Laufzeit ab:
@@ -178,13 +180,17 @@ accessibility-checker/
 │   │       ├── darstellung.ts ✓ Reflow, Zoom, Textabstand
 │   │       ├── formulare.ts ✓ Zustands-Traversierung (A-07)
 │   │       └── mehrseitig.ts ✓ Vergleiche über Seiten hinweg
-│   ├── stufe2/
+│   ├── stufe2/             ✓ Sprachmodell-Stufe
 │   │   ├── adapter/
-│   │   │   ├── ollama.ts
-│   │   │   └── cloud.ts        ← optional
-│   │   ├── einrichtung.ts      ← Erkennung, Installation, Messung (6.3.1)
-│   │   ├── buendel.ts
-│   │   └── pruefungen.ts
+│   │   │   ├── typ.ts      ✓ Vertrag, austauschbar (L-27)
+│   │   │   ├── ollama.ts   ✓
+│   │   │   └── cloud.ts        ← optional, nach 1.0
+│   │   ├── einrichtung.ts  ✓ Erkennung, Vorschlag, Messung (6.3.1)
+│   │   ├── prompts.ts      ✓ liest prompts/stufe2.md
+│   │   ├── sammler.ts      ✓ Elemente je Prompt
+│   │   ├── vorfilter.ts    ✓ spart Modellaufrufe
+│   │   ├── cache.ts        ✓ Inhaltshash (L-28)
+│   │   └── pruefungen.ts   ✓ Ablauf
 │   ├── stufe3/                 ← Fragenerzeugung, Antwortspeicherung
 │   ├── bericht/                ← WCAG-EM/ACR-Erzeugung, HTML, PDF, EARL
 │   ├── db/
@@ -193,8 +199,8 @@ accessibility-checker/
 │   │   ├── schema.sql      ✓
 │   │   └── migrationen/    ✓
 │   ├── plattform/              ← Die drei gekapselten Adapter (8.1)
-│   │   ├── ollama-installation.ts
-│   │   ├── hardware.ts
+│   │   ├── ollama-installation.ts  ← entfällt: es wird nichts installiert (L-41)
+│   │   ├── hardware.ts     ✓ Erkennung und Modellvorschlag (L-42)
 │   │   └── pfade.ts        ✓
 │   └── typen/              ✓ Gemeinsame TypeScript-Typen
 │
@@ -433,6 +439,36 @@ Die Spracherkennung braucht rund 120 Zeichen für ein belastbares Urteil. Findet
 - **Kurze fremdsprachige Einschübe** (Zitate, Slogans, Fachbegriffe) erkennt keine statistische Spracherkennung verlässlich. Sie gehen als Hinweis in die manuelle Stufe.
 - **Quelltext ist keine Sprache.** Codebeispiele werden von der Spracherkennung ausgenommen — sonst gelten sie reihenweise als französisch oder portugiesisch.
 - **`title`-Attribute** werden bei 1.4.13 grundsätzlich beanstandet. Das ist streng, aber sachlich richtig: Der Browser-Tooltip lässt sich weder mit Escape schließen noch mit dem Zeiger erreichen.
+
+## 5.9 Die Sprachmodell-Stufe
+
+Aufbau je Prüfung: **sammeln → vorfiltern → Zwischenspeicher → bündeln → fragen → zuordnen.**
+
+| Baustein | Datei | Zweck |
+|---|---|---|
+| Prompts | `src/stufe2/prompts.ts` | liest `prompts/stufe2.md`; die Prompts bleiben Daten |
+| Adapter | `src/stufe2/adapter/` | austauschbar (L-27); Ollama ist der Standard |
+| Sammler | `src/stufe2/sammler.ts` | holt je Prompt genau die Angaben, die seine Vorlage braucht |
+| Vorfilter | `src/stufe2/vorfilter.ts` | entscheidet ohne Modell, was ohne Modell entscheidbar ist |
+| Zwischenspeicher | `src/stufe2/cache.ts` | Inhaltshash über Prüfung, Inhalt und **Modellname** (L-28) |
+| Ablauf | `src/stufe2/pruefungen.ts` | fügt es zusammen |
+| Einrichtung | `src/stufe2/einrichtung.ts` | Erkennung, Modellvorschlag, Messung (L-40 bis L-45) |
+
+### Ein „problem" ist kein Verstoß
+
+Das ist die wichtigste Zusage der Stufe. Ein Modellurteil führt **nie** zu `nicht_erfuellt`, sondern immer zu `pruefung_erforderlich` (L-25). Stünde im Bericht eine Feststellung, die kein Mensch geprüft hat, wäre die Grundidee des Werkzeugs verletzt — und ein 3,8B-Modell ist dafür ohnehin die falsche Instanz.
+
+### Was schiefgehen kann, geht nach „unsicher"
+
+Kein Ollama, kaputtes JSON, Schemaverstoß, Zeitüberschreitung, ein vom Modell ausgelassener Index: In jedem dieser Fälle gilt das betroffene Element als `unsicher` und wandert in die manuelle Liste (L-23, L-26). Es gibt **keinen zweiten Versuch** — bei Temperatur 0 käme dasselbe heraus.
+
+### Der Modellname gehört in den Hash
+
+Ein anderes Modell urteilt anders. Ein Ergebnis von `phi4-mini` unter der Flagge von `phi4:14b` weiterzuverwenden wäre eine stille Fälschung — und machte den Modellvergleich in Phase 8 wertlos.
+
+### Was nicht an das Modell geht
+
+Ausschließlich Text. Keine Bilder, keine Screenshots. **Passwortfelder werden nicht eingesammelt**, und Feldwerte gehen nie mit — nur Beschriftungen (Regel 2, S-03).
 
 ## 6. Schnittstelle zwischen Oberfläche und Server
 

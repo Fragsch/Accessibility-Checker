@@ -26,6 +26,9 @@ import type { Database } from 'better-sqlite3';
 import { listeScans } from '../db/scan-speichern.js';
 import { istEntwurf } from '../scan/statusableitung.js';
 import { projektWurzel, protokollDatei } from '../plattform/pfade.js';
+import { erkenneHardware, schlageModellVor } from '../plattform/hardware.js';
+import { erstelleBericht, messeGeschwindigkeit } from '../stufe2/einrichtung.js';
+import { ladePrompts } from '../stufe2/prompts.js';
 import { Scanverwaltung } from './scanverwaltung.js';
 
 export interface ServerOptionen {
@@ -38,6 +41,10 @@ const scanAnfrage = z.object({
   urls: z.array(z.string().min(1)).min(1).max(200),
   standard: z.enum(['2.1', '2.2']).default('2.1'),
   betriebsart: z.enum(['einzelseite', 'profil', 'gesamt']).optional(),
+  /** Sprachmodell-Stufe fuer diesen Lauf zuschalten (L-46). */
+  stufe2: z.boolean().default(false),
+  /** Abweichendes Modell; sonst der Vorschlag nach Hardware (L-29). */
+  modell: z.string().min(1).optional(),
 });
 
 const standardAnfrage = z.object({
@@ -55,9 +62,6 @@ const SPAETERE_ROUTEN: { methode: 'GET' | 'POST' | 'PUT' | 'DELETE'; pfad: strin
   { methode: 'POST', pfad: '/api/scan/:id/antwort', phase: '5 — gefuehrte manuelle Pruefliste' },
   { methode: 'POST', pfad: '/api/scan/:id/anmeldung-fertig', phase: '6 — Anmeldung durch den Nutzer' },
   { methode: 'GET', pfad: '/api/scan/:id/bericht', phase: '7 — Bericht nach WCAG-EM' },
-  { methode: 'GET', pfad: '/api/system/hardware', phase: '4 — Sprachmodell-Stufe' },
-  { methode: 'GET', pfad: '/api/system/ollama', phase: '4 — Sprachmodell-Stufe' },
-  { methode: 'POST', pfad: '/api/system/ollama/einrichten', phase: '4 — Sprachmodell-Stufe' },
 ];
 
 export function baueServer(optionen: ServerOptionen = {}): FastifyInstance {
@@ -98,10 +102,12 @@ export function baueServer(optionen: ServerOptionen = {}): FastifyInstance {
     const scanId = verwaltung.starte({
       urls,
       standard: gelesen.data.standard,
+      stufe2Aktiv: gelesen.data.stufe2,
+      ...(gelesen.data.modell ? { modell: gelesen.data.modell } : {}),
       ...(gelesen.data.betriebsart ? { betriebsart: gelesen.data.betriebsart } : {}),
     });
 
-    return antwort.code(201).send({ scanId, urls, standard: gelesen.data.standard });
+    return antwort.code(201).send({ scanId, urls, standard: gelesen.data.standard, stufe2: gelesen.data.stufe2 });
   });
 
   server.get('/api/scans', async () => ({ scans: listeScans(db) }));
@@ -166,6 +172,54 @@ export function baueServer(optionen: ServerOptionen = {}): FastifyInstance {
     });
 
     anfrage.raw.on('close', () => abmelden?.());
+  });
+
+  // ------------------------------------------------------ Stufe 2 (System)
+
+  server.get('/api/system/hardware', async () => {
+    const hardware = erkenneHardware();
+    return { hardware, vorschlag: schlageModellVor(hardware) };
+  });
+
+  /**
+   * Zustand der Sprachmodell-Stufe (L-40, L-42).
+   * Antwortet auch dann mit 200, wenn Ollama fehlt — das ist kein Fehler,
+   * sondern eine abgeschaltete Stufe 2 (L-26).
+   */
+  server.get('/api/system/ollama', async (anfrage) => {
+    const abfrage = (anfrage.query ?? {}) as { modell?: string; standard?: string };
+    // Welche Kriterien ohne Stufe 2 offen bleiben, haengt vom Standard ab:
+    // 3.2.6 gibt es erst unter WCAG 2.2.
+    const standard = abfrage.standard === '2.2' ? '2.2' : '2.1';
+
+    return erstelleBericht({
+      ...(abfrage.modell ? { modell: abfrage.modell } : {}),
+      protokoll,
+      kriterien: katalog.fuerStandard(standard),
+    });
+  });
+
+  /**
+   * Geschwindigkeitsmessung (L-44).
+   *
+   * Der Name der Route stammt aus ARCHITEKTUR 6. Sie installiert bewusst
+   * nichts: Ein Modelldownload von mehreren Gigabyte gehoert in die Hand des
+   * Menschen (L-41). Geliefert werden die noetigen Befehle und — sofern
+   * alles bereitsteht — die gemessene Laufzeitschaetzung.
+   */
+  server.post('/api/system/ollama/einrichten', async (anfrage) => {
+    const koerper = (anfrage.body ?? {}) as { modell?: string };
+    const bericht = await erstelleBericht({
+      ...(koerper.modell ? { modell: koerper.modell } : {}),
+      protokoll,
+      kriterien: katalog.fuerStandard('2.1'),
+    });
+
+    if (!bericht.einsatzbereit) return { ...bericht, messung: null };
+
+    const prompts = ladePrompts();
+    const messung = await messeGeschwindigkeit(bericht.vorschlag.modell, prompts.systemAnweisung, { protokoll });
+    return { ...bericht, messung };
   });
 
   // ------------------------------------------------------ Spaetere Phasen

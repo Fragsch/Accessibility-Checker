@@ -107,10 +107,12 @@ Erwartet wird eine Antwort, deren `message.content` genau dem Schema entspricht 
 ## 5. Anbindung in der Anwendung
 
 ```bash
-npm install ollama zod zod-to-json-schema
+npm install ollama
 ```
 
-Der Adapter gehört nach `src/stufe2/adapter/ollama.ts`. Gerüst:
+> **Nachtrag aus der Umsetzung:** `zod-to-json-schema` wird nicht gebraucht. Zod 4 erzeugt das JSON-Schema selbst über `z.toJSONSchema()`. Ein zweites Schema von Hand zu pflegen wäre ohnehin die schlechtere Lösung — es liefe unweigerlich vom Laufzeitschema weg.
+
+Der Adapter liegt in `src/stufe2/adapter/ollama.ts`. Gerüst:
 
 ```ts
 import { Ollama } from 'ollama';
@@ -204,6 +206,8 @@ const eingabeTempo = antwort.prompt_eval_count / (antwort.prompt_eval_duration /
 Daraus lässt sich die Dauer eines Scans vorab berechnen und anzeigen. Überschreitet die Schätzung fünf Minuten je Seite, warnt die Anwendung und bietet an, die Stufe zu überspringen (L-45).
 
 **Grober Anhalt für einen M1:** rund 10 Modellaufrufe je Seite, etwa 1500 Eingabe- und 250 Ausgabetoken je Aufruf. Bei 15 Token/s Ausgabe und 300 Token/s Eingabe sind das etwa **3 bis 4 Minuten je Seite**. Mit der Vorfilterung aus `prompts/stufe2.md` halbiert sich das.
+
+> **Tatsächlich gemessen** (M1, 8 GB, `phi4-mini`, Ollama 0.32.14): **18,3 Token/s Ausgabe** und **170 Token/s Eingabe**. Die Ausgabe liegt damit im vorhergesagten Bereich, die Eingabe deutlich darunter — die 300 Token/s aus der Schätzung werden auf dieser Maschine nicht erreicht. Daraus ergeben sich rund **zwei Minuten je Seite**, also unterhalb der Schwelle aus L-45. Das Werkzeug rechnet diesen Wert selbst aus; `POST /api/system/ollama/einrichten` liefert ihn.
 
 Für ein Prüfprofil aus 25 Seiten bleiben damit ein bis zwei Stunden — ein Lauf über Mittag oder über Nacht, nichts für zwischendurch. Für Einzelseiten während der Entwicklung ist es brauchbar.
 

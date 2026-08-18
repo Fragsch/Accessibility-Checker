@@ -5,7 +5,7 @@
  * was der Server nicht wissen kann — etwa dass er gar nicht antwortet.
  */
 
-import type { Kriterium, ScanZustand, Standard } from './typen';
+import type { Kriterium, ScanZustand, Standard, Stufe2Zustand } from './typen';
 
 export class ApiFehler extends Error {
   readonly status: number;
@@ -39,13 +39,18 @@ export async function ladeKatalog(standard: Standard): Promise<Kriterium[]> {
   return antwort.kriterien;
 }
 
-export async function starteScan(urls: string[], standard: Standard): Promise<number> {
+export async function starteScan(urls: string[], standard: Standard, stufe2 = false): Promise<number> {
   const antwort = await hole<{ scanId: number }>('/api/scan', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ urls, standard }),
+    body: JSON.stringify({ urls, standard, stufe2 }),
   });
   return antwort.scanId;
+}
+
+/** Zustand der Sprachmodell-Stufe: Hardware, Ollama, Modellvorschlag (L-40, L-42). */
+export async function ladeStufe2Zustand(standard: Standard): Promise<Stufe2Zustand> {
+  return hole<Stufe2Zustand>(`/api/system/ollama?standard=${standard}`);
 }
 
 export async function ladeScan(scanId: number): Promise<ScanZustand> {

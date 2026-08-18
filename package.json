@@ -37,6 +37,7 @@
     "fastify": "^5.12.0",
     "franc-min": "^6.2.0",
     "html-validate": "^11.8.0",
+    "ollama": "^0.6.3",
     "playwright": "^1.62.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

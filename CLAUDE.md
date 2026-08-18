@@ -68,14 +68,18 @@ Die Phasen aus `PRD.md` Abschnitt 9 sind bindend. Aktueller Stand: **Phase 1 bis
 | 1 | ✓ Erster vollständiger Scan | `src/katalog/`, `src/scan/`, `src/db/` |
 | 2 | ✓ Server und Oberfläche | `src/server/`, `web/` |
 | 3 | ✓ Automatik ausgereizt — sechs Engines, 124 Regeln | `src/stufe1/` |
+| 4 | ✓ Sprachmodell-Stufe über Ollama, optional zuschaltbar | `src/stufe2/` |
 
-**Als Nächstes Phase 4:** die Sprachmodell-Stufe über Ollama. Vorher `ANLEITUNG-OLLAMA.md` lesen. Die Anschlussstelle ist der Zweig `pruefung.typ === 'llm'` in `src/scan/runner.ts`; er erzeugt heute einen Hinweis und muss dann das Modell befragen.
+**Als Nächstes Phase 5:** die geführte manuelle Prüfliste mit Persistenz. Die Anschlussstellen stehen: `OffeneFrage` in `src/typen/`, die Tabelle `manuelle_antwort` in `src/db/schema.sql`, und die Routen `GET /api/scan/:id/fragen` und `POST /api/scan/:id/antwort` antworten heute mit 501.
+
+### Vier Regeln aus Phase 3 und 4, die weitergelten
 
 ### Drei Regeln aus Phase 3, die weitergelten
 
 1. **Kein `tsx` in einem Pfad, der einen Browser steuert.** esbuild baut `__name()` in benannte Funktionen ein; im Browser gibt es das nicht, und jeder `page.evaluate`-Aufruf scheitert stumm. Tests und Befehlszeile laufen über den kompilierten Stand.
 2. **Nach jeder Änderung an einer Engine: `npm run verifikation`.** Sie misst gegen `test/referenzseiten/soll.json`. Zwei Zahlen zählen — *übersehen* muss 0 bleiben, *Fehlalarme* müssen 0 bleiben.
 3. **Nach jeder Änderung an der Oberfläche: `npm run pruefe:selbst`.** Der eigene Scanner läuft über alle drei Ansichten.
+4. **Ein Urteil des Sprachmodells ist nie ein Verstoß.** `problem` und `unsicher` führen beide zu `pruefung_erforderlich`, niemals zu `nicht_erfuellt` (L-25). Wer das ändert, stellt Feststellungen in den Bericht, die niemand geprüft hat.
 
 ## Wichtig beim Einstieg
 

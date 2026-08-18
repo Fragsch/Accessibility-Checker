@@ -45,7 +45,7 @@ export function App(): React.ReactElement {
     }
   }, []);
 
-  async function beginne(urls: string[], standard: Standard): Promise<void> {
+  async function beginne(urls: string[], standard: Standard, stufe2: boolean): Promise<void> {
     setzeFehler(null);
     setzeGepruefteSeiten([]);
 
@@ -53,7 +53,7 @@ export function App(): React.ReactElement {
       const geladeneKriterien = await ladeKatalog(standard);
       setzeKriterien(geladeneKriterien);
 
-      const scanId = await starteScan(urls, standard);
+      const scanId = await starteScan(urls, standard, stufe2);
       setzeAnsicht('laeuft');
       setzeZustand({
         scanId,
@@ -133,7 +133,10 @@ export function App(): React.ReactElement {
               <h2 tabIndex={-1} ref={ueberschrift}>
                 Was soll geprüft werden?
               </h2>
-              <Pruefauftrag beschaeftigt={false} beiStart={(urls, standard) => void beginne(urls, standard)} />
+              <Pruefauftrag
+                beschaeftigt={false}
+                beiStart={(urls, standard, stufe2) => void beginne(urls, standard, stufe2)}
+              />
             </>
           )}
 

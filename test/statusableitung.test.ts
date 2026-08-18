@@ -70,7 +70,7 @@ describe('Statusableitung je Seite (5.2)', () => {
   it('ein LLM-Urteil "problem" oder "unsicher" fuehrt zu pruefung_erforderlich', () => {
     assert.equal(leiteStatusAb(eingabe({ llmUrteile: ['problem'] })), 'pruefung_erforderlich');
     assert.equal(leiteStatusAb(eingabe({ llmUrteile: ['unsicher'] })), 'pruefung_erforderlich');
-    assert.equal(leiteStatusAb(eingabe({ llmUrteile: ['in_ordnung'] })), 'erfuellt');
+    assert.equal(leiteStatusAb(eingabe({ llmUrteile: ['ok'] })), 'erfuellt');
   });
 
   it('erfuellt nur, wenn tatsaechlich eine Pruefung gelaufen ist', () => {

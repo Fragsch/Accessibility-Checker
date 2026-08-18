@@ -21,8 +21,14 @@ import type {
   Status,
 } from '../typen/index.js';
 
-/** Urteil der Stufe 2 zu einem Kriterium. Ab Phase 4 gefuellt. */
-export type LlmUrteil = 'in_ordnung' | 'problem' | 'unsicher';
+/**
+ * Urteil der Stufe 2 zu einem Kriterium.
+ *
+ * Die Wortwahl stammt aus `prompts/stufe2.md` und ist dort verbindlich
+ * festgelegt — sie im Code anders zu benennen hiesse, an zwei Stellen
+ * dasselbe zu pflegen.
+ */
+export type LlmUrteil = 'ok' | 'problem' | 'unsicher';
 
 export interface AbleitungEingabe {
   kriterium: Kriterium;

@@ -32,7 +32,7 @@ const HOECHSTZAHL_SCHRITTE = 150;
 /** Ab wie vielen Wiederholungen desselben Elements eine Falle angenommen wird. */
 const FALLE_AB = 3;
 
-interface Halt {
+export interface Halt {
   selektor: string;
   /**
    * Eindeutige Kennung dieses Halts.
@@ -44,12 +44,55 @@ interface Halt {
    */
   kennung: string;
   beschriftung: string;
+  /** Seitenbereich, in dem der Halt liegt — Kopf, Navigation, Inhalt, Fuss. */
+  bereich: string;
   oben: number;
   links: number;
   imBild: boolean;
   verdeckt: boolean;
   fokusSichtbar: boolean;
   urlGeaendert: boolean;
+}
+
+/**
+ * Fuehrt den Tab-Durchlauf aus und gibt die Halte zurueck.
+ *
+ * Ausgelagert, weil die Stufe 2 dieselben Stopps braucht: Der Prompt
+ * `fokusreihenfolge` beurteilt die Bedienlogik der Reihenfolge, und die muss
+ * dieselbe sein, die die Automatik gemessen hat. Zweimal tabben hiesse, ueber
+ * zwei verschiedene Dinge zu reden.
+ */
+export async function sammleFokusStopps(
+  seite: import('playwright').Page,
+  protokoll: import('../../protokoll.js').Protokoll,
+  hoechstzahl = HOECHSTZAHL_SCHRITTE,
+): Promise<Halt[]> {
+  const stopps: Halt[] = [];
+
+  try {
+    await seite.evaluate(() => {
+      const anfang = document.body;
+      anfang.setAttribute('tabindex', '-1');
+      anfang.focus();
+      anfang.removeAttribute('tabindex');
+    });
+
+    for (let schritt = 0; schritt < hoechstzahl; schritt += 1) {
+      await seite.keyboard.press('Tab');
+      const halt = await lesFokus(seite, protokoll);
+      if (!halt) break;
+
+      const letzter = stopps[stopps.length - 1];
+      if (letzter && letzter.kennung === halt.kennung) break;
+
+      if (stopps.length > 2 && halt.kennung === stopps[0]?.kennung) break;
+      stopps.push(halt);
+    }
+  } catch (e) {
+    protokoll.info('eigen', `Fokus-Durchlauf abgebrochen: ${(e as Error).message.split('\n')[0]}`);
+  }
+
+  return stopps;
 }
 
 export async function pruefeTastatur(
@@ -375,9 +418,15 @@ async function lesFokus(seite: import('playwright').Page, protokoll: import('../
         .trim()
         .slice(0, 40);
 
+      const landmarke = element.closest('header, nav, main, aside, footer, form, [role=banner], [role=navigation], [role=main], [role=contentinfo], [role=search]');
+      const bereich = landmarke
+        ? (landmarke.getAttribute('role') ?? landmarke.tagName.toLowerCase())
+        : 'ohne Bereich';
+
       return {
         selektor: selektorFuer(element),
         kennung: `${selektorFuer(element)}@${Math.round(masse.left)},${Math.round(masse.top + window.scrollY)}`,
+        bereich,
         beschriftung: beschriftung || element.tagName.toLowerCase(),
         oben: masse.top + window.scrollY,
         links: masse.left + window.scrollX,

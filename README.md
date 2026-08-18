@@ -6,7 +6,7 @@ Prüft Webseiten und Webanwendungen gegen alle Erfolgskriterien, zeigt je Kriter
 
 ## Stand
 
-**Phase 3 abgeschlossen — die Automatik ist ausgereizt.** Sechs Prüf-Engines, 124 Regeln. Neben axe-core prüfen jetzt auch die Gültigkeit des Markups, die Spracherkennung, die Texterkennung in Bildern, die Kontrastmessung an Bildpunkten und eine eigene Engine für alles Verhaltensabhängige: Tastatur-Durchlauf, Reflow bei 320 Pixeln, 200 Prozent Zoom, erhöhter Textabstand, Formularfehler, Vergleiche über mehrere Seiten hinweg.
+**Phase 4 abgeschlossen — die Sprachmodell-Stufe läuft.** Neben den sechs automatischen Prüf-Engines bewertet jetzt optional ein lokales Sprachmodell über Ollama, was sich nur inhaltlich beurteilen lässt: Ist der Linktext aussagekräftig? Beschreibt die Überschrift den Abschnitt? Nennt die Fehlermeldung einen Behebungsweg?
 
 ```bash
 npm run einrichten       # einmalig
@@ -14,9 +14,11 @@ npm run build
 npm start                # http://127.0.0.1:3000
 ```
 
-Gemessen an den Referenzseiten: **74 % der eingebauten Verstöße belegt erkannt, kein einziger Fehlalarm, kein einziges übersehenes Kriterium.** Die übrigen bleiben als „Prüfung erforderlich" offen — sie hängen an der Sprachmodell-Stufe oder an inhaltlichen Fragen. Nachzuvollziehen mit `npm run verifikation`.
+Die Sprachmodell-Stufe ist **abschaltbar und standardmäßig aus**. Ohne sie bleiben zehn Kriterien inhaltlich unbewertet — sie tragen dann `Prüfung erforderlich` und wandern in die manuelle Liste. Die Oberfläche benennt, welche das sind. Einrichtung: `ANLEITUNG-OLLAMA.md`.
 
-Noch nicht gebaut: Sprachmodell-Stufe (Phase 4), geführte manuelle Liste (Phase 5), Prüfprofile und Crawl (Phase 6), Bericht (Phase 7). Kriterien, die davon abhängen, tragen bis dahin `Prüfung erforderlich` — sie verschwinden nicht und gelten nie als erfüllt.
+Gemessen an den Referenzseiten: **74 % der eingebauten Verstöße belegt erkannt, kein einziger Fehlalarm, kein einziges übersehenes Kriterium.** Nachzuvollziehen mit `npm run verifikation`.
+
+Noch nicht gebaut: geführte manuelle Liste (Phase 5), Prüfprofile und Crawl (Phase 6), Bericht (Phase 7).
 
 ## Was das Werkzeug können soll
 

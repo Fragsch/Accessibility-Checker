@@ -17,6 +17,27 @@ import type {
 
 export type { Bewertung, Kriterium, ScanErgebnis, SeitenErgebnis, Standard, Status };
 
+export interface Stufe2Zustand {
+  hardware: {
+    speicherGb: number;
+    freiGb: number;
+    beschleunigung: string;
+    prozessor: string;
+  };
+  vorschlag: {
+    modell: string;
+    groesseGb: number;
+    begruendung: string;
+    erwartetesTempo: string;
+    warnung: string | null;
+  };
+  ollama: { erreichbar: boolean; version: string | null; modelle: string[]; grund: string | null };
+  modellVorhanden: boolean;
+  einsatzbereit: boolean;
+  schritte: { text: string; befehl: string | null }[];
+  entfaelltOhneStufe2: string[];
+}
+
 export interface ScanZustand {
   scanId: number;
   zustand: 'laeuft' | 'fertig' | 'abgebrochen' | 'fehler';

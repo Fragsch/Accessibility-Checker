@@ -39,6 +39,13 @@ import { lesMerkmale, vergleicheSeiten } from '../stufe1/eigen/mehrseitig.js';
 import type { SeitenMerkmale } from '../stufe1/eigen/mehrseitig.js';
 import { normalisiere } from '../stufe1/normalisierung.js';
 import { baueBewertung, verdichte } from './statusableitung.js';
+import type { LlmUrteil } from './statusableitung.js';
+import { fuehreStufe2Aus } from '../stufe2/pruefungen.js';
+import type { Stufe2Ergebnis } from '../stufe2/pruefungen.js';
+import { ladePrompts } from '../stufe2/prompts.js';
+import type { Prompts } from '../stufe2/prompts.js';
+import type { ModellAdapter } from '../stufe2/adapter/typ.js';
+import type { Zwischenspeicher } from '../stufe2/cache.js';
 
 export const WERKZEUG_VERSION = '0.1.0';
 
@@ -64,8 +71,18 @@ export interface ScanAuftrag {
    * deshalb abschaltbar — die Grundpruefung bleibt davon unberuehrt.
    */
   mehrereViewports?: boolean;
-  /** Stufe 2 ist vor Phase 4 nicht vorhanden und bleibt abschaltbar (Regel 7). */
+  /**
+   * Sprachmodell-Stufe zuschalten (L-46).
+   *
+   * Ohne Adapter bleibt sie aus — auch wenn dieser Schalter steht. Das ist
+   * kein Fehler: Ein nicht erreichbares Ollama ist eine abgeschaltete Stufe 2,
+   * kein Abbruch (L-26).
+   */
   stufe2Aktiv?: boolean;
+  /** Modell-Adapter der Stufe 2. Fehlt er, bleibt die Stufe aus. */
+  stufe2Adapter?: ModellAdapter;
+  /** Zwischenspeicher fuer bereits bewertete Textbausteine (L-28). */
+  stufe2Speicher?: Zwischenspeicher;
   katalog?: Katalog;
   browser?: Browser;
   protokoll?: Protokoll;
@@ -91,6 +108,19 @@ export async function fuehreScanAus(auftrag: ScanAuftrag): Promise<ScanErgebnis>
   const betriebsart = auftrag.betriebsart ?? (auftrag.seiten.length > 1 ? 'profil' : 'einzelseite');
   const katalog = auftrag.katalog ?? Katalog.laden();
   const kriterien = katalog.fuerStandard(standard);
+
+  // Die Sprachmodell-Stufe laeuft nur, wenn sie eingeschaltet *und* ein
+  // Adapter vorhanden ist. Fehlt einer von beiden, wandern die betroffenen
+  // Pruefungen in die manuelle Liste (L-26, L-48).
+  const stufe2Aktiv = (auftrag.stufe2Aktiv ?? false) && auftrag.stufe2Adapter !== undefined;
+  let prompts: Prompts | null = null;
+  if (stufe2Aktiv) {
+    try {
+      prompts = ladePrompts();
+    } catch (e) {
+      protokoll.fehler('stufe2', `Prompts nicht ladbar: ${(e as Error).message}`);
+    }
+  }
 
   const eigenerBrowser = auftrag.browser === undefined;
   const browser = auftrag.browser ?? (await Browser.starten({ protokoll }));
@@ -125,7 +155,17 @@ export async function fuehreScanAus(auftrag: ScanAuftrag): Promise<ScanErgebnis>
         protokoll,
         ...(auftrag.viewport ? { viewport: auftrag.viewport } : {}),
         mehrereViewports: auftrag.mehrereViewports ?? false,
-        stufe2Aktiv: auftrag.stufe2Aktiv ?? false,
+        stufe2Aktiv,
+        ...(stufe2Aktiv && prompts && auftrag.stufe2Adapter
+          ? {
+              stufe2: {
+                adapter: auftrag.stufe2Adapter,
+                prompts,
+                ...(auftrag.stufe2Speicher ? { speicher: auftrag.stufe2Speicher } : {}),
+                ...(auftrag.abbruch ? { abbruch: auftrag.abbruch } : {}),
+              },
+            }
+          : {}),
       });
 
       seitenErgebnisse.push(ergebnis);
@@ -142,6 +182,9 @@ export async function fuehreScanAus(auftrag: ScanAuftrag): Promise<ScanErgebnis>
     }
   } finally {
     if (eigenerBrowser) await browser.schliessen();
+    // Modell freigeben, damit es nicht dauerhaft Speicher belegt
+    // (ANLEITUNG-OLLAMA.md, Fallstrick 2).
+    if (stufe2Aktiv) await auftrag.stufe2Adapter?.freigeben();
   }
 
   if (betriebsart !== 'einzelseite') {
@@ -154,7 +197,7 @@ export async function fuehreScanAus(auftrag: ScanAuftrag): Promise<ScanErgebnis>
     standard,
     gestartetAm,
     beendetAm: new Date().toISOString(),
-    stufe2Aktiv: auftrag.stufe2Aktiv ?? false,
+    stufe2Aktiv,
     werkzeugVersion: WERKZEUG_VERSION,
     seiten: seitenErgebnisse,
     projektebene: verdichte(seitenErgebnisse, kriterien),
@@ -206,6 +249,12 @@ interface SeitenPruefungOptionen {
   viewport?: Viewport;
   mehrereViewports: boolean;
   stufe2Aktiv: boolean;
+  stufe2?: {
+    adapter: ModellAdapter;
+    prompts: Prompts;
+    speicher?: Zwischenspeicher;
+    abbruch?: AbortSignal;
+  };
 }
 
 interface SeitenPruefungErgebnis {
@@ -298,8 +347,36 @@ async function pruefeSeite(optionen: SeitenPruefungOptionen): Promise<SeitenPrue
       protokoll,
     });
 
+    /*
+      Stufe 2 läuft nach Stufe 1 und nicht davor.
+
+      Zum einen liefert Stufe 1 die Vorarbeit — den Tab-Durchlauf etwa, dessen
+      Reihenfolge der Prompt `fokusreihenfolge` inhaltlich beurteilt. Zum
+      anderen sind die Ergebnisse der Stufe 1 damit fertig, bevor der langsame
+      Teil beginnt; die Oberfläche kann sie sofort zeigen und die Urteile des
+      Modells nachreichen (L-49, NF-10).
+    */
+    let stufe2: Stufe2Ergebnis | null = null;
+    if (optionen.stufe2) {
+      stufe2 = await fuehreStufe2Aus({
+        adapter: optionen.stufe2.adapter,
+        prompts: optionen.stufe2.prompts,
+        kriterien,
+        standard: optionen.standard,
+        sammelKontext: { seite: geladen.seite, protokoll },
+        protokoll,
+        mehrseitig: optionen.betriebsart !== 'einzelseite',
+        ...(optionen.stufe2.speicher ? { speicher: optionen.stufe2.speicher } : {}),
+        ...(optionen.stufe2.abbruch ? { abbruch: optionen.stufe2.abbruch } : {}),
+      });
+
+      protokoll.info('stufe2', `${stufe2.modellaufrufe} Modellaufrufe, ${stufe2.zwischenspeicherTreffer} aus dem Zwischenspeicher`, {
+        url: geladen.url,
+      });
+    }
+
     const befundeNachKriterium = gruppiere(normalisiert.befunde, (b) => b.kriterium);
-    const hinweiseNachKriterium = gruppiere(normalisiert.hinweise, (h) => h.kriterium);
+    const hinweiseNachKriterium = gruppiere([...normalisiert.hinweise, ...(stufe2?.hinweise ?? [])], (h) => h.kriterium);
 
     const bewertungen: Bewertung[] = kriterien.map((kriterium) =>
       bewerteKriterium({
@@ -311,6 +388,7 @@ async function pruefeSeite(optionen: SeitenPruefungOptionen): Promise<SeitenPrue
         vorhandeneEngines: vorhanden,
         gescheiterteEngines,
         stufe2Aktiv: optionen.stufe2Aktiv,
+        ...(stufe2 ? { stufe2 } : {}),
       }),
     );
 
@@ -421,6 +499,7 @@ interface KriteriumOptionen {
   vorhandeneEngines: Set<EngineName>;
   gescheiterteEngines: Map<EngineName, string>;
   stufe2Aktiv: boolean;
+  stufe2?: Stufe2Ergebnis;
 }
 
 /**
@@ -490,12 +569,22 @@ function bewerteKriterium(optionen: KriteriumOptionen): Bewertung {
     }
 
     if (pruefung.typ === 'llm') {
-      // Regel 7: Ohne Stufe 2 wandert die Pruefung in die manuelle Liste.
+      const gelaufen = optionen.stufe2?.gelaufenePruefungen.includes(pruefung.pruefungsId) ?? false;
+
+      if (gelaufen) {
+        // Die Urteile stecken bereits als Hinweise in `optionen.hinweise`;
+        // hier zaehlt nur, dass die Pruefung stattgefunden hat.
+        herkuenfte.add('llm');
+        continue;
+      }
+
+      // Regel 7 und L-48: Ohne Stufe 2 wandert die Pruefung in die manuelle
+      // Liste — sie entfaellt nicht.
       hinweise.push({
         kriterium: kriterium.id,
         herkunft: `llm/${pruefung.pruefungsId}`,
         text: optionen.stufe2Aktiv
-          ? `Die Bewertung "${pruefung.pruefungsId}" der Sprachmodell-Stufe steht noch aus.`
+          ? `Die Bewertung "${pruefung.pruefungsId}" der Sprachmodell-Stufe ist ausgefallen. Sie ist von Hand vorzunehmen.`
           : `Die Sprachmodell-Stufe ist nicht aktiv. Die Bewertung "${pruefung.pruefungsId}" ist von Hand vorzunehmen.`,
       });
       herkuenfte.add('manuell');
@@ -511,12 +600,15 @@ function bewerteKriterium(optionen: KriteriumOptionen): Bewertung {
     herkuenfte.add('manuell');
   }
 
+  const llmUrteile: LlmUrteil[] = optionen.stufe2?.urteileJeKriterium.get(kriterium.id) ?? [];
+
   return baueBewertung({
     kriterium,
     anwendbar: true,
     befunde: optionen.befunde,
     hinweise,
     offeneFragen,
+    llmUrteile,
     autoPruefungGelaufen,
     herkunft: herkuenfte.size ? [...herkuenfte].sort().join(' + ') : 'ungeprueft',
   });

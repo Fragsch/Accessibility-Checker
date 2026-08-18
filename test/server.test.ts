@@ -44,6 +44,7 @@ describe('Adressen pruefen', () => {
 describe('Routen', { timeout: 180_000 }, () => {
   let server: FastifyInstance;
   let db: Database;
+  const verwaltungAufraeumen: number[] = [];
 
   before(() => {
     db = oeffneDatenbank({ pfad: ':memory:' });
@@ -55,6 +56,9 @@ describe('Routen', { timeout: 180_000 }, () => {
   });
 
   after(async () => {
+    for (const scanId of verwaltungAufraeumen) {
+      await server.inject({ method: 'POST', url: `/api/scan/${scanId}/abbrechen` }).catch(() => undefined);
+    }
     await server.close();
     db.close();
   });
@@ -92,9 +96,54 @@ describe('Routen', { timeout: 180_000 }, () => {
   });
 
   it('nennt bei spaeteren Funktionen die Phase, statt 404 zu melden', async () => {
-    const antwort = await server.inject({ method: 'GET', url: '/api/system/ollama' });
+    const antwort = await server.inject({ method: 'GET', url: '/api/scan/1/bericht' });
     assert.equal(antwort.statusCode, 501);
-    assert.match((antwort.json() as { phase: string }).phase, /Sprachmodell/);
+    assert.match((antwort.json() as { phase: string }).phase, /Bericht/);
+  });
+
+  it('meldet den Zustand der Sprachmodell-Stufe, auch ohne Ollama', async () => {
+    // Kein laufendes Ollama ist kein Fehler, sondern eine abgeschaltete
+    // Stufe 2 (L-26). Die Route muss deshalb immer mit 200 antworten und
+    // benennen, was zu tun waere.
+    const antwort = await server.inject({ method: 'GET', url: '/api/system/ollama' });
+    assert.equal(antwort.statusCode, 200);
+
+    const bericht = antwort.json() as {
+      einsatzbereit: boolean;
+      vorschlag: { modell: string };
+      schritte: { text: string; befehl: string | null }[];
+      entfaelltOhneStufe2: string[];
+    };
+
+    assert.ok(bericht.vorschlag.modell.length > 0, 'ein Modellvorschlag gehoert immer dazu');
+    assert.equal(bericht.entfaelltOhneStufe2.length, 10, 'PRD 6.3.1: zehn Kriterien unter WCAG 2.1');
+    if (!bericht.einsatzbereit) {
+      assert.ok(bericht.schritte.length > 0, 'wenn etwas fehlt, muss dastehen was');
+    }
+  });
+
+  it('erkennt die Ausstattung des Rechners (L-42)', async () => {
+    const antwort = await server.inject({ method: 'GET', url: '/api/system/hardware' });
+    assert.equal(antwort.statusCode, 200);
+
+    const gelesen = antwort.json() as { hardware: { speicherGb: number }; vorschlag: { modell: string } };
+    assert.ok(gelesen.hardware.speicherGb > 0);
+    assert.ok(gelesen.vorschlag.modell.length > 0);
+  });
+
+  it('nimmt einen Auftrag mit zugeschalteter Sprachmodell-Stufe an (L-46)', async () => {
+    const antwort = await server.inject({
+      method: 'POST',
+      url: '/api/scan',
+      payload: { urls: ['https://beispiel.test/'], stufe2: true },
+    });
+
+    assert.equal(antwort.statusCode, 201);
+    assert.equal((antwort.json() as { stufe2: boolean }).stufe2, true);
+
+    // Wieder aufraeumen: Der Scan wuerde sonst im Hintergrund weiterlaufen.
+    const { scanId } = antwort.json() as { scanId: number };
+    verwaltungAufraeumen.push(scanId);
   });
 
   it('fuehrt einen Scan aus und liefert das vollstaendige Ergebnis', async () => {

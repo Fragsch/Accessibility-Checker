@@ -20,6 +20,9 @@ import { Protokoll, stillesProtokoll } from '../protokoll.js';
 import { WERKZEUG_VERSION, fuehreScanAus } from '../scan/runner.js';
 import { verdichte } from '../scan/statusableitung.js';
 import { ladeScan, legeScanAn, schliesseScanAb, speichereSeitenErgebnis } from '../db/scan-speichern.js';
+import { OllamaAdapter } from '../stufe2/adapter/ollama.js';
+import { datenbankSpeicher } from '../stufe2/cache.js';
+import { erkenneHardware, schlageModellVor } from '../plattform/hardware.js';
 
 export type ScanZustand = 'laeuft' | 'fertig' | 'abgebrochen' | 'fehler';
 
@@ -45,6 +48,10 @@ export interface ScanAuftragEingang {
   urls: string[];
   standard: Standard;
   betriebsart?: Betriebsart;
+  /** Sprachmodell-Stufe fuer diesen Lauf zuschalten (L-46). */
+  stufe2Aktiv?: boolean;
+  /** Abweichendes Modell; sonst der Vorschlag nach Hardware (L-29). */
+  modell?: string;
 }
 
 export interface ScanZustandBericht {
@@ -141,7 +148,7 @@ export class Scanverwaltung {
     const scanId = legeScanAn(this.#db, {
       betriebsart,
       standard: eingang.standard,
-      stufe2Aktiv: false,
+      stufe2Aktiv: eingang.stufe2Aktiv ?? false,
       werkzeugVersion: WERKZEUG_VERSION,
       gestartetAm,
       seiten: eingang.urls.map((url) => ({ url })),
@@ -225,6 +232,27 @@ export class Scanverwaltung {
     const seitenErgebnisse: SeitenErgebnis[] = [];
 
     try {
+      /*
+        Stufe 2 wird hier zusammengesteckt, nicht im Runner.
+
+        Der Runner soll nichts ueber Ollama wissen — er bekommt einen Adapter
+        oder keinen. Faellt der Dienst aus, bleibt die Stufe eben aus; das ist
+        kein Fehler, sondern der vorgesehene Betrieb ohne Sprachmodell (L-26).
+      */
+      const stufe2Aktiv = eingang.stufe2Aktiv ?? false;
+      const modell = eingang.modell ?? schlageModellVor(erkenneHardware()).modell;
+      const adapter = stufe2Aktiv ? new OllamaAdapter({ modell, protokoll: this.#protokoll }) : null;
+
+      if (adapter) {
+        const zustand = await adapter.zustand();
+        if (!zustand.erreichbar) {
+          lauf.melde('fehler', {
+            text: `Die Sprachmodell-Stufe konnte nicht gestartet werden: ${zustand.grund ?? 'unbekannt'} Der Scan läuft ohne sie weiter.`,
+          });
+          this.#protokoll.warnung('stufe2', `Ollama nicht erreichbar — Scan ${lauf.scanId} laeuft ohne Stufe 2`);
+        }
+      }
+
       const ergebnis = await fuehreScanAus({
         seiten: eingang.urls.map((url) => ({ url })),
         standard: eingang.standard,
@@ -232,6 +260,8 @@ export class Scanverwaltung {
         katalog: this.#katalog,
         protokoll: this.#protokoll,
         abbruch: lauf.abbruchsignal,
+        stufe2Aktiv,
+        ...(adapter ? { stufe2Adapter: adapter, stufe2Speicher: datenbankSpeicher(this.#db, modell) } : {}),
         beiFortschritt: (meldung) => {
           if (meldung.art === 'seite-begonnen') {
             lauf.aktuelleUrl = meldung.url;

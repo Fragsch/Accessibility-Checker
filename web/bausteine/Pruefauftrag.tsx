@@ -8,15 +8,17 @@
 import { useState } from 'react';
 
 import type { Standard } from '../typen';
+import { Sprachmodell } from './Sprachmodell';
 
 interface Eigenschaften {
   beschaeftigt: boolean;
-  beiStart: (urls: string[], standard: Standard) => void;
+  beiStart: (urls: string[], standard: Standard, stufe2: boolean) => void;
 }
 
 export function Pruefauftrag({ beschaeftigt, beiStart }: Eigenschaften): React.ReactElement {
   const [adressen, setzeAdressen] = useState('');
   const [standard, setzeStandard] = useState<Standard>('2.1');
+  const [stufe2, setzeStufe2] = useState(false);
   const [fehler, setzeFehler] = useState<string | null>(null);
 
   function abschicken(ereignis: React.FormEvent): void {
@@ -33,7 +35,7 @@ export function Pruefauftrag({ beschaeftigt, beiStart }: Eigenschaften): React.R
     }
 
     setzeFehler(null);
-    beiStart(urls, standard);
+    beiStart(urls, standard, stufe2);
   }
 
   return (
@@ -90,6 +92,8 @@ export function Pruefauftrag({ beschaeftigt, beiStart }: Eigenschaften): React.R
           </label>
         </div>
       </fieldset>
+
+      <Sprachmodell aktiv={stufe2} standard={standard} beiAenderung={setzeStufe2} />
 
       <div className="knopfreihe">
         <button type="submit" disabled={beschaeftigt}>
