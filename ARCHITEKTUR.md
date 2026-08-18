@@ -65,6 +65,30 @@ npx playwright install chromium
 
 Prüfen Sie nach der Installation die tatsächlichen Hauptversionen und halten Sie sie hier fest. Weicht eine Bibliothek grundlegend von dem ab, was hier beschrieben ist, ist das ein Fall für eine Rückfrage — siehe `CLAUDE.md`.
 
+### Tatsächlich installiert (Stand Phase 1)
+
+| Paket | Fassung | Anmerkung |
+|---|---|---|
+| Node.js | 24.18.1 | |
+| `typescript` | 5.9.3 | Auf 5.x festgelegt. npm bietet inzwischen TypeScript 7 an — ein neu geschriebener Compiler, nicht bloß eine höhere Nummer. Wechsel nur bewusst |
+| `playwright` | 1.62.x | |
+| `axe-core` | 4.13.0 | 105 Regeln, davon 76 im Katalog zugeordnet |
+| `@axe-core/playwright` | 4.13.x | Namentlich einbinden: `import { AxeBuilder }`. Der Vorgabe-Export lässt sich unter `verbatimModuleSyntax` nicht aufrufen |
+| `better-sqlite3` | 13.0.3 | Braucht einen freigegebenen Installationsschritt, siehe unten |
+| `fastify` | 5.12.x | ab Phase 2 in Gebrauch |
+| `zod` | 4.4.x | |
+| `@types/better-sqlite3` | 9.6.x | `better-sqlite3` bringt keine eigenen Typen mit |
+
+**npm gibt Installationsskripte nicht mehr von selbst frei.** `better-sqlite3` und `esbuild` bauen beim Installieren native Teile. Ohne Freigabe bleiben sie unvollständig und brechen erst zur Laufzeit ab:
+
+```bash
+npm approve-scripts better-sqlite3 esbuild
+```
+
+Die Freigabe steht in `package.json` unter `allowScripts` und gilt damit auch auf anderen Rechnern.
+
+**axe meldet auf Deutsch.** axe-core liefert unter `locales/de.json` eine Übersetzung mit. Sie wird beim Einspritzen über `axe.configure` gesetzt (`src/stufe1/axe.ts`), weil Befundtexte in Oberfläche und Bericht erscheinen und deutsch sein müssen (NF-05).
+
 ### Ausdrücklich nicht verwenden
 
 | Nicht verwenden | Grund |
@@ -103,26 +127,33 @@ accessibility-checker/
 │
 ├── werkzeuge/
 │   ├── katalog-pruefen.mjs ✓ lauffähig, ohne Abhängigkeiten
-│   └── axe-abgleich.mjs    ✓ lauffähig, sobald axe-core installiert ist
+│   ├── axe-abgleich.mjs    ✓ lauffähig, sobald axe-core installiert ist
+│   ├── beiwerk-kopieren.mjs ✓ kopiert SQL-Dateien nach dist/
+│   └── scan.ts             ✓ Scan von der Befehlszeile
 │
 ├── src/
+│   ├── protokoll.ts        ✓ Technisches Protokoll (5.6)
 │   ├── server/                 ← Fastify, Routen
-│   ├── katalog/                ← Laden, Validieren, Filtern nach Standard
+│   ├── katalog/            ✓ Laden, Validieren, Filtern nach Standard
+│   │   ├── laden.ts        ✓
+│   │   └── schema.ts       ✓ Laufzeitschema, gespiegelt aus katalog/schema.json
 │   ├── scan/
-│   │   ├── runner.ts           ← Ablaufsteuerung eines Scans
-│   │   ├── browser.ts          ← Playwright-Kapselung
+│   │   ├── runner.ts       ✓ Ablaufsteuerung eines Scans
+│   │   ├── browser.ts      ✓ Playwright-Kapselung
+│   │   ├── anwendbarkeit.ts ✓ Auswertung von anwendbarWenn (5.5)
+│   │   ├── statusableitung.ts ✓ Status, Verdichtung, ACR (5.2–5.4)
 │   │   ├── crawl.ts
 │   │   └── anmeldung.ts        ← Übergabe an den Nutzer (6.1.1)
 │   ├── stufe1/                 ← Automatische Prüfungen
-│   │   ├── axe.ts
+│   │   ├── axe.ts          ✓
+│   │   ├── normalisierung.ts ✓ Zusammenführen, Entdoppeln, Zuordnen
 │   │   ├── ibm.ts
 │   │   ├── html.ts
 │   │   ├── sprache.ts
 │   │   ├── ocr.ts
 │   │   ├── kontrast.ts
 │   │   ├── tastatur.ts         ← Tab-Durchlauf
-│   │   ├── viewports.ts
-│   │   └── normalisierung.ts   ← Zusammenführen, Entdoppeln, Zuordnen
+│   │   └── viewports.ts
 │   ├── stufe2/
 │   │   ├── adapter/
 │   │   │   ├── ollama.ts
@@ -133,20 +164,24 @@ accessibility-checker/
 │   ├── stufe3/                 ← Fragenerzeugung, Antwortspeicherung
 │   ├── bericht/                ← WCAG-EM/ACR-Erzeugung, HTML, PDF, EARL
 │   ├── db/
-│   │   ├── schema.sql
-│   │   └── migrationen/
+│   │   ├── index.ts        ✓ Öffnen, Migrationen
+│   │   ├── scan-speichern.ts ✓
+│   │   ├── schema.sql      ✓
+│   │   └── migrationen/    ✓
 │   ├── plattform/              ← Die drei gekapselten Adapter (8.1)
 │   │   ├── ollama-installation.ts
 │   │   ├── hardware.ts
-│   │   └── pfade.ts
-│   └── typen/                  ← Gemeinsame TypeScript-Typen
+│   │   └── pfade.ts        ✓
+│   └── typen/              ✓ Gemeinsame TypeScript-Typen
 │
 ├── web/                        ← React-Oberfläche
 │
 ├── test/
+│   ├── *.test.ts           ✓ Tests, laufen über `npm test`
+│   ├── beispielseiten/     ✓ Kleine Seiten für einzelne Ablaufregeln
 │   └── referenzseiten/     ✓ Testseiten mit bekannten Fehlern (Phase 8)
 │
-└── daten/                      ← Datenbank und Belege; nicht versioniert
+└── daten/                      ← Datenbank, Belege und Protokoll; nicht versioniert
 ```
 
 ## 4. Datenmodell

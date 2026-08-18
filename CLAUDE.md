@@ -61,21 +61,27 @@ node werkzeuge/katalog-pruefen.mjs   # Katalog prüfen — läuft ohne Abhängig
 
 ## Reihenfolge der Umsetzung
 
-Die Phasen aus `PRD.md` Abschnitt 9 sind bindend. Aktueller Stand: **Phase 0 abgeschlossen** — der Katalog liegt vor.
+Die Phasen aus `PRD.md` Abschnitt 9 sind bindend. Aktueller Stand: **Phase 1 abgeschlossen** — eine echte Webseite wird geprüft, jedes Kriterium trägt einen Status.
 
-Als Nächstes Phase 1 und 2, in dieser Reihenfolge:
+Erledigt:
 
-1. Katalog einlesen und gegen `schema.json` validieren
-2. Typen aus `ARCHITEKTUR.md` 4.1 anlegen
-3. Datenbankschema anlegen
-4. Playwright-Kapselung, eine Seite laden
-5. axe-core anbinden, Befunde normalisieren, Kriterien zuordnen
-6. Anwendbarkeitserkennung über `anwendbarWenn`
-7. Statusableitung nach `ARCHITEKTUR.md` 5.2
-8. Fastify-Routen
-9. Oberfläche: Übersicht → Detail → Empfehlung
+1. ✓ Katalog einlesen und validieren — `src/katalog/`
+2. ✓ Typen aus `ARCHITEKTUR.md` 4.1 — `src/typen/`
+3. ✓ Datenbankschema — `src/db/`
+4. ✓ Playwright-Kapselung — `src/scan/browser.ts`
+5. ✓ axe-Abgleich — `npm run axe:abgleich`
+6. ✓ axe-core anbinden, Befunde zuordnen — `src/stufe1/`
+7. ✓ Anwendbarkeitserkennung — `src/scan/anwendbarkeit.ts`
+8. ✓ Statusableitung — `src/scan/statusableitung.ts`
 
-**Ziel von Phase 1 und 2:** Eine echte Webseite prüfen und das Ergebnis anzeigen können. Alles Weitere ist Ausbau.
+Als Nächstes Phase 2, Schritte 9 und 10 aus `ARCHITEKTUR.md` 9:
+
+- Fastify-Routen nach `ARCHITEKTUR.md` 6
+- Oberfläche: Übersicht → Detail → Empfehlung
+
+**Ziel von Phase 2:** Ein Mensch kann eine URL eingeben und das Ergebnis lesen. Alles Weitere ist Ausbau.
+
+Bis dahin wird über die Befehlszeile geprüft: `npm run scan -- https://example.org`.
 
 ## Wichtig beim Einstieg
 

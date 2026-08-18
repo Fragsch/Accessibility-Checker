@@ -6,7 +6,16 @@ Prüft Webseiten und Webanwendungen gegen alle Erfolgskriterien, zeigt je Kriter
 
 ## Stand
 
-**Phase 0 abgeschlossen.** Der Prüfkatalog liegt vollständig vor. Die Anwendung selbst ist noch nicht gebaut.
+**Phase 1 abgeschlossen.** Das Werkzeug prüft eine echte Webseite und bewertet jedes Kriterium des gewählten Standards: Katalog einlesen, Seite mit Playwright laden, axe-core ausführen, Befunde den Erfolgskriterien zuordnen, Anwendbarkeit erkennen, Status ableiten, Ergebnis speichern.
+
+Bedient wird es bis auf Weiteres über die Befehlszeile:
+
+```bash
+npm run scan -- https://example.org
+npm run scan -- https://example.org --standard 2.2 --ausfuehrlich --speichern
+```
+
+Noch nicht gebaut: Oberfläche (Phase 2), weitere Prüf-Engines (Phase 3), Sprachmodell-Stufe (Phase 4), geführte manuelle Liste (Phase 5), Bericht (Phase 7). Kriterien, die davon abhängen, tragen bis dahin `Prüfung erforderlich` — sie verschwinden nicht und gelten nie als erfüllt.
 
 ## Was das Werkzeug können soll
 
@@ -38,8 +47,10 @@ ANLEITUNG-OLLAMA.md Sprachmodell einrichten und anbinden
 
 katalog/          Der Prüfkatalog als Daten: 56 Kriterien, Schema, Pflegeanleitung
 prompts/          Prompts der Sprachmodell-Stufe
-werkzeuge/        Prüfskripte, die ohne Projektabhängigkeiten laufen
-test/             Referenzseiten für die Verifikation
+src/              Die Anwendung
+werkzeuge/        Prüfskripte und Befehlszeilenwerkzeuge
+test/             Referenz- und Beispielseiten, Tests
+daten/            Datenbank, Belege, Protokoll — nicht versioniert
 ```
 
 ## Loslegen
@@ -47,6 +58,9 @@ test/             Referenzseiten für die Verifikation
 ```bash
 npm run einrichten                   # Abhängigkeiten und Chromium installieren
 node werkzeuge/katalog-pruefen.mjs   # Katalog prüfen — läuft sofort, ohne Installation
+
+npm run scan -- https://example.org  # Eine Seite prüfen
+npm test                             # Katalog, axe-Abgleich, Typen und Tests
 ```
 
 Der Katalog-Prüfer braucht nur Node und ist die schnellste Probe, ob die Grundlage unversehrt ist.
