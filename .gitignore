@@ -1,0 +1,28 @@
+# Abhaengigkeiten
+node_modules/
+
+# Bauergebnisse
+dist/
+.vite/
+
+# Datenbank und Pruefdaten
+*.db
+*.db-journal
+*.sqlite
+daten/
+berichte/
+
+# Betriebssystem
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+
+# Protokolle
+*.log
+npm-debug.log*
+
+# Lokale Umgebung
+.env
+.env.local

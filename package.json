@@ -1,0 +1,28 @@
+{
+  "name": "accessibility-checker",
+  "version": "0.1.0",
+  "description": "Lokales Prüfwerkzeug für digitale Barrierefreiheit nach WCAG 2.1 und 2.2, Level AA",
+  "private": true,
+  "type": "module",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "einrichten": "npm install && npx playwright install chromium",
+
+    "dev": "node --run dev:server & node --run dev:web",
+    "dev:server": "tsx watch src/server/index.ts",
+    "dev:web": "vite",
+    "build": "tsc -p tsconfig.json && vite build",
+    "start": "node dist/server/index.js",
+
+    "test": "node --run katalog:pruefen && node --run axe:abgleich && node --test",
+    "katalog:pruefen": "node werkzeuge/katalog-pruefen.mjs",
+    "axe:abgleich": "node werkzeuge/axe-abgleich.mjs",
+
+    "pruefe:selbst": "node dist/werkzeuge/selbstpruefung.js"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

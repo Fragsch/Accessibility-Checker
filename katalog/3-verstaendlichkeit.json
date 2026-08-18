@@ -1,0 +1,386 @@
+{
+  "prinzip": "verstaendlichkeit",
+  "kriterien": [
+    {
+      "id": "3.1.1",
+      "titel": "Sprache der Seite",
+      "level": "A",
+      "prinzip": "verstaendlichkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Die Hauptsprache der Seite muss im Code angegeben sein, damit Screenreader die richtige Aussprache wählen.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["html-has-lang", "html-lang-valid", "html-xml-lang-mismatch"]
+        }
+      ],
+      "empfehlung": {
+        "text": "Setzen Sie das lang-Attribut am html-Element auf den Sprachcode nach ISO 639-1. Ohne diese Angabe liest ein Screenreader deutschen Text unter Umständen mit englischer Aussprache vor — das Ergebnis ist unverständlich.",
+        "codeBeispiel": {
+          "vorher": "<html>",
+          "nachher": "<html lang=\"de\">"
+        },
+        "referenzen": [
+          { "titel": "W3C: Sprache der Seite verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/language-of-page.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "3.1.2",
+      "titel": "Sprache von Teilen",
+      "level": "AA",
+      "prinzip": "verstaendlichkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Fremdsprachige Passagen müssen als solche gekennzeichnet sein, damit sie richtig ausgesprochen werden.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["valid-lang"]
+        },
+        {
+          "typ": "auto",
+          "engine": "sprache",
+          "regelIds": ["fremdsprachige-passage"],
+          "hinweis": "Erkennt über franc-min Textabschnitte, deren Sprache von der Seitensprache abweicht und die kein eigenes lang-Attribut tragen. Kurze Lehnwörter werden ausgenommen."
+        }
+      ],
+      "empfehlung": {
+        "text": "Kennzeichnen Sie fremdsprachige Abschnitte mit einem lang-Attribut am umschließenden Element. Eingebürgerte Lehnwörter wie „Software“ oder „Marketing“ brauchen keine Kennzeichnung — ganze Sätze, Zitate und Produktbezeichnungen schon.",
+        "codeBeispiel": {
+          "vorher": "<p>Unser Leitsatz: Think different.</p>",
+          "nachher": "<p>Unser Leitsatz: <span lang=\"en\">Think different.</span></p>"
+        },
+        "referenzen": [
+          { "titel": "W3C: Sprache von Teilen verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/language-of-parts.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "3.2.1",
+      "titel": "Bei Fokus",
+      "level": "A",
+      "prinzip": "verstaendlichkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Allein das Fokussieren eines Elements darf keine unerwartete Änderung auslösen — kein Seitenwechsel, kein Absenden, kein neues Fenster.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["aenderung-bei-fokus"],
+          "hinweis": "Fällt beim Tastatur-Durchlauf mit ab: prüft je Fokusstopp auf Seitenwechsel, geöffnetes Fenster oder wesentliche DOM-Änderung."
+        }
+      ],
+      "empfehlung": {
+        "text": "Lösen Sie Aktionen erst bei bewusster Bedienung aus, nicht schon beim focus-Ereignis. Automatisches Weiterspringen zum nächsten Feld nach erreichter Zeichenzahl ist ebenfalls problematisch, weil es Korrekturen erschwert.",
+        "codeBeispiel": {
+          "vorher": "auswahl.addEventListener('focus', () => formular.submit());",
+          "nachher": "auswahl.addEventListener('change', () => {\n  // Nur bewusste Änderung wirkt, und auch dann besser\n  // über eine sichtbare Schaltfläche\n});"
+        },
+        "referenzen": [
+          { "titel": "W3C: Bei Fokus verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/on-focus.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "3.2.2",
+      "titel": "Bei Eingabe",
+      "level": "A",
+      "prinzip": "verstaendlichkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Das Ändern einer Einstellung darf keine unerwartete Änderung des Kontexts auslösen, sofern nicht vorher darauf hingewiesen wurde.",
+      "anwendbarWenn": "input, select, textarea",
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["auto-submit-bei-aenderung"],
+          "hinweis": "Erkennt Auswahlfelder und Auswahlkästchen, die bei change ein Formular absenden oder die Seite wechseln."
+        },
+        {
+          "typ": "manuell",
+          "frage": "Löst das Ändern eines Formularfelds einen Seitenwechsel oder eine andere unerwartete Änderung aus, ohne dass vorher darauf hingewiesen wurde?"
+        }
+      ],
+      "empfehlung": {
+        "text": "Ergänzen Sie eine ausdrückliche Schaltfläche zum Bestätigen, statt bei jeder Änderung sofort zu handeln. Ist das automatische Verhalten gewollt, weisen Sie vor dem Feld darauf hin.",
+        "codeBeispiel": {
+          "vorher": "<select onchange=\"this.form.submit()\">…</select>",
+          "nachher": "<select name=\"sprache\">…</select>\n<button type=\"submit\">Sprache wechseln</button>"
+        },
+        "referenzen": [
+          { "titel": "W3C: Bei Eingabe verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/on-input.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "3.2.3",
+      "titel": "Konsistente Navigation",
+      "level": "AA",
+      "prinzip": "verstaendlichkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Wiederkehrende Navigationselemente müssen auf allen Seiten in derselben Reihenfolge erscheinen.",
+      "anwendbarWenn": "nav, [role=navigation]",
+      "nurMehrseitig": true,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["navigation-reihenfolge-vergleich"],
+          "hinweis": "Vergleicht die Reihenfolge der Navigationspunkte über alle geprüften Seiten hinweg."
+        }
+      ],
+      "empfehlung": {
+        "text": "Erzeugen Sie die Navigation aus einer gemeinsamen Vorlage, statt sie je Seite zu pflegen. Einzelne Punkte dürfen hinzukommen oder wegfallen — die Reihenfolge der übrigen muss gleich bleiben.",
+        "referenzen": [
+          { "titel": "W3C: Konsistente Navigation verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/consistent-navigation.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "3.2.4",
+      "titel": "Konsistente Bezeichnung",
+      "level": "AA",
+      "prinzip": "verstaendlichkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Gleiche Funktionen müssen überall gleich heißen. Was auf einer Seite „Suchen“ heißt, darf auf der nächsten nicht „Finden“ heißen.",
+      "anwendbarWenn": null,
+      "nurMehrseitig": true,
+      "pruefungen": [
+        {
+          "typ": "llm",
+          "pruefungsId": "konsistente-bezeichnung",
+          "buendelGroesse": 20
+        }
+      ],
+      "empfehlung": {
+        "text": "Legen Sie eine Begriffsliste für wiederkehrende Funktionen an und verwenden Sie sie durchgängig. Betroffen sind auch Symbole: Dasselbe Symbol muss überall dieselbe Funktion haben.",
+        "codeBeispiel": {
+          "vorher": "Seite A: <button>Absenden</button>\nSeite B: <button>Abschicken</button>\nSeite C: <button>Formular senden</button>",
+          "nachher": "Alle Seiten: <button>Absenden</button>"
+        },
+        "referenzen": [
+          { "titel": "W3C: Konsistente Bezeichnung verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/consistent-identification.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "3.2.6",
+      "titel": "Konsistente Hilfe",
+      "level": "A",
+      "prinzip": "verstaendlichkeit",
+      "standard": { "eingefuehrtMit": "2.2", "entfallenAb": null },
+      "beschreibung": "Hilfsangebote wie Kontaktmöglichkeiten oder Hilfeseiten müssen auf allen Seiten an derselben Stelle stehen.",
+      "anwendbarWenn": null,
+      "nurMehrseitig": true,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["hilfe-position-vergleich"],
+          "hinweis": "Sucht Links und Bereiche mit Hilfebezug und vergleicht ihre Position in der Seitenstruktur über alle geprüften Seiten."
+        },
+        {
+          "typ": "llm",
+          "pruefungsId": "konsistente-hilfe",
+          "buendelGroesse": 20
+        }
+      ],
+      "empfehlung": {
+        "text": "Platzieren Sie Kontakt- und Hilfelinks über eine gemeinsame Vorlage immer an derselben Stelle — etwa in der Fußzeile oder am Ende der Hauptnavigation. Die Position muss relativ zur Seitenstruktur gleich bleiben, nicht auf den Pixel genau.",
+        "referenzen": [
+          { "titel": "W3C: Konsistente Hilfe verstehen", "url": "https://www.w3.org/WAI/WCAG22/Understanding/consistent-help.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "3.3.1",
+      "titel": "Fehlererkennung",
+      "level": "A",
+      "prinzip": "verstaendlichkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Eingabefehler müssen als Text benannt werden — welches Feld betroffen ist und was daran falsch ist.",
+      "anwendbarWenn": "form, input, select, textarea",
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["fehlermeldung-erkennbar"],
+          "hinweis": "Sendet Formulare leer und mit ungültigen Werten ab und prüft, ob Fehler in Textform erscheinen und mit dem Feld verknüpft sind."
+        },
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["aria-valid-attr-value"]
+        }
+      ],
+      "empfehlung": {
+        "text": "Geben Sie Fehler als Text aus, nicht nur als rote Umrandung. Verknüpfen Sie die Meldung über aria-describedby mit dem Feld und setzen Sie aria-invalid. Eine Zusammenfassung am Formularanfang, die zu den Feldern verlinkt, hilft zusätzlich.",
+        "codeBeispiel": {
+          "vorher": "<input name=\"mail\" class=\"fehler\">  <!-- nur rot umrandet -->",
+          "nachher": "<label for=\"mail\">E-Mail</label>\n<input id=\"mail\" name=\"mail\" aria-invalid=\"true\" aria-describedby=\"mail-fehler\">\n<p id=\"mail-fehler\">Bitte geben Sie eine E-Mail-Adresse mit @ ein.</p>"
+        },
+        "referenzen": [
+          { "titel": "W3C: Fehlererkennung verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/error-identification.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "3.3.2",
+      "titel": "Beschriftungen oder Anweisungen",
+      "level": "A",
+      "prinzip": "verstaendlichkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Formularfelder brauchen eine Beschriftung, und wo ein bestimmtes Format erwartet wird, muss das vorab erklärt sein.",
+      "anwendbarWenn": "input, select, textarea",
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["label", "label-title-only", "form-field-multiple-labels", "select-name", "aria-input-field-name", "aria-toggle-field-name"]
+        },
+        {
+          "typ": "llm",
+          "pruefungsId": "feldbeschriftung",
+          "buendelGroesse": 20,
+          "sammelSelektor": "input:not([type=hidden]), select, textarea"
+        }
+      ],
+      "empfehlung": {
+        "text": "Jedes Feld braucht ein label mit for-Attribut. Ein Platzhaltertext ersetzt keine Beschriftung — er verschwindet beim Tippen. Formatvorgaben und Pflichtfeldangaben gehören vor das Feld, nicht erst in die Fehlermeldung.",
+        "codeBeispiel": {
+          "vorher": "<input type=\"text\" name=\"datum\" placeholder=\"Datum\">",
+          "nachher": "<label for=\"datum\">Geburtsdatum</label>\n<span id=\"datum-hilfe\">Format: TT.MM.JJJJ</span>\n<input type=\"text\" id=\"datum\" name=\"datum\" aria-describedby=\"datum-hilfe\">"
+        },
+        "referenzen": [
+          { "titel": "W3C: Beschriftungen oder Anweisungen verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/labels-or-instructions.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "3.3.3",
+      "titel": "Fehlerempfehlung",
+      "level": "AA",
+      "prinzip": "verstaendlichkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Eine Fehlermeldung muss nicht nur sagen, dass etwas falsch ist, sondern auch wie es richtig geht.",
+      "anwendbarWenn": "form, input, select, textarea",
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["fehlermeldung-vorhanden"],
+          "hinweis": "Sammelt die beim Absenden erzeugten Fehlermeldungen als Grundlage für die Sprachmodell-Prüfung."
+        },
+        {
+          "typ": "llm",
+          "pruefungsId": "fehlerempfehlung",
+          "buendelGroesse": 20
+        }
+      ],
+      "empfehlung": {
+        "text": "Formulieren Sie Fehlermeldungen so, dass sie den Weg zur Lösung nennen. „Ungültige Eingabe“ hilft nicht. „Die Postleitzahl muss aus fünf Ziffern bestehen“ hilft.",
+        "codeBeispiel": {
+          "vorher": "<p>Fehler in Feld 3.</p>",
+          "nachher": "<p>Die Postleitzahl muss aus fünf Ziffern bestehen, zum Beispiel 10115.</p>"
+        },
+        "referenzen": [
+          { "titel": "W3C: Fehlerempfehlung verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/error-suggestion.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "3.3.4",
+      "titel": "Fehlervermeidung (rechtlich, finanziell, Daten)",
+      "level": "AA",
+      "prinzip": "verstaendlichkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Bei rechtlich oder finanziell bindenden Vorgängen und beim Ändern gespeicherter Daten muss sich die Eingabe zurücknehmen, prüfen oder bestätigen lassen.",
+      "anwendbarWenn": "form",
+      "pruefungen": [
+        {
+          "typ": "manuell",
+          "frage": "Gibt es Vorgänge mit rechtlicher oder finanzieller Bindung oder mit Änderung gespeicherter Daten? Falls ja: Lässt sich der Vorgang rückgängig machen, werden die Eingaben vor dem Abschluss zur Prüfung angezeigt, oder ist eine ausdrückliche Bestätigung nötig?"
+        }
+      ],
+      "empfehlung": {
+        "text": "Schalten Sie vor den Abschluss eine Übersichtsseite mit allen Eingaben und einer Änderungsmöglichkeit. Alternativ genügt eine Rücknahmemöglichkeit innerhalb einer angemessenen Frist. Beim Löschen von Daten reicht eine Bestätigungsabfrage.",
+        "referenzen": [
+          { "titel": "W3C: Fehlervermeidung verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/error-prevention-legal-financial-data.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "3.3.7",
+      "titel": "Redundante Eingabe",
+      "level": "A",
+      "prinzip": "verstaendlichkeit",
+      "standard": { "eingefuehrtMit": "2.2", "entfallenAb": null },
+      "beschreibung": "Angaben, die im selben Vorgang schon gemacht wurden, dürfen nicht erneut eingetippt werden müssen — sie werden vorbelegt oder zur Auswahl angeboten.",
+      "anwendbarWenn": "form",
+      "pruefungen": [
+        {
+          "typ": "manuell",
+          "frage": "Müssen in mehrstufigen Vorgängen Angaben erneut eingegeben werden, die bereits in einem früheren Schritt gemacht wurden?"
+        }
+      ],
+      "empfehlung": {
+        "text": "Belegen Sie Felder mit bereits bekannten Angaben vor oder bieten Sie sie zur Auswahl an. Der häufigste Fall ist die Rechnungsanschrift, die der Lieferanschrift entspricht — hier genügt ein Auswahlkästchen. Ausgenommen sind Sicherheitsabfragen wie eine wiederholte Kennworteingabe.",
+        "codeBeispiel": {
+          "vorher": "<!-- Schritt 2 fragt Anschrift erneut vollständig ab -->",
+          "nachher": "<label>\n  <input type=\"checkbox\" name=\"gleiche_anschrift\" checked>\n  Rechnungsanschrift entspricht der Lieferanschrift\n</label>"
+        },
+        "referenzen": [
+          { "titel": "W3C: Redundante Eingabe verstehen", "url": "https://www.w3.org/WAI/WCAG22/Understanding/redundant-entry.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "3.3.8",
+      "titel": "Barrierefreie Authentifizierung (Minimum)",
+      "level": "AA",
+      "prinzip": "verstaendlichkeit",
+      "standard": { "eingefuehrtMit": "2.2", "entfallenAb": null },
+      "beschreibung": "Die Anmeldung darf keinen kognitiven Test verlangen — kein Rätsel, kein Merken einer Zeichenfolge, kein Erkennen von Bildinhalten ohne Alternative.",
+      "anwendbarWenn": "input[type=password], form[action*=login], form[action*=anmeld], .captcha, [class*=captcha]",
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["captcha-erkennung", "einfuegen-unterbunden"],
+          "hinweis": "Erkennt gängige CAPTCHA-Einbindungen sowie Kennwortfelder, die das Einfügen aus der Zwischenablage unterbinden."
+        },
+        {
+          "typ": "manuell",
+          "frage": "Verlangt die Anmeldung einen kognitiven Test — Bilderrätsel, Merkaufgabe, Rechenaufgabe? Falls ja: Gibt es eine Alternative ohne solchen Test?"
+        }
+      ],
+      "empfehlung": {
+        "text": "Unterbinden Sie niemals das Einfügen aus der Zwischenablage in Kennwortfelder — das macht Kennwortverwaltungen unbrauchbar und ist der häufigste Verstoß gegen dieses Kriterium. Ersetzen Sie Bilderrätsel durch Verfahren, die keinen kognitiven Test verlangen, etwa Anmeldung per E-Mail-Link oder Passkey.",
+        "codeBeispiel": {
+          "vorher": "<input type=\"password\" onpaste=\"return false\" autocomplete=\"off\">",
+          "nachher": "<input type=\"password\" autocomplete=\"current-password\">"
+        },
+        "referenzen": [
+          { "titel": "W3C: Barrierefreie Authentifizierung verstehen", "url": "https://www.w3.org/WAI/WCAG22/Understanding/accessible-authentication-minimum.html" }
+        ]
+      }
+    }
+  ]
+}

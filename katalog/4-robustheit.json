@@ -1,0 +1,102 @@
+{
+  "prinzip": "robustheit",
+  "kriterien": [
+    {
+      "id": "4.1.1",
+      "titel": "Syntaxanalyse",
+      "level": "A",
+      "prinzip": "robustheit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": "2.2" },
+      "beschreibung": "Elemente brauchen vollständige Start- und End-Tags, dürfen nicht falsch verschachtelt sein und keine doppelten Kennungen tragen. In WCAG 2.2 ist dieses Kriterium entfallen, weil Browser fehlerhaftes Markup heute zuverlässig verarbeiten.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["duplicate-id-active", "duplicate-id-aria"]
+        },
+        {
+          "typ": "auto",
+          "engine": "html",
+          "regelIds": ["close-order", "no-dup-id", "void-content", "element-permitted-content"]
+        }
+      ],
+      "empfehlung": {
+        "text": "Beheben Sie doppelte id-Werte und falsche Verschachtelungen. Doppelte Kennungen sind auch dann ein echtes Problem, wenn dieses Kriterium in WCAG 2.2 entfallen ist: aria-describedby, aria-labelledby und label mit for-Attribut verweisen darüber und greifen sonst auf das falsche Element.",
+        "codeBeispiel": {
+          "vorher": "<div id=\"box\">…</div>\n<div id=\"box\">…</div>\n<p>Text <span>fehlerhaft verschachtelt</p></span>",
+          "nachher": "<div id=\"box-1\">…</div>\n<div id=\"box-2\">…</div>\n<p>Text <span>richtig verschachtelt</span></p>"
+        },
+        "referenzen": [
+          { "titel": "W3C: Syntaxanalyse verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/parsing.html" },
+          { "titel": "W3C: Warum 4.1.1 in WCAG 2.2 entfallen ist", "url": "https://www.w3.org/WAI/standards-guidelines/wcag/new-in-22/" }
+        ]
+      }
+    },
+
+    {
+      "id": "4.1.2",
+      "titel": "Name, Rolle, Wert",
+      "level": "A",
+      "prinzip": "robustheit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Jedes Bedienelement muss maschinenlesbar mitteilen, wie es heißt, was es ist und in welchem Zustand es sich befindet. Nur so kann ein Screenreader es ankündigen.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["button-name", "link-name", "input-button-name", "select-name", "frame-title", "aria-roles", "aria-valid-attr", "aria-valid-attr-value", "aria-required-attr", "aria-allowed-attr", "aria-allowed-role", "aria-hidden-focus", "aria-command-name", "aria-meter-name", "aria-progressbar-name", "aria-tooltip-name", "aria-dialog-name", "aria-treeitem-name", "nested-interactive", "presentation-role-conflict"]
+        },
+        {
+          "typ": "auto",
+          "engine": "ibm",
+          "regelIds": ["element_id_unique", "aria_role_valid", "aria_attribute_valid"]
+        }
+      ],
+      "empfehlung": {
+        "text": "Nutzen Sie native HTML-Elemente, wo immer es geht — sie bringen Name, Rolle und Zustand von sich aus mit. Wenn Sie eigene Bedienelemente bauen müssen, brauchen sie eine role, einen zugänglichen Namen und aktuell gehaltene Zustandsattribute wie aria-expanded oder aria-checked.",
+        "codeBeispiel": {
+          "vorher": "<div class=\"schalter\" onclick=\"umschalten()\"></div>",
+          "nachher": "<button type=\"button\"\n        aria-pressed=\"false\"\n        onclick=\"umschalten(this)\">\n  Benachrichtigungen\n</button>\n<!-- umschalten() aktualisiert aria-pressed -->"
+        },
+        "referenzen": [
+          { "titel": "W3C: Name, Rolle, Wert verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html" },
+          { "titel": "W3C: ARIA Authoring Practices", "url": "https://www.w3.org/WAI/ARIA/apg/" }
+        ]
+      }
+    },
+
+    {
+      "id": "4.1.3",
+      "titel": "Statusmeldungen",
+      "level": "AA",
+      "prinzip": "robustheit",
+      "standard": { "eingefuehrtMit": "2.1", "entfallenAb": null },
+      "beschreibung": "Meldungen, die ohne Fokuswechsel erscheinen — Erfolgsmeldungen, Fehlerhinweise, Trefferzahlen, Ladezustände — müssen Screenreadern angekündigt werden.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["statusmeldung-live-region"],
+          "hinweis": "Löst Formularabsenden und Filterwechsel aus und prüft, ob neu erscheinende Meldungen in einem Bereich mit aria-live oder passender role liegen."
+        },
+        {
+          "typ": "manuell",
+          "frage": "Werden Meldungen, die ohne Fokuswechsel erscheinen — etwa „In den Warenkorb gelegt“ oder „12 Treffer gefunden“ —, von Screenreadern angekündigt?"
+        }
+      ],
+      "empfehlung": {
+        "text": "Legen Sie den Meldungsbereich bereits leer im HTML an und füllen Sie ihn per JavaScript. Ein Bereich, der samt aria-live erst neu eingefügt wird, wird oft nicht vorgelesen. Verwenden Sie aria-live=\"polite\" für Hinweise und role=\"alert\" nur für Dringendes.",
+        "codeBeispiel": {
+          "vorher": "ergebnis.innerHTML = '<div>12 Treffer gefunden</div>';",
+          "nachher": "<!-- fest im HTML vorhanden: -->\n<div id=\"status\" role=\"status\" aria-live=\"polite\"></div>\n\n<!-- später per JavaScript: -->\ndocument.getElementById('status').textContent = '12 Treffer gefunden';"
+        },
+        "referenzen": [
+          { "titel": "W3C: Statusmeldungen verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/status-messages.html" }
+        ]
+      }
+    }
+  ]
+}

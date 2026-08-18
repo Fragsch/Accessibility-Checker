@@ -1,0 +1,589 @@
+{
+  "prinzip": "wahrnehmbarkeit",
+  "kriterien": [
+    {
+      "id": "1.1.1",
+      "titel": "Nicht-Text-Inhalte",
+      "level": "A",
+      "prinzip": "wahrnehmbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Jedes Bild, Symbol und jede Grafik braucht eine Textalternative, die dieselbe Information vermittelt. Rein schmückende Grafiken bekommen ein leeres alt-Attribut, damit Screenreader sie überspringen.",
+      "anwendbarWenn": "img, svg, canvas, object, area, input[type=image], [role=img]",
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["image-alt", "input-image-alt", "area-alt", "object-alt", "role-img-alt", "svg-img-alt", "image-redundant-alt"]
+        },
+        {
+          "typ": "manuell",
+          "frage": "Vermitteln die vorhandenen Alternativtexte dieselbe Information wie die Bilder selbst? Sind rein schmückende Grafiken mit leerem alt-Attribut gekennzeichnet?",
+          "kontextSelektor": "img[alt]:not([alt='']), [role=img][aria-label]",
+          "hinweis": "Wird durch die bildbasierte Bewertung der Ausbaustufe (PRD 6.3.2) ersetzt."
+        }
+      ],
+      "empfehlung": {
+        "text": "Ergänzen Sie ein alt-Attribut, das die Funktion des Bildes im Kontext beschreibt — nicht sein Aussehen. Fragen Sie sich: Was ginge verloren, wenn das Bild fehlte? Genau das gehört in den Alternativtext. Rein schmückende Grafiken erhalten alt=\"\", damit Screenreader sie überspringen. Vermeiden Sie Dateinamen und Wendungen wie \"Bild von\".",
+        "codeBeispiel": {
+          "vorher": "<img src=\"warnung.svg\">\n<img src=\"trennlinie.png\" alt=\"trennlinie.png\">",
+          "nachher": "<img src=\"warnung.svg\" alt=\"Achtung: Vorgang kann nicht rückgängig gemacht werden\">\n<img src=\"trennlinie.png\" alt=\"\">"
+        },
+        "referenzen": [
+          { "titel": "W3C: Nicht-Text-Inhalte verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/non-text-content.html" },
+          { "titel": "W3C: Entscheidungsbaum für Alternativtexte", "url": "https://www.w3.org/WAI/tutorials/images/decision-tree/" }
+        ]
+      }
+    },
+
+    {
+      "id": "1.2.1",
+      "titel": "Reine Audio- und Videoinhalte (aufgezeichnet)",
+      "level": "A",
+      "prinzip": "wahrnehmbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Reine Tonaufnahmen brauchen ein Transkript. Stumme Videos brauchen eine Beschreibung als Text oder Ton.",
+      "anwendbarWenn": "audio, video",
+      "pruefungen": [
+        {
+          "typ": "manuell",
+          "frage": "Gibt es zu jeder reinen Tonaufnahme ein vollständiges Transkript und zu jedem stummen Video eine Textbeschreibung?",
+          "kontextSelektor": "audio, video"
+        }
+      ],
+      "empfehlung": {
+        "text": "Stellen Sie ein vollständiges Transkript unmittelbar neben dem Medienelement bereit — als aufklappbaren Textblock oder als verlinkte Seite. Das Transkript enthält alles Gesprochene sowie relevante Geräusche und die Angabe, wer spricht.",
+        "referenzen": [
+          { "titel": "W3C: Reine Audio- und Videoinhalte verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/audio-only-and-video-only-prerecorded.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "1.2.2",
+      "titel": "Untertitel (aufgezeichnet)",
+      "level": "A",
+      "prinzip": "wahrnehmbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Videos mit Ton brauchen Untertitel, die das Gesprochene und bedeutungstragende Geräusche wiedergeben.",
+      "anwendbarWenn": "video",
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["video-caption"],
+          "hinweis": "Erkennt nur das Vorhandensein einer track-Spur mit kind=captions."
+        },
+        {
+          "typ": "manuell",
+          "frage": "Sind die Untertitel inhaltlich vollständig und zeitlich passend? Werden Sprecherwechsel und bedeutungstragende Geräusche wiedergegeben?",
+          "kontextSelektor": "video"
+        }
+      ],
+      "empfehlung": {
+        "text": "Binden Sie eine Untertitelspur über ein track-Element mit kind=\"captions\" ein. Automatisch erzeugte Untertitel reichen nicht aus — sie müssen nachbearbeitet werden, insbesondere bei Fachbegriffen und Eigennamen.",
+        "codeBeispiel": {
+          "vorher": "<video src=\"schulung.mp4\" controls></video>",
+          "nachher": "<video src=\"schulung.mp4\" controls>\n  <track kind=\"captions\" src=\"schulung-de.vtt\" srclang=\"de\" label=\"Deutsch\" default>\n</video>"
+        },
+        "referenzen": [
+          { "titel": "W3C: Untertitel verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/captions-prerecorded.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "1.2.3",
+      "titel": "Audiodeskription oder Volltext-Alternative",
+      "level": "A",
+      "prinzip": "wahrnehmbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Was im Video nur zu sehen und nicht zu hören ist, muss auch ohne Bild erfassbar sein — über eine Audiodeskription oder ein beschreibendes Transkript.",
+      "anwendbarWenn": "video",
+      "pruefungen": [
+        {
+          "typ": "manuell",
+          "frage": "Sind rein visuelle Informationen des Videos — eingeblendeter Text, Handlungen, Diagramme — über eine Audiodeskription oder ein beschreibendes Transkript zugänglich?",
+          "kontextSelektor": "video"
+        }
+      ],
+      "empfehlung": {
+        "text": "Ein beschreibendes Volltext-Transkript ist meist der günstigere Weg als eine zusätzliche Tonspur. Es enthält neben dem Gesprochenen auch die visuellen Vorgänge. Am einfachsten wird es, wenn das Video von vornherein so vertont wird, dass es Gezeigtes benennt.",
+        "referenzen": [
+          { "titel": "W3C: Audiodeskription verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/audio-description-or-media-alternative-prerecorded.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "1.2.4",
+      "titel": "Untertitel (live)",
+      "level": "AA",
+      "prinzip": "wahrnehmbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Live übertragene Videos mit Ton brauchen Echtzeit-Untertitel.",
+      "anwendbarWenn": "video, [class*=live], [data-live]",
+      "pruefungen": [
+        {
+          "typ": "manuell",
+          "frage": "Werden Live-Übertragungen mit Echtzeit-Untertiteln versehen?",
+          "kontextSelektor": "video"
+        }
+      ],
+      "empfehlung": {
+        "text": "Nutzen Sie einen Dienst für Live-Untertitelung. Ist das nicht leistbar, prüfen Sie, ob die Übertragung wirklich live sein muss — eine Aufzeichnung mit nachträglich erstellten Untertiteln erfüllt die Anforderung mit deutlich geringerem Aufwand.",
+        "referenzen": [
+          { "titel": "W3C: Untertitel live verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/captions-live.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "1.2.5",
+      "titel": "Audiodeskription (aufgezeichnet)",
+      "level": "AA",
+      "prinzip": "wahrnehmbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Aufgezeichnete Videos brauchen eine Audiodeskription der rein visuellen Inhalte.",
+      "anwendbarWenn": "video",
+      "pruefungen": [
+        {
+          "typ": "manuell",
+          "frage": "Gibt es zu den aufgezeichneten Videos eine Audiodeskription, die die visuellen Inhalte beschreibt?",
+          "kontextSelektor": "video"
+        }
+      ],
+      "empfehlung": {
+        "text": "Bieten Sie eine zweite Tonspur mit Audiodeskription an, oder eine erweiterte Fassung des Videos mit Beschreibungspausen. Auf Stufe AA genügt anders als bei 1.2.3 eine Textalternative nicht mehr.",
+        "referenzen": [
+          { "titel": "W3C: Audiodeskription aufgezeichnet verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/audio-description-prerecorded.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "1.3.1",
+      "titel": "Info und Beziehungen",
+      "level": "A",
+      "prinzip": "wahrnehmbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Struktur, die visuell erkennbar ist, muss auch im Code stehen: Überschriften als Überschriften, Listen als Listen, Tabellen mit Kopfzellen, Formularfelder mit verknüpfter Beschriftung.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["list", "listitem", "definition-list", "dlitem", "th-has-data-cells", "td-headers-attr", "table-fake-caption", "empty-table-header", "label", "form-field-multiple-labels", "aria-required-children", "aria-required-parent", "p-as-heading", "heading-order", "landmark-one-main", "aria-hidden-body"]
+        },
+        {
+          "typ": "auto",
+          "engine": "html",
+          "regelIds": ["element-required-content", "attribute-allowed-values"]
+        },
+        {
+          "typ": "llm",
+          "pruefungsId": "ueberschriftenhierarchie",
+          "buendelGroesse": 20,
+          "sammelSelektor": "h1, h2, h3, h4, h5, h6"
+        }
+      ],
+      "empfehlung": {
+        "text": "Verwenden Sie semantische HTML-Elemente statt gestalteter div-Container. Eine fett formatierte Zeile ist keine Überschrift — h1 bis h6 sind es. Eine Aufzählung mit Aufzählungszeichen als Text ist keine Liste — ul und li sind es. Formularfelder brauchen ein label mit passendem for-Attribut.",
+        "codeBeispiel": {
+          "vorher": "<div class=\"ueberschrift\">Kontakt</div>\n<div class=\"liste\">• Telefon<br>• E-Mail</div>\n<span>Ihr Name</span> <input type=\"text\" name=\"name\">",
+          "nachher": "<h2>Kontakt</h2>\n<ul>\n  <li>Telefon</li>\n  <li>E-Mail</li>\n</ul>\n<label for=\"name\">Ihr Name</label> <input type=\"text\" id=\"name\" name=\"name\">"
+        },
+        "referenzen": [
+          { "titel": "W3C: Info und Beziehungen verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "1.3.2",
+      "titel": "Bedeutungstragende Reihenfolge",
+      "level": "A",
+      "prinzip": "wahrnehmbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Die Reihenfolge im Quelltext muss der sinnvollen Lesereihenfolge entsprechen. Wer den Inhalt linear vorgelesen bekommt, muss ihn verstehen können.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["dom-reihenfolge-vs-visuell"],
+          "hinweis": "Vergleicht die DOM-Reihenfolge mit der visuellen Anordnung; meldet Abweichungen durch CSS order, float oder absolute Positionierung."
+        },
+        {
+          "typ": "llm",
+          "pruefungsId": "lesereihenfolge",
+          "buendelGroesse": 1
+        }
+      ],
+      "empfehlung": {
+        "text": "Ordnen Sie den Quelltext so an, dass er ohne Gestaltung sinnvoll bleibt. Prüfen Sie das, indem Sie die Formatierung im Browser abschalten. Vorsicht bei den CSS-Eigenschaften order und flex-direction: row-reverse — sie ändern die sichtbare Reihenfolge, nicht die vorgelesene.",
+        "codeBeispiel": {
+          "vorher": ".karte { display: flex; flex-direction: column-reverse; }\n<div class=\"karte\"><p>Beschreibung</p><h3>Titel</h3></div>",
+          "nachher": "<div class=\"karte\"><h3>Titel</h3><p>Beschreibung</p></div>"
+        },
+        "referenzen": [
+          { "titel": "W3C: Bedeutungstragende Reihenfolge verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/meaningful-sequence.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "1.3.3",
+      "titel": "Sensorische Eigenschaften",
+      "level": "A",
+      "prinzip": "wahrnehmbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Anweisungen dürfen sich nicht allein auf Form, Farbe, Größe oder Position beziehen. \"Klicken Sie auf die runde Schaltfläche rechts\" hilft niemandem, der die Seite nicht sieht.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "llm",
+          "pruefungsId": "sensorische-anweisungen",
+          "buendelGroesse": 20,
+          "sammelSelektor": "p, li, label, .hinweis, [role=note]"
+        }
+      ],
+      "empfehlung": {
+        "text": "Nennen Sie das gemeinte Element beim Namen. Form-, Farb- und Positionsangaben dürfen ergänzen, aber nicht allein stehen.",
+        "codeBeispiel": {
+          "vorher": "<p>Klicken Sie auf die grüne Schaltfläche unten rechts, um fortzufahren.</p>",
+          "nachher": "<p>Klicken Sie auf die Schaltfläche „Weiter“ (grün, unten rechts), um fortzufahren.</p>"
+        },
+        "referenzen": [
+          { "titel": "W3C: Sensorische Eigenschaften verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/sensory-characteristics.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "1.3.4",
+      "titel": "Anzeigerichtung",
+      "level": "AA",
+      "prinzip": "wahrnehmbarkeit",
+      "standard": { "eingefuehrtMit": "2.1", "entfallenAb": null },
+      "beschreibung": "Inhalte dürfen nicht auf Hoch- oder Querformat festgelegt sein. Wer sein Gerät fest montiert hat, kann es nicht drehen.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["css-orientation-lock"]
+        }
+      ],
+      "empfehlung": {
+        "text": "Entfernen Sie CSS-Regeln, die Inhalte über eine orientation-Medienabfrage sperren oder drehen. Gestalten Sie stattdessen beide Ausrichtungen nutzbar.",
+        "codeBeispiel": {
+          "vorher": "@media (orientation: landscape) {\n  body { transform: rotate(90deg); }\n}",
+          "nachher": "/* Beide Ausrichtungen über flexibles Layout unterstützen */\n.inhalt { display: flex; flex-wrap: wrap; }"
+        },
+        "referenzen": [
+          { "titel": "W3C: Anzeigerichtung verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/orientation.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "1.3.5",
+      "titel": "Eingabezweck bestimmen",
+      "level": "AA",
+      "prinzip": "wahrnehmbarkeit",
+      "standard": { "eingefuehrtMit": "2.1", "entfallenAb": null },
+      "beschreibung": "Felder, die persönliche Daten abfragen, müssen ihren Zweck maschinenlesbar angeben. Dann können Browser und Hilfsmittel sie automatisch ausfüllen oder mit Symbolen versehen.",
+      "anwendbarWenn": "input, select, textarea",
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["autocomplete-valid"]
+        }
+      ],
+      "empfehlung": {
+        "text": "Ergänzen Sie das autocomplete-Attribut bei allen Feldern, die Daten der nutzenden Person abfragen. Die zulässigen Werte sind in der HTML-Spezifikation festgelegt — eigene Bezeichnungen wirken nicht.",
+        "codeBeispiel": {
+          "vorher": "<input type=\"text\" name=\"vorname\">\n<input type=\"email\" name=\"mail\">",
+          "nachher": "<input type=\"text\" name=\"vorname\" autocomplete=\"given-name\">\n<input type=\"email\" name=\"mail\" autocomplete=\"email\">"
+        },
+        "referenzen": [
+          { "titel": "W3C: Eingabezweck verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/identify-input-purpose.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "1.4.1",
+      "titel": "Benutzung von Farbe",
+      "level": "A",
+      "prinzip": "wahrnehmbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Farbe darf nicht das einzige Mittel sein, um Information zu vermitteln. Pflichtfelder nur rot zu färben oder Links im Fließtext nur farblich abzusetzen, genügt nicht.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["link-in-text-block"]
+        },
+        {
+          "typ": "manuell",
+          "frage": "Wird an keiner Stelle Information ausschließlich über Farbe vermittelt — etwa bei Pflichtfeldern, Statusanzeigen, Diagrammlegenden oder Fehlermarkierungen?"
+        }
+      ],
+      "empfehlung": {
+        "text": "Ergänzen Sie zur Farbe ein zweites Merkmal: ein Symbol, eine Beschriftung, eine Unterstreichung oder ein Muster. Links im Fließtext werden unterstrichen. Pflichtfelder erhalten zusätzlich einen Stern und eine Erläuterung.",
+        "codeBeispiel": {
+          "vorher": "<span style=\"color:red\">Name</span>\n<a href=\"/agb\" style=\"color:#06c; text-decoration:none\">AGB</a>",
+          "nachher": "<span>Name <abbr title=\"Pflichtfeld\">*</abbr></span>\n<a href=\"/agb\">AGB</a>  <!-- unterstrichen -->"
+        },
+        "referenzen": [
+          { "titel": "W3C: Benutzung von Farbe verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/use-of-color.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "1.4.2",
+      "titel": "Audio-Steuerelement",
+      "level": "A",
+      "prinzip": "wahrnehmbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Ton, der automatisch länger als drei Sekunden spielt, muss sich anhalten oder in der Lautstärke regeln lassen — unabhängig von der Systemlautstärke.",
+      "anwendbarWenn": "audio[autoplay], video[autoplay], audio, video",
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["no-autoplay-audio"]
+        }
+      ],
+      "empfehlung": {
+        "text": "Verzichten Sie auf automatisch startenden Ton. Ist er unverzichtbar, stellen Sie unmittelbar am Anfang der Seite eine Schaltfläche zum Anhalten bereit — erreichbar, bevor der Ton beginnt.",
+        "codeBeispiel": {
+          "vorher": "<audio src=\"hintergrund.mp3\" autoplay loop></audio>",
+          "nachher": "<audio id=\"ton\" src=\"hintergrund.mp3\" loop></audio>\n<button onclick=\"document.getElementById('ton').play()\">Ton abspielen</button>"
+        },
+        "referenzen": [
+          { "titel": "W3C: Audio-Steuerelement verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/audio-control.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "1.4.3",
+      "titel": "Kontrast (Minimum)",
+      "level": "AA",
+      "prinzip": "wahrnehmbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Text braucht mindestens ein Kontrastverhältnis von 4,5:1 zum Hintergrund. Bei großer Schrift ab 18 Punkt oder 14 Punkt fett genügen 3:1.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["color-contrast"]
+        },
+        {
+          "typ": "auto",
+          "engine": "pixel",
+          "regelIds": ["kontrast-auf-verlauf", "kontrast-auf-bild"],
+          "hinweis": "Fängt die Fälle ab, die axe als unvollständig meldet, weil der Hintergrund kein einfarbiger Wert ist."
+        }
+      ],
+      "empfehlung": {
+        "text": "Dunkeln Sie die Textfarbe ab oder hellen Sie den Hintergrund auf, bis 4,5:1 erreicht ist. Besondere Vorsicht bei hellgrauem Text auf Weiß und bei Text über Bildern — dort hilft eine halbtransparente Fläche hinter dem Text.",
+        "codeBeispiel": {
+          "vorher": ".hinweis { color: #999; background: #fff; }  /* 2,85:1 */",
+          "nachher": ".hinweis { color: #595959; background: #fff; }  /* 7:1 */"
+        },
+        "referenzen": [
+          { "titel": "W3C: Kontrast Minimum verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "1.4.4",
+      "titel": "Textgröße ändern",
+      "level": "AA",
+      "prinzip": "wahrnehmbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Text muss sich auf 200 Prozent vergrößern lassen, ohne dass Inhalt verloren geht oder unlesbar wird.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["meta-viewport", "meta-viewport-large"]
+        },
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["zoom-200-prozent"],
+          "hinweis": "Setzt die Schriftgröße auf 200 % und prüft auf Überlappungen und abgeschnittenen Text."
+        }
+      ],
+      "empfehlung": {
+        "text": "Verwenden Sie relative Einheiten wie rem statt fester Pixelwerte für Schriftgrößen und Behälterhöhen. Entfernen Sie user-scalable=no aus dem viewport-Meta-Element. Vermeiden Sie feste Höhen bei Elementen, die Text enthalten.",
+        "codeBeispiel": {
+          "vorher": "<meta name=\"viewport\" content=\"width=device-width, user-scalable=no\">\n.karte { font-size: 14px; height: 120px; }",
+          "nachher": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n.karte { font-size: 0.875rem; min-height: 7.5rem; }"
+        },
+        "referenzen": [
+          { "titel": "W3C: Textgröße ändern verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/resize-text.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "1.4.5",
+      "titel": "Bilder eines Textes",
+      "level": "AA",
+      "prinzip": "wahrnehmbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Text soll als Text vorliegen, nicht als Bild. Text in Bildern lässt sich nicht vergrößern, nicht umfließen und nicht in eigenen Farben darstellen.",
+      "anwendbarWenn": "img, svg image, [style*='background-image']",
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "ocr",
+          "regelIds": ["text-in-bild"],
+          "hinweis": "Meldet Bilder, in denen die Texterkennung mehr als eine Handvoll zusammenhängender Wörter findet. Logos und Wortmarken sind ausgenommen."
+        }
+      ],
+      "empfehlung": {
+        "text": "Setzen Sie den Text als echten Text und gestalten Sie ihn mit CSS. Webfonts, Schatten, Verläufe und Umrisse lassen sich heute vollständig in CSS abbilden. Ausgenommen sind nur Logos und Fälle, in denen die konkrete Darstellung wesentlich ist.",
+        "codeBeispiel": {
+          "vorher": "<img src=\"aktion-banner.png\" alt=\"20 % Rabatt auf alle Kurse bis 31.12.\">",
+          "nachher": "<div class=\"aktion\">\n  <p class=\"aktion__text\">20 % Rabatt auf alle Kurse bis 31.12.</p>\n</div>"
+        },
+        "referenzen": [
+          { "titel": "W3C: Bilder eines Textes verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/images-of-text.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "1.4.10",
+      "titel": "Reflow",
+      "level": "AA",
+      "prinzip": "wahrnehmbarkeit",
+      "standard": { "eingefuehrtMit": "2.1", "entfallenAb": null },
+      "beschreibung": "Bei 320 Pixel Breite darf kein horizontales Scrollen nötig sein. Der Inhalt muss umbrechen statt seitlich hinauszulaufen.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["reflow-320"],
+          "hinweis": "Lädt die Seite bei 320 × 256 Pixel und prüft, ob scrollWidth die Fensterbreite übersteigt."
+        }
+      ],
+      "empfehlung": {
+        "text": "Ersetzen Sie feste Breiten durch max-width und flexible Layouts. Häufigste Ursachen sind breite Tabellen, feste Pixelbreiten und nicht umbrechende lange Zeichenketten wie URLs.",
+        "codeBeispiel": {
+          "vorher": ".inhalt { width: 960px; }\n.code { white-space: nowrap; }",
+          "nachher": ".inhalt { max-width: 960px; width: 100%; }\n.code { overflow-wrap: anywhere; }"
+        },
+        "referenzen": [
+          { "titel": "W3C: Reflow verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/reflow.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "1.4.11",
+      "titel": "Nicht-Text-Kontrast",
+      "level": "AA",
+      "prinzip": "wahrnehmbarkeit",
+      "standard": { "eingefuehrtMit": "2.1", "entfallenAb": null },
+      "beschreibung": "Bedienelemente und aussagekräftige Grafiken brauchen mindestens 3:1 Kontrast zu ihrer Umgebung — Feldrahmen, Schaltflächengrenzen, Symbole, Diagrammlinien.",
+      "anwendbarWenn": "button, input, select, textarea, a, svg, [role=button], [role=checkbox], [role=radio]",
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "pixel",
+          "regelIds": ["bedienelement-kontrast", "grafik-kontrast"],
+          "hinweis": "Wertet Screenshots der Elementgrenzen aus. Ergänzt später durch die bildbasierte Bewertung der Ausbaustufe."
+        }
+      ],
+      "empfehlung": {
+        "text": "Verstärken Sie die Rahmen von Eingabefeldern und die Grenzen von Schaltflächen. Ein hellgrauer Rahmen auf weißem Grund erfüllt die Anforderung fast nie. Gleiches gilt für Symbole ohne Beschriftung und für Linien in Diagrammen.",
+        "codeBeispiel": {
+          "vorher": "input { border: 1px solid #ddd; }  /* 1,3:1 */",
+          "nachher": "input { border: 1px solid #767676; }  /* 4,5:1 */"
+        },
+        "referenzen": [
+          { "titel": "W3C: Nicht-Text-Kontrast verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "1.4.12",
+      "titel": "Textabstand",
+      "level": "AA",
+      "prinzip": "wahrnehmbarkeit",
+      "standard": { "eingefuehrtMit": "2.1", "entfallenAb": null },
+      "beschreibung": "Wenn Nutzende Zeilenhöhe, Wort- und Buchstabenabstand vergrößern, darf kein Inhalt verloren gehen oder überlappen.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["avoid-inline-spacing"]
+        },
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["textabstand-test"],
+          "hinweis": "Setzt line-height 1.5, letter-spacing 0.12em, word-spacing 0.16em, Absatzabstand 2em und prüft auf Überlappung und abgeschnittenen Text."
+        }
+      ],
+      "empfehlung": {
+        "text": "Vermeiden Sie feste Höhen bei textführenden Elementen und setzen Sie Abstände nicht über style-Attribute direkt am Element, weil Nutzerstile diese nicht überschreiben können. Verwenden Sie min-height statt height.",
+        "codeBeispiel": {
+          "vorher": "<div style=\"line-height:1.1; height:40px\">Zweizeiliger Text …</div>",
+          "nachher": "<div class=\"hinweis\">Zweizeiliger Text …</div>\n.hinweis { line-height: 1.5; min-height: 2.5rem; }"
+        },
+        "referenzen": [
+          { "titel": "W3C: Textabstand verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/text-spacing.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "1.4.13",
+      "titel": "Inhalt bei Hover oder Fokus",
+      "level": "AA",
+      "prinzip": "wahrnehmbarkeit",
+      "standard": { "eingefuehrtMit": "2.1", "entfallenAb": null },
+      "beschreibung": "Eingeblendete Inhalte wie Tooltips müssen mit der Escape-Taste schließbar sein, mit dem Zeiger erreichbar bleiben und sichtbar bleiben, bis sie bewusst geschlossen werden.",
+      "anwendbarWenn": "[title], [aria-describedby], [data-tooltip], .tooltip, [role=tooltip]",
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["tooltip-escape", "tooltip-hoverbar"],
+          "hinweis": "Löst Hover und Fokus aus, prüft Reaktion auf Escape und ob der eingeblendete Bereich mit dem Zeiger erreichbar ist."
+        },
+        {
+          "typ": "manuell",
+          "frage": "Bleiben eingeblendete Zusatzinhalte sichtbar, solange sie gebraucht werden, und verschwinden sie nicht schon beim leichten Verlassen des auslösenden Elements?"
+        }
+      ],
+      "empfehlung": {
+        "text": "Setzen Sie eingeblendete Inhalte so um, dass der Bereich zwischen auslösendem Element und Einblendung überfahrbar bleibt. Ergänzen Sie einen Escape-Handler. Das title-Attribut erfüllt die Anforderung nicht — es ist weder per Tastatur erreichbar noch überfahrbar.",
+        "codeBeispiel": {
+          "vorher": "<button title=\"Diese Angabe erscheint auf der Rechnung\">?</button>",
+          "nachher": "<button aria-describedby=\"tip1\">?</button>\n<div role=\"tooltip\" id=\"tip1\">Diese Angabe erscheint auf der Rechnung</div>\n<!-- schließt bei Escape, bleibt bei Hover bestehen -->"
+        },
+        "referenzen": [
+          { "titel": "W3C: Inhalt bei Hover oder Fokus verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/content-on-hover-or-focus.html" }
+        ]
+      }
+    }
+  ]
+}

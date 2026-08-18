@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Barrierefreiheit prüfen – Musterakademie</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; }
+
+    :focus-visible { outline: 3px solid #005fcc; outline-offset: 2px; }
+
+    .hinweis { color: #595959; background: #ffffff; }          /* 7:1 */
+    input, select, textarea { border: 1px solid #767676; padding: 6px; }  /* 4,5:1 */
+
+    .breit { max-width: 100%; width: 100%; border-collapse: collapse; }
+    .breit th, .breit td { border: 1px solid #767676; padding: 6px 10px; text-align: left; }
+
+    .luftig { min-height: 2.5rem; line-height: 1.5; }
+
+    .laufband { animation: schieben 6s linear infinite; }
+    .laufband[data-pausiert] { animation-play-state: paused; }
+    @keyframes schieben { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    @media (prefers-reduced-motion: reduce) { .laufband { animation: none; } }
+
+    button, .ziel { min-width: 24px; min-height: 24px; padding: 4px; }
+
+    .kopf { position: fixed; top: 0; left: 0; right: 0; height: 72px; background: #eeeeee; }
+    main { margin-top: 72px; }
+    a, button, input, select, textarea, :target { scroll-margin-top: 82px; }
+
+    .sprunglink { position: absolute; left: -9999px; top: 0; background: #ffffff; padding: 8px; }
+    .sprunglink:focus { left: 0; z-index: 100; }
+  </style>
+</head>
+<body>
+
+<a class="sprunglink" href="#inhalt">Zum Hauptinhalt springen</a>
+
+<header class="kopf">
+  <nav aria-label="Hauptnavigation">
+    <a href="/">Start</a>
+    <a href="/leistungen">Leistungen</a>
+    <a href="/kontakt">Kontakt</a>
+  </nav>
+</header>
+
+<main id="inhalt">
+
+  <h1>Willkommen bei der Musterakademie</h1>
+
+  <img src="team.jpg" alt="Vier Personen des Schulungsteams vor einem Whiteboard" width="320" height="200">
+
+  <img src="trennlinie.png" alt="" width="320" height="8">
+
+  <div class="aktion">
+    <p><strong>20 Prozent Rabatt auf alle Kurse bis 31.12.</strong></p>
+  </div>
+
+  <h2>Öffnungszeiten und Anfahrt</h2>
+
+  <ul>
+    <li>Beratung</li>
+    <li>Schulung</li>
+    <li>Prüfung</li>
+  </ul>
+
+  <p>Klicken Sie auf die Schaltfläche „Weiter“ (grün, unten rechts), um fortzufahren.</p>
+
+  <p class="hinweis">
+    Lesen Sie unsere <a href="/agb">Allgemeinen Geschäftsbedingungen</a>.
+  </p>
+
+  <p><a href="/datenschutz">Datenschutzerklärung lesen</a></p>
+
+  <p>Unser Leitsatz: <span lang="en">We make the web accessible for everyone.</span></p>
+
+  <h2>Anfrage</h2>
+
+  <form action="/anfrage" method="post">
+
+    <p>
+      <label for="name">Ihr Name</label>
+      <input type="text" id="name" name="name" autocomplete="name">
+    </p>
+
+    <p>
+      <label for="mail">E-Mail</label>
+      <input type="email" id="mail" name="mail" autocomplete="email">
+    </p>
+
+    <p>
+      <label for="datum">Wunschtermin</label>
+      <span id="datum-hilfe">Format: TT.MM.JJJJ, zum Beispiel 12.03.2027</span>
+      <input type="text" id="datum" name="datum" aria-describedby="datum-hilfe">
+    </p>
+
+    <p>
+      <label for="anliegen">Anliegen</label>
+      <select id="anliegen" name="anliegen">
+        <option>Beratung</option>
+        <option>Schulung</option>
+      </select>
+    </p>
+
+    <p>
+      <label for="sprache">Sprache</label>
+      <select id="sprache" name="sprache">
+        <option>Deutsch</option>
+        <option>English</option>
+      </select>
+      <button type="submit" name="aktion" value="sprache">Sprache wechseln</button>
+    </p>
+
+    <p>
+      <button type="submit">Absenden</button>
+      <button type="reset">Leeren</button>
+      <button type="button" class="ziel" aria-label="Hinweis schließen">&times;</button>
+    </p>
+
+  </form>
+
+  <h2>Kurstermine</h2>
+
+  <table class="breit">
+    <caption>Kommende Kurstermine mit freien Plätzen</caption>
+    <thead>
+      <tr><th scope="col">Kurs</th><th scope="col">Datum</th><th scope="col">Plätze</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Grundlagen</td><td>12.03.</td><td>8</td></tr>
+      <tr><td>Aufbau</td><td>19.03.</td><td>3</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Aufzeichnung der Einführung</h2>
+
+  <video src="schulung.mp4" controls width="320">
+    <track kind="captions" src="schulung-de.vtt" srclang="de" label="Deutsch" default>
+  </video>
+  <p><a href="/schulung-transkript">Transkript der Einführung lesen</a></p>
+
+  <div id="box-1">Erster Kasten</div>
+  <div id="box-2">Zweiter Kasten</div>
+
+  <p>
+    <button type="button" aria-describedby="tip1">Erläuterung zur Rechnungsangabe</button>
+  </p>
+  <p id="tip1" class="hinweis">Diese Angabe erscheint auf der Rechnung.</p>
+
+  <p>
+    <input type="text" aria-label="Erstes Feld">
+    <input type="text" aria-label="Zweites Feld">
+    <input type="text" aria-label="Drittes Feld">
+  </p>
+
+  <p class="luftig">Dieser Text bleibt auch bei größerem Zeilenabstand vollständig sichtbar.</p>
+
+  <p>
+    <span class="laufband">Laufende Meldung</span>
+    <button type="button" onclick="pausieren(this)">Laufband anhalten</button>
+  </p>
+
+  <div id="status" role="status" aria-live="polite"></div>
+
+</main>
+
+<script>
+  function pausieren(schalter) {
+    var band = document.querySelector('.laufband');
+    var laeuft = !band.hasAttribute('data-pausiert');
+    if (laeuft) { band.setAttribute('data-pausiert', ''); schalter.textContent = 'Laufband fortsetzen'; }
+    else { band.removeAttribute('data-pausiert'); schalter.textContent = 'Laufband anhalten'; }
+  }
+
+  setTimeout(function () {
+    document.getElementById('status').textContent = '12 Treffer gefunden';
+  }, 1500);
+</script>
+
+</body>
+</html>

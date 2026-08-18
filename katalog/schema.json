@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://accessibility-checker.local/katalog/schema.json",
+  "title": "Prüfkatalog",
+  "type": "object",
+  "required": ["prinzip", "kriterien"],
+  "additionalProperties": false,
+  "properties": {
+    "prinzip": {
+      "enum": ["wahrnehmbarkeit", "bedienbarkeit", "verstaendlichkeit", "robustheit"]
+    },
+    "kriterien": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/kriterium" }
+    }
+  },
+
+  "$defs": {
+    "kriterium": {
+      "type": "object",
+      "required": ["id", "titel", "level", "prinzip", "standard", "beschreibung", "anwendbarWenn", "pruefungen", "empfehlung"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[1-4]\\.[0-9]+\\.[0-9]+$"
+        },
+        "titel": { "type": "string", "minLength": 3 },
+        "level": { "enum": ["A", "AA"] },
+        "prinzip": {
+          "enum": ["wahrnehmbarkeit", "bedienbarkeit", "verstaendlichkeit", "robustheit"]
+        },
+        "standard": {
+          "type": "object",
+          "required": ["eingefuehrtMit", "entfallenAb"],
+          "additionalProperties": false,
+          "properties": {
+            "eingefuehrtMit": { "enum": ["2.0", "2.1", "2.2"] },
+            "entfallenAb": { "enum": ["2.2", null] }
+          }
+        },
+        "beschreibung": { "type": "string", "minLength": 20 },
+        "anwendbarWenn": {
+          "type": ["string", "null"],
+          "description": "CSS-Selektor. null bedeutet: immer anwendbar."
+        },
+        "nurMehrseitig": {
+          "type": "boolean",
+          "default": false,
+          "description": "Nur bei Prüfprofil oder Gesamtprüfung auswertbar."
+        },
+        "pruefungen": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/pruefung" }
+        },
+        "empfehlung": { "$ref": "#/$defs/empfehlung" }
+      }
+    },
+
+    "pruefung": {
+      "type": "object",
+      "required": ["typ"],
+      "properties": {
+        "typ": { "enum": ["auto", "llm", "manuell"] },
+        "hinweis": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "typ": { "const": "auto" } } },
+          "then": {
+            "required": ["engine", "regelIds"],
+            "properties": {
+              "engine": { "enum": ["axe", "ibm", "html", "sprache", "ocr", "pixel", "eigen"] },
+              "regelIds": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "typ": { "const": "llm" } } },
+          "then": {
+            "required": ["pruefungsId", "buendelGroesse"],
+            "properties": {
+              "pruefungsId": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+              "buendelGroesse": { "type": "integer", "minimum": 1, "maximum": 50 },
+              "sammelSelektor": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "typ": { "const": "manuell" } } },
+          "then": {
+            "required": ["frage"],
+            "properties": {
+              "frage": { "type": "string", "minLength": 10 },
+              "kontextSelektor": { "type": "string" }
+            }
+          }
+        }
+      ]
+    },
+
+    "empfehlung": {
+      "type": "object",
+      "required": ["text", "referenzen"],
+      "additionalProperties": false,
+      "properties": {
+        "text": { "type": "string", "minLength": 20 },
+        "codeBeispiel": {
+          "type": "object",
+          "required": ["vorher", "nachher"],
+          "additionalProperties": false,
+          "properties": {
+            "vorher": { "type": "string" },
+            "nachher": { "type": "string" }
+          }
+        },
+        "referenzen": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["titel", "url"],
+            "additionalProperties": false,
+            "properties": {
+              "titel": { "type": "string" },
+              "url": { "type": "string", "format": "uri" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

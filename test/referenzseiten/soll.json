@@ -1,0 +1,69 @@
+{
+  "beschreibung": "Sollwerte für die Verifikation. 'mangelhaft' listet die eingebauten Verstöße, 'sauber' muss befundfrei bleiben.",
+  "standard": "2.2",
+  "hinweis": "Der Standard steht auf 2.2, damit auch 2.4.11 und 2.5.8 mitgeprüft werden. Unter 2.1 entfallen diese beiden, dafür gilt 4.1.1.",
+
+  "seiten": {
+    "mangelhaft.html": {
+      "erwarteteVerstoesse": [
+        { "kriterium": "1.1.1", "stufe": "auto", "stelle": "img[src='team.jpg']", "was": "alt-Attribut fehlt" },
+        { "kriterium": "1.1.1", "stufe": "manuell", "stelle": "img[src='trennlinie.png']", "was": "alt enthält den Dateinamen" },
+        { "kriterium": "1.2.2", "stufe": "auto", "stelle": "video", "was": "keine Untertitelspur" },
+        { "kriterium": "1.3.1", "stufe": "auto", "stelle": "table", "was": "Kopfzellen als td statt th" },
+        { "kriterium": "1.3.1", "stufe": "auto", "stelle": "div[style*='font-weight:bold']", "was": "Überschrift als gestaltetes div" },
+        { "kriterium": "1.3.1", "stufe": "auto", "stelle": "p", "was": "Liste als Text mit Zeilenumbrüchen" },
+        { "kriterium": "1.3.3", "stufe": "llm", "stelle": "p", "was": "Anweisung nur über Farbe und Position" },
+        { "kriterium": "1.3.5", "stufe": "auto", "stelle": "input[name='mail']", "was": "autocomplete fehlt" },
+        { "kriterium": "1.4.1", "stufe": "auto", "stelle": "a[href='/agb']", "was": "Link im Fließtext nur farblich abgesetzt" },
+        { "kriterium": "1.4.2", "stufe": "auto", "stelle": "video[autoplay]", "was": "Ton startet selbsttätig" },
+        { "kriterium": "1.4.3", "stufe": "auto", "stelle": ".schwach", "was": "Kontrast 2,85:1 statt 4,5:1" },
+        { "kriterium": "1.4.4", "stufe": "auto", "stelle": "meta[name='viewport']", "was": "user-scalable=no" },
+        { "kriterium": "1.4.5", "stufe": "auto", "stelle": "img[src='aktion.png']", "was": "Text als Bild" },
+        { "kriterium": "1.4.10", "stufe": "auto", "stelle": ".breit", "was": "feste Breite 1200px erzwingt seitliches Scrollen bei 320px" },
+        { "kriterium": "1.4.11", "stufe": "auto", "stelle": "input", "was": "Feldrahmen 1,3:1 statt 3:1" },
+        { "kriterium": "1.4.12", "stufe": "auto", "stelle": ".eng", "was": "feste Höhe schneidet bei erhöhtem Zeilenabstand ab" },
+        { "kriterium": "1.4.13", "stufe": "auto", "stelle": "button[title]", "was": "Zusatzinhalt nur über title-Attribut" },
+
+        { "kriterium": "2.1.1", "stufe": "auto", "stelle": "div.btn[onclick]", "was": "klickbares div ohne Tastaturzugang" },
+        { "kriterium": "2.2.2", "stufe": "auto", "stelle": ".laufband", "was": "dauerhafte Animation ohne Anhalten" },
+        { "kriterium": "2.4.1", "stufe": "auto", "stelle": "body", "was": "kein Sprunglink, keine Landmarken" },
+        { "kriterium": "2.4.2", "stufe": "llm", "stelle": "title", "was": "nichtssagender Titel 'Startseite'" },
+        { "kriterium": "2.4.3", "stufe": "auto", "stelle": "input[tabindex]", "was": "positive tabindex-Werte kehren die Reihenfolge um" },
+        { "kriterium": "2.4.4", "stufe": "llm", "stelle": "a[href='/datenschutz']", "was": "Linktext 'mehr'" },
+        { "kriterium": "2.4.4", "stufe": "llm", "stelle": "a[href='/agb']", "was": "Linktext 'hier'" },
+        { "kriterium": "2.4.6", "stufe": "llm", "stelle": "h2", "was": "nichtssagende Überschrift 'Informationen'" },
+        { "kriterium": "2.4.7", "stufe": "auto", "stelle": "*:focus", "was": "outline: none ohne Ersatz" },
+        { "kriterium": "2.4.11", "stufe": "auto", "stelle": ".kopf", "was": "feste Kopfzeile verdeckt fokussierte Elemente", "nurStandard": "2.2" },
+        { "kriterium": "2.5.3", "stufe": "auto", "stelle": "button[aria-label='Formular zuruecksetzen']", "was": "sichtbare Beschriftung nicht im zugänglichen Namen" },
+        { "kriterium": "2.5.8", "stufe": "auto", "stelle": ".winzig", "was": "Ziel 16x16 statt mindestens 24x24", "nurStandard": "2.2" },
+
+        { "kriterium": "3.1.1", "stufe": "auto", "stelle": "html", "was": "lang-Attribut fehlt" },
+        { "kriterium": "3.1.2", "stufe": "auto", "stelle": "p", "was": "englischer Satz ohne lang-Kennzeichnung" },
+        { "kriterium": "3.2.2", "stufe": "auto", "stelle": "select[name='sprache']", "was": "Formular wird bei Änderung abgesendet" },
+        { "kriterium": "3.3.2", "stufe": "auto", "stelle": "input[name='name']", "was": "nur Platzhalter statt Beschriftung" },
+        { "kriterium": "3.3.2", "stufe": "auto", "stelle": "input[name='mail']", "was": "Beschriftung nicht verknüpft" },
+        { "kriterium": "3.3.2", "stufe": "llm", "stelle": "label[for='feld3']", "was": "nichtssagende Beschriftung 'Feld 3'" },
+
+        { "kriterium": "4.1.1", "stufe": "auto", "stelle": "#box", "was": "doppelte id", "nurStandard": "2.1" },
+        { "kriterium": "4.1.2", "stufe": "auto", "stelle": "button:empty", "was": "Schaltfläche ohne zugänglichen Namen" },
+        { "kriterium": "4.1.2", "stufe": "auto", "stelle": "select[name='anliegen']", "was": "Auswahlfeld ohne zugänglichen Namen" },
+        { "kriterium": "4.1.3", "stufe": "auto", "stelle": "#status", "was": "Statusmeldung ohne Live-Bereich" }
+      ],
+
+      "erwarteteNichtAnwendbar": [
+        "1.2.4", "2.4.5", "3.2.3", "3.2.4", "3.2.6"
+      ]
+    },
+
+    "sauber.html": {
+      "erwarteteVerstoesse": [],
+      "hinweis": "Jeder Befund auf dieser Seite ist ein Fehlalarm-Verdacht und muss einzeln bewertet werden."
+    }
+  },
+
+  "zielwerte": {
+    "erkennungsquote_auto": 0.95,
+    "fehlalarmquote": 0.05,
+    "erlaeuterung": "Bezugsgröße für die Erkennungsquote sind ausschließlich die Verstöße mit stufe='auto'. Verstöße der Stufen llm und manuell werden gesondert bewertet, weil ihr Urteil vom Modell beziehungsweise vom Menschen abhängt."
+  }
+}

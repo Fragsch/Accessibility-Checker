@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<!-- 3.1.1 VERSTOSS: lang-Attribut fehlt -->
+<html>
+<head>
+  <meta charset="utf-8">
+  <!-- 1.4.4 VERSTOSS: Vergroessern unterbunden -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <!-- 2.4.2 VERSTOSS: nichtssagender Titel -->
+  <title>Startseite</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; }
+    /* 2.4.7 VERSTOSS: Fokus unsichtbar */
+    *:focus { outline: none; }
+    /* 1.4.3 VERSTOSS: Kontrast 2,85:1 */
+    .schwach { color: #999999; background: #ffffff; }
+    /* 1.4.11 VERSTOSS: Feldrahmen 1,3:1 */
+    input, select, textarea { border: 1px solid #dddddd; padding: 4px; }
+    /* 1.4.10 VERSTOSS: feste Breite erzwingt seitliches Scrollen */
+    .breit { width: 1200px; }
+    /* 1.4.12 VERSTOSS: feste Hoehe schneidet bei groesserem Zeilenabstand ab */
+    .eng { height: 34px; line-height: 1.05; overflow: hidden; }
+    /* 2.2.2 VERSTOSS: dauerhafte Animation ohne Anhalten */
+    .laufband { animation: schieben 6s linear infinite; }
+    @keyframes schieben { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    /* 2.5.8 VERSTOSS: Ziel kleiner als 24 x 24 */
+    .winzig { width: 16px; height: 16px; padding: 0; }
+    /* 2.4.11 VERSTOSS: feste Kopfzeile ohne scroll-margin verdeckt den Fokus */
+    .kopf { position: fixed; top: 0; left: 0; right: 0; height: 72px; background: #eeeeee; }
+    main { margin-top: 72px; }
+  </style>
+</head>
+<body>
+
+<div class="kopf">
+  <!-- 2.4.1 VERSTOSS: kein Sprunglink, keine Landmarken -->
+  <div>
+    <a href="/">Start</a>
+    <a href="/leistungen">Leistungen</a>
+    <a href="/kontakt">Kontakt</a>
+  </div>
+</div>
+
+<main>
+
+  <!-- 1.3.1 VERSTOSS: Ueberschrift als gestaltetes div -->
+  <div style="font-size:2rem; font-weight:bold">Willkommen</div>
+
+  <!-- 1.1.1 VERSTOSS: alt fehlt -->
+  <img src="team.jpg" width="320" height="200">
+
+  <!-- 1.1.1 VERSTOSS: alt ist der Dateiname -->
+  <img src="trennlinie.png" alt="trennlinie.png" width="320" height="8">
+
+  <!-- 1.4.5 VERSTOSS: Text als Bild -->
+  <img src="aktion.png" alt="20 Prozent Rabatt auf alle Kurse bis 31.12." width="600" height="120">
+
+  <!-- 2.4.6 VERSTOSS: nichtssagende Ueberschrift -->
+  <h2>Informationen</h2>
+
+  <!-- 1.3.1 VERSTOSS: Liste als Text mit Zeilenumbruechen -->
+  <p>
+    &bull; Beratung<br>
+    &bull; Schulung<br>
+    &bull; Pruefung
+  </p>
+
+  <!-- 1.3.3 VERSTOSS: Anweisung nur ueber Farbe und Position -->
+  <p>Klicken Sie auf die gruene Schaltflaeche unten rechts, um fortzufahren.</p>
+
+  <!-- 1.4.1 VERSTOSS: Link im Fliesstext nur farblich abgesetzt -->
+  <p class="schwach">
+    Unsere Bedingungen finden Sie
+    <a href="/agb" style="color:#0066cc; text-decoration:none">hier</a>.
+  </p>
+
+  <!-- 2.4.4 VERSTOSS: nichtssagender Linktext -->
+  <p><a href="/datenschutz">mehr</a></p>
+
+  <!-- 3.1.2 VERSTOSS: englischer Satz ohne lang-Kennzeichnung -->
+  <p>Unser Leitsatz: We make the web accessible for everyone.</p>
+
+  <h2>Anfrage</h2>
+
+  <form action="/anfrage" method="post">
+
+    <!-- 3.3.2 VERSTOSS: Beschriftung fehlt, nur Platzhalter -->
+    <input type="text" name="name" placeholder="Ihr Name">
+
+    <!-- 1.3.5 VERSTOSS: autocomplete fehlt -->
+    <!-- 3.3.2 VERSTOSS: keine verknuepfte Beschriftung -->
+    <span>E-Mail</span>
+    <input type="email" name="mail">
+
+    <!-- 3.3.2 VERSTOSS: nichtssagende Beschriftung, Format nicht erklaert -->
+    <label for="feld3">Feld 3</label>
+    <input type="text" id="feld3" name="datum">
+
+    <!-- 4.1.2 VERSTOSS: Auswahlfeld ohne zugaenglichen Namen -->
+    <select name="anliegen">
+      <option>Beratung</option>
+      <option>Schulung</option>
+    </select>
+
+    <!-- 3.2.2 VERSTOSS: Kontextwechsel bei Eingabe -->
+    <select name="sprache" onchange="this.form.submit()">
+      <option>Deutsch</option>
+      <option>English</option>
+    </select>
+
+    <!-- 2.1.1 VERSTOSS: klickbares div statt button -->
+    <div class="btn" onclick="alert('gesendet')">Absenden</div>
+
+    <!-- 2.5.3 VERSTOSS: aria-label enthaelt die sichtbare Beschriftung nicht -->
+    <button type="button" aria-label="Formular zuruecksetzen">Leeren</button>
+
+    <!-- 2.5.8 VERSTOSS: Ziel zu klein -->
+    <button type="button" class="winzig" aria-label="Schliessen">&times;</button>
+
+  </form>
+
+  <h2>Tabelle</h2>
+
+  <!-- 1.3.1 VERSTOSS: Kopfzellen als normale Zellen -->
+  <table class="breit">
+    <tr><td>Kurs</td><td>Datum</td><td>Plaetze</td></tr>
+    <tr><td>Grundlagen</td><td>12.03.</td><td>8</td></tr>
+    <tr><td>Aufbau</td><td>19.03.</td><td>3</td></tr>
+  </table>
+
+  <h2>Medien</h2>
+
+  <!-- 1.2.2 VERSTOSS: Video ohne Untertitelspur -->
+  <!-- 1.4.2 VERSTOSS: Ton startet selbsttaetig -->
+  <video src="schulung.mp4" autoplay controls width="320"></video>
+
+  <!-- 4.1.1 VERSTOSS: doppelte id -->
+  <div id="box">Erster Kasten</div>
+  <div id="box">Zweiter Kasten</div>
+
+  <!-- 4.1.2 VERSTOSS: Schaltflaeche ohne zugaenglichen Namen -->
+  <button type="button"></button>
+
+  <!-- 1.4.13 VERSTOSS: Zusatzinhalt nur ueber title -->
+  <button type="button" title="Diese Angabe erscheint auf der Rechnung">?</button>
+
+  <!-- 2.4.3 VERSTOSS: positive tabindex-Werte kehren die Reihenfolge um -->
+  <input type="text" tabindex="3" aria-label="Drittes Feld">
+  <input type="text" tabindex="1" aria-label="Erstes Feld">
+  <input type="text" tabindex="2" aria-label="Zweites Feld">
+
+  <div class="eng">Dieser Text wird bei groesserem Zeilenabstand abgeschnitten, weil die Hoehe fest ist.</div>
+
+  <div class="laufband">Dauerhaft laufende Meldung ohne Moeglichkeit zum Anhalten</div>
+
+  <!-- 4.1.3 VERSTOSS: Statusmeldung ohne Live-Bereich -->
+  <div id="status"></div>
+
+</main>
+
+<script>
+  // 4.1.3 VERSTOSS: Meldung erscheint ohne Ankuendigung
+  setTimeout(function () {
+    document.getElementById('status').textContent = '12 Treffer gefunden';
+  }, 1500);
+</script>
+
+</body>
+</html>

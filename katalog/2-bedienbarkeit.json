@@ -1,0 +1,593 @@
+{
+  "prinzip": "bedienbarkeit",
+  "kriterien": [
+    {
+      "id": "2.1.1",
+      "titel": "Tastatur",
+      "level": "A",
+      "prinzip": "bedienbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Alles, was mit der Maus geht, muss auch mit der Tastatur gehen — ohne besondere Zeitvorgaben für einzelne Tastenanschläge.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["scrollable-region-focusable", "frame-focusable-content", "nested-interactive"]
+        },
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["klickbar-ohne-fokus"],
+          "hinweis": "Findet Elemente mit Klick-Behandlung, die weder von Haus aus fokussierbar sind noch tabindex tragen."
+        }
+      ],
+      "empfehlung": {
+        "text": "Verwenden Sie button und a statt div und span mit Klick-Behandlung. Diese Elemente sind von Haus aus fokussierbar und reagieren auf Enter und Leertaste. Wenn ein eigenes Element unvermeidbar ist, braucht es tabindex=\"0\", eine passende role und eine Tastaturbehandlung.",
+        "codeBeispiel": {
+          "vorher": "<div class=\"btn\" onclick=\"speichern()\">Speichern</div>",
+          "nachher": "<button type=\"button\" onclick=\"speichern()\">Speichern</button>"
+        },
+        "referenzen": [
+          { "titel": "W3C: Tastatur verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/keyboard.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "2.1.2",
+      "titel": "Keine Tastaturfalle",
+      "level": "A",
+      "prinzip": "bedienbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Wer mit der Tastatur in einen Bereich gelangt, muss ihn auch wieder verlassen können — mit Tabulator, Pfeiltasten oder Escape.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["tastaturfalle"],
+          "hinweis": "Tabbt die Seite durch und meldet, wenn der Fokus zwischen wenigen Elementen kreist oder nicht weiterwandert."
+        }
+      ],
+      "empfehlung": {
+        "text": "Prüfen Sie eingebettete Inhalte, eigene Dialoge und Editoren. Ein Dialog darf den Fokus zwar halten, muss aber über Escape verlassbar sein. Vermeiden Sie Fokusbehandlungen, die den Fokus bedingungslos zurücksetzen.",
+        "codeBeispiel": {
+          "vorher": "feld.addEventListener('blur', () => feld.focus());",
+          "nachher": "// Fokus nur innerhalb eines geöffneten Dialogs halten,\n// und Escape schließt den Dialog\ndialog.addEventListener('keydown', e => {\n  if (e.key === 'Escape') dialogSchliessen();\n});"
+        },
+        "referenzen": [
+          { "titel": "W3C: Keine Tastaturfalle verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/no-keyboard-trap.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "2.1.4",
+      "titel": "Tastenkurzbefehle",
+      "level": "A",
+      "prinzip": "bedienbarkeit",
+      "standard": { "eingefuehrtMit": "2.1", "entfallenAb": null },
+      "beschreibung": "Kurzbefehle aus einer einzelnen Taste müssen abschaltbar, umbelegbar oder auf den Fokus beschränkt sein — sonst lösen sie bei Spracheingabe oder unbeabsichtigtem Tastendruck ungewollte Aktionen aus.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["accesskeys"]
+        },
+        {
+          "typ": "manuell",
+          "frage": "Gibt es Kurzbefehle aus einer einzelnen Taste ohne Zusatztaste? Falls ja: Lassen sie sich abschalten oder umbelegen, oder wirken sie nur bei fokussiertem Element?"
+        }
+      ],
+      "empfehlung": {
+        "text": "Verwenden Sie Kurzbefehle nur mit Zusatztaste, oder beschränken Sie sie auf das gerade fokussierte Element. Bieten Sie andernfalls eine Einstellung zum Abschalten an.",
+        "codeBeispiel": {
+          "vorher": "document.addEventListener('keydown', e => {\n  if (e.key === 's') speichern();\n});",
+          "nachher": "document.addEventListener('keydown', e => {\n  if (e.key === 's' && (e.ctrlKey || e.metaKey)) {\n    e.preventDefault();\n    speichern();\n  }\n});"
+        },
+        "referenzen": [
+          { "titel": "W3C: Tastenkurzbefehle verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/character-key-shortcuts.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "2.2.1",
+      "titel": "Zeiteinteilung anpassbar",
+      "level": "A",
+      "prinzip": "bedienbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Zeitbegrenzungen müssen abschaltbar, verlängerbar oder ausreichend lang sein. Wer langsamer liest oder tippt, darf nicht aus dem Vorgang fallen.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["meta-refresh"]
+        },
+        {
+          "typ": "manuell",
+          "frage": "Gibt es Zeitbegrenzungen — Sitzungsablauf, Formularfristen, automatische Weiterleitungen? Falls ja: Lassen sie sich abschalten oder mindestens auf das Zehnfache verlängern, und wird rechtzeitig gewarnt?"
+        }
+      ],
+      "empfehlung": {
+        "text": "Warnen Sie mindestens 20 Sekunden vor Ablauf und bieten Sie eine Verlängerung mit einem einzigen Bedienschritt an. Entfernen Sie automatische Weiterleitungen über meta refresh.",
+        "codeBeispiel": {
+          "vorher": "<meta http-equiv=\"refresh\" content=\"30; url=/start\">",
+          "nachher": "<!-- Statt automatischer Weiterleitung: -->\n<p>Ihre Sitzung endet in <span id=\"rest\">2:00</span> Minuten.\n  <button type=\"button\" onclick=\"verlaengern()\">Sitzung verlängern</button>\n</p>"
+        },
+        "referenzen": [
+          { "titel": "W3C: Zeiteinteilung anpassbar verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/timing-adjustable.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "2.2.2",
+      "titel": "Pausieren, beenden, ausblenden",
+      "level": "A",
+      "prinzip": "bedienbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Bewegte, blinkende oder sich selbst aktualisierende Inhalte, die länger als fünf Sekunden laufen, brauchen eine Möglichkeit zum Anhalten.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["blink", "marquee"]
+        },
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["dauerhafte-animation"],
+          "hinweis": "Erkennt CSS-Animationen mit unendlicher Wiederholung sowie Karussells ohne Pausenschaltfläche."
+        },
+        {
+          "typ": "manuell",
+          "frage": "Lassen sich Karussells, Laufschriften und automatisch aktualisierende Bereiche anhalten?"
+        }
+      ],
+      "empfehlung": {
+        "text": "Ergänzen Sie eine sichtbare Schaltfläche zum Anhalten. Berücksichtigen Sie zusätzlich die Systemeinstellung für reduzierte Bewegung.",
+        "codeBeispiel": {
+          "vorher": ".karussell { animation: lauf 10s infinite; }",
+          "nachher": ".karussell { animation: lauf 10s infinite; }\n.karussell[data-pausiert] { animation-play-state: paused; }\n\n@media (prefers-reduced-motion: reduce) {\n  .karussell { animation: none; }\n}"
+        },
+        "referenzen": [
+          { "titel": "W3C: Pausieren, beenden, ausblenden verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/pause-stop-hide.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "2.3.1",
+      "titel": "Dreimaliges Blitzen",
+      "level": "A",
+      "prinzip": "bedienbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Nichts darf öfter als dreimal pro Sekunde aufblitzen. Schnelle Helligkeitswechsel können epileptische Anfälle auslösen.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "manuell",
+          "frage": "Gibt es Inhalte, die häufiger als dreimal pro Sekunde aufblitzen oder stark die Helligkeit wechseln — etwa in Videos, Animationen oder Werbeflächen?"
+        }
+      ],
+      "empfehlung": {
+        "text": "Entfernen Sie schnelle Blitzeffekte. Bei eingebundenen Videos prüfen Sie die ersten Sekunden besonders sorgfältig und weisen Sie im Zweifel vorab auf den Inhalt hin.",
+        "referenzen": [
+          { "titel": "W3C: Dreimaliges Blitzen verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/three-flashes-or-below-threshold.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "2.4.1",
+      "titel": "Blöcke umgehen",
+      "level": "A",
+      "prinzip": "bedienbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Wiederkehrende Bereiche wie die Hauptnavigation müssen übersprungen werden können — über einen Sprunglink oder eine Gliederung in Bereiche.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["bypass", "skip-link", "region", "landmark-one-main", "landmark-unique"]
+        }
+      ],
+      "empfehlung": {
+        "text": "Setzen Sie als erstes Element im body einen Sprunglink zum Hauptinhalt. Er darf visuell verborgen sein, muss aber bei Tastaturfokus sichtbar werden. Ergänzend gliedern Sie die Seite mit header, nav, main und footer.",
+        "codeBeispiel": {
+          "vorher": "<body>\n  <nav>… 30 Links …</nav>\n  <div id=\"inhalt\">…</div>",
+          "nachher": "<body>\n  <a class=\"sprunglink\" href=\"#inhalt\">Zum Hauptinhalt springen</a>\n  <nav>… 30 Links …</nav>\n  <main id=\"inhalt\">…</main>\n\n<!-- .sprunglink: position absolute, außerhalb des Sichtbereichs;\n     .sprunglink:focus: sichtbar -->"
+        },
+        "referenzen": [
+          { "titel": "W3C: Blöcke umgehen verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/bypass-blocks.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "2.4.2",
+      "titel": "Seite mit Titel versehen",
+      "level": "A",
+      "prinzip": "bedienbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Jede Seite braucht einen Titel, der ihren Zweck beschreibt. Er ist das Erste, was ein Screenreader vorliest, und er steht in der Tab-Leiste und in Lesezeichen.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["document-title"]
+        },
+        {
+          "typ": "llm",
+          "pruefungsId": "seitentitel",
+          "buendelGroesse": 1
+        }
+      ],
+      "empfehlung": {
+        "text": "Beginnen Sie mit dem Seitenzweck, dann folgt der Name des Angebots. So bleibt der Unterschied auch bei vielen offenen Tabs erkennbar. Vermeiden Sie auf allen Seiten identische Titel.",
+        "codeBeispiel": {
+          "vorher": "<title>Startseite</title>\n<title>Startseite</title>  <!-- auf jeder Unterseite -->",
+          "nachher": "<title>Kontakt – Musterfirma</title>\n<title>Barrierefreiheit prüfen – Musterfirma</title>"
+        },
+        "referenzen": [
+          { "titel": "W3C: Seitentitel verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/page-titled.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "2.4.3",
+      "titel": "Fokus-Reihenfolge",
+      "level": "A",
+      "prinzip": "bedienbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Der Tastaturfokus muss in einer sinnvollen Reihenfolge wandern, die Bedeutung und Bedienbarkeit erhält.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["tabindex"]
+        },
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["tab-durchlauf-reihenfolge"],
+          "hinweis": "Tabbt die Seite durch und vergleicht die Fokusreihenfolge mit der visuellen Anordnung."
+        },
+        {
+          "typ": "llm",
+          "pruefungsId": "fokusreihenfolge",
+          "buendelGroesse": 1
+        }
+      ],
+      "empfehlung": {
+        "text": "Verzichten Sie auf positive tabindex-Werte — sie hebeln die natürliche Reihenfolge aus und sind kaum wartbar. Ordnen Sie stattdessen den Quelltext richtig an. Bei geöffneten Dialogen setzen Sie den Fokus in den Dialog und geben ihn beim Schließen an das auslösende Element zurück.",
+        "codeBeispiel": {
+          "vorher": "<input tabindex=\"3\"> <input tabindex=\"1\"> <input tabindex=\"2\">",
+          "nachher": "<input> <input> <input>  <!-- Quelltextreihenfolge = Fokusreihenfolge -->"
+        },
+        "referenzen": [
+          { "titel": "W3C: Fokus-Reihenfolge verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/focus-order.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "2.4.4",
+      "titel": "Linkzweck (im Kontext)",
+      "level": "A",
+      "prinzip": "bedienbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Aus dem Linktext muss hervorgehen, wohin er führt. Screenreader können sich alle Links einer Seite als Liste ausgeben lassen — dort steht kein umgebender Text mehr.",
+      "anwendbarWenn": "a[href]",
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["link-name", "identical-links-same-purpose", "link-in-text-block"]
+        },
+        {
+          "typ": "llm",
+          "pruefungsId": "linkzweck",
+          "buendelGroesse": 20,
+          "sammelSelektor": "a[href]"
+        }
+      ],
+      "empfehlung": {
+        "text": "Ersetzen Sie „hier klicken“, „mehr“ und „weiterlesen“ durch das Ziel des Links. Muss der kurze Text bleiben, ergänzen Sie eine verborgene Erweiterung oder ein aria-label. Bildlinks brauchen einen Alternativtext, der das Ziel benennt.",
+        "codeBeispiel": {
+          "vorher": "<p>Unsere Datenschutzerklärung finden Sie <a href=\"/datenschutz\">hier</a>.</p>",
+          "nachher": "<p>Lesen Sie unsere <a href=\"/datenschutz\">Datenschutzerklärung</a>.</p>"
+        },
+        "referenzen": [
+          { "titel": "W3C: Linkzweck verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/link-purpose-in-context.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "2.4.5",
+      "titel": "Verschiedene Methoden",
+      "level": "AA",
+      "prinzip": "bedienbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Es muss mindestens zwei Wege geben, eine Seite zu erreichen — etwa Navigation und Suche, oder Navigation und Inhaltsverzeichnis.",
+      "anwendbarWenn": null,
+      "nurMehrseitig": true,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["navigationswege"],
+          "hinweis": "Prüft das Vorhandensein von Suche, Sitemap-Link, Brotkrumenpfad und Hauptnavigation."
+        }
+      ],
+      "empfehlung": {
+        "text": "Ergänzen Sie neben der Hauptnavigation eine Suche oder eine Übersichtsseite. Ein Brotkrumenpfad zählt ebenfalls als zweiter Weg. Ausgenommen sind Seiten, die notwendiger Schritt in einem Vorgang sind — etwa innerhalb einer Bestellstrecke.",
+        "referenzen": [
+          { "titel": "W3C: Verschiedene Methoden verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/multiple-ways.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "2.4.6",
+      "titel": "Überschriften und Beschriftungen",
+      "level": "AA",
+      "prinzip": "bedienbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Überschriften und Feldbeschriftungen müssen beschreiben, worum es geht. Vorhanden allein genügt nicht — sie müssen aussagekräftig sein.",
+      "anwendbarWenn": "h1, h2, h3, h4, h5, h6, label, legend, [role=heading]",
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["empty-heading", "empty-table-header"]
+        },
+        {
+          "typ": "llm",
+          "pruefungsId": "ueberschrift-aussagekraft",
+          "buendelGroesse": 20,
+          "sammelSelektor": "h1, h2, h3, h4, h5, h6, legend"
+        }
+      ],
+      "empfehlung": {
+        "text": "Formulieren Sie Überschriften so, dass man beim Überfliegen versteht, was im Abschnitt steht. „Informationen“, „Sonstiges“ und „Details“ sagen nichts. Feldbeschriftungen benennen die erwartete Angabe, nicht die Handlung.",
+        "codeBeispiel": {
+          "vorher": "<h2>Informationen</h2>\n<label>Feld 3</label>",
+          "nachher": "<h2>Öffnungszeiten und Anfahrt</h2>\n<label for=\"plz\">Postleitzahl</label>"
+        },
+        "referenzen": [
+          { "titel": "W3C: Überschriften und Beschriftungen verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/headings-and-labels.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "2.4.7",
+      "titel": "Fokus sichtbar",
+      "level": "AA",
+      "prinzip": "bedienbarkeit",
+      "standard": { "eingefuehrtMit": "2.0", "entfallenAb": null },
+      "beschreibung": "Das gerade fokussierte Element muss sichtbar hervorgehoben sein. Ohne erkennbaren Fokus ist Tastaturbedienung Blindflug.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["fokus-sichtbarkeit"],
+          "hinweis": "Vergleicht Screenshots jedes Fokusstopps mit dem Ruhezustand; meldet Stopps ohne erkennbare visuelle Änderung."
+        }
+      ],
+      "empfehlung": {
+        "text": "Entfernen Sie niemals outline, ohne einen gleichwertigen Ersatz zu setzen. Nutzen Sie :focus-visible, um den Fokusrahmen bei Tastaturbedienung zu zeigen und bei Mausklick zu unterdrücken.",
+        "codeBeispiel": {
+          "vorher": "*:focus { outline: none; }",
+          "nachher": ":focus-visible {\n  outline: 3px solid #005fcc;\n  outline-offset: 2px;\n}"
+        },
+        "referenzen": [
+          { "titel": "W3C: Fokus sichtbar verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/focus-visible.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "2.4.11",
+      "titel": "Fokus nicht verdeckt (Minimum)",
+      "level": "AA",
+      "prinzip": "bedienbarkeit",
+      "standard": { "eingefuehrtMit": "2.2", "entfallenAb": null },
+      "beschreibung": "Das fokussierte Element darf nicht vollständig von anderen Inhalten verdeckt sein — typischerweise von festen Kopfzeilen, Hinweisbannern oder Chat-Fenstern.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["fokus-verdeckt"],
+          "hinweis": "Fällt beim Tastatur-Durchlauf mit ab: prüft je Fokusstopp, ob das Element von einem Element mit fester Positionierung überlagert wird."
+        }
+      ],
+      "empfehlung": {
+        "text": "Ergänzen Sie scroll-margin-top in Höhe der festen Kopfzeile, damit fokussierte Elemente beim Scrollen darunter hervorkommen. Prüfen Sie zusätzlich fest positionierte Banner am unteren Rand.",
+        "codeBeispiel": {
+          "vorher": ".kopfzeile { position: fixed; height: 80px; }",
+          "nachher": ".kopfzeile { position: fixed; height: 80px; }\n:target, a, button, input, select, textarea { scroll-margin-top: 90px; }"
+        },
+        "referenzen": [
+          { "titel": "W3C: Fokus nicht verdeckt verstehen", "url": "https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "2.5.1",
+      "titel": "Zeigergesten",
+      "level": "A",
+      "prinzip": "bedienbarkeit",
+      "standard": { "eingefuehrtMit": "2.1", "entfallenAb": null },
+      "beschreibung": "Funktionen, die Mehrfinger- oder Pfadgesten verlangen, brauchen eine Alternative mit einem einzelnen Zeigerkontakt.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "manuell",
+          "frage": "Gibt es Funktionen, die Wischen, Ziehen, Zusammenziehen oder Mehrfingergesten verlangen? Falls ja: Lassen sie sich auch mit einfachem Antippen oder über Schaltflächen bedienen?"
+        }
+      ],
+      "empfehlung": {
+        "text": "Ergänzen Sie zu jeder Geste eine Schaltfläche. Ein Bildkarussell mit Wischgeste braucht zusätzlich Vor- und Zurück-Schaltflächen, eine Kartenansicht mit Zoomgeste zusätzlich Plus- und Minus-Schaltflächen.",
+        "referenzen": [
+          { "titel": "W3C: Zeigergesten verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/pointer-gestures.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "2.5.2",
+      "titel": "Zeiger-Abbruch",
+      "level": "A",
+      "prinzip": "bedienbarkeit",
+      "standard": { "eingefuehrtMit": "2.1", "entfallenAb": null },
+      "beschreibung": "Eine Aktion darf nicht schon beim Drücken ausgelöst werden, sondern erst beim Loslassen — damit ein versehentliches Drücken durch Wegziehen abgebrochen werden kann.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "manuell",
+          "frage": "Werden Aktionen erst beim Loslassen ausgelöst, sodass ein versehentliches Drücken durch Wegziehen abgebrochen werden kann?"
+        }
+      ],
+      "empfehlung": {
+        "text": "Verwenden Sie click statt mousedown oder pointerdown zum Auslösen von Aktionen. Der click-Ereignistyp erfüllt die Anforderung von sich aus.",
+        "codeBeispiel": {
+          "vorher": "el.addEventListener('mousedown', loeschen);",
+          "nachher": "el.addEventListener('click', loeschen);"
+        },
+        "referenzen": [
+          { "titel": "W3C: Zeiger-Abbruch verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/pointer-cancellation.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "2.5.3",
+      "titel": "Beschriftung im Namen",
+      "level": "A",
+      "prinzip": "bedienbarkeit",
+      "standard": { "eingefuehrtMit": "2.1", "entfallenAb": null },
+      "beschreibung": "Der zugängliche Name eines Bedienelements muss den sichtbaren Beschriftungstext enthalten — sonst funktioniert Sprachsteuerung nicht.",
+      "anwendbarWenn": "button, a, input, select, textarea, [role=button], [role=link]",
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["label-content-name-mismatch"]
+        }
+      ],
+      "empfehlung": {
+        "text": "Wenn Sie aria-label setzen, muss der sichtbare Text darin vorkommen. Sonst sagt jemand „Klicke Absenden“ und nichts geschieht, weil das Element intern anders heißt. Am sichersten ist es, gar kein aria-label zu setzen, wenn eine sichtbare Beschriftung vorhanden ist.",
+        "codeBeispiel": {
+          "vorher": "<button aria-label=\"Formular abschicken\">Absenden</button>",
+          "nachher": "<button>Absenden</button>\n<!-- oder, falls eine Ergänzung nötig ist: -->\n<button aria-label=\"Absenden – Kontaktformular\">Absenden</button>"
+        },
+        "referenzen": [
+          { "titel": "W3C: Beschriftung im Namen verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/label-in-name.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "2.5.4",
+      "titel": "Betätigung durch Bewegung",
+      "level": "A",
+      "prinzip": "bedienbarkeit",
+      "standard": { "eingefuehrtMit": "2.1", "entfallenAb": null },
+      "beschreibung": "Funktionen, die durch Schütteln oder Neigen des Geräts ausgelöst werden, brauchen eine Alternative über Bedienelemente und müssen abschaltbar sein.",
+      "anwendbarWenn": null,
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["bewegungssensoren"],
+          "hinweis": "Sucht nach Verwendung von devicemotion und deviceorientation."
+        },
+        {
+          "typ": "manuell",
+          "frage": "Werden Funktionen durch Gerätebewegung ausgelöst? Falls ja: Gibt es eine gleichwertige Bedienung über Schaltflächen, und lässt sich die Bewegungssteuerung abschalten?"
+        }
+      ],
+      "empfehlung": {
+        "text": "Bieten Sie zu jeder bewegungsgesteuerten Funktion eine Schaltfläche an — etwa „Zurücksetzen“ statt Schütteln. Menschen mit Tremor oder mit fest montiertem Gerät können die Bewegung nicht ausführen oder lösen sie ungewollt aus.",
+        "referenzen": [
+          { "titel": "W3C: Betätigung durch Bewegung verstehen", "url": "https://www.w3.org/WAI/WCAG21/Understanding/motion-actuation.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "2.5.7",
+      "titel": "Zeigerbewegungen",
+      "level": "AA",
+      "prinzip": "bedienbarkeit",
+      "standard": { "eingefuehrtMit": "2.2", "entfallenAb": null },
+      "beschreibung": "Funktionen, die Ziehen mit dem Zeiger verlangen, brauchen eine Alternative mit einfachem Antippen oder Klicken.",
+      "anwendbarWenn": "[draggable=true], input[type=range], [role=slider], .sortierbar, [data-drag]",
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["ziehen-ohne-alternative"],
+          "hinweis": "Sucht nach draggable-Attributen, Drag-Ereignissen und Schiebereglern ohne begleitende Schaltflächen oder Eingabefelder."
+        },
+        {
+          "typ": "manuell",
+          "frage": "Lassen sich alle durch Ziehen bedienbaren Funktionen — Sortierlisten, Schieberegler, Kartenausschnitte — auch ohne Ziehen bedienen?"
+        }
+      ],
+      "empfehlung": {
+        "text": "Ergänzen Sie zu jeder Ziehfunktion eine klickbare Alternative: Pfeilschaltflächen bei sortierbaren Listen, ein Zahlenfeld neben dem Schieberegler, Richtungsschaltflächen bei Karten.",
+        "codeBeispiel": {
+          "vorher": "<li draggable=\"true\">Eintrag 1</li>",
+          "nachher": "<li draggable=\"true\">Eintrag 1\n  <button type=\"button\" aria-label=\"Eintrag 1 nach oben\">↑</button>\n  <button type=\"button\" aria-label=\"Eintrag 1 nach unten\">↓</button>\n</li>"
+        },
+        "referenzen": [
+          { "titel": "W3C: Zeigerbewegungen verstehen", "url": "https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements.html" }
+        ]
+      }
+    },
+
+    {
+      "id": "2.5.8",
+      "titel": "Zielgröße (Minimum)",
+      "level": "AA",
+      "prinzip": "bedienbarkeit",
+      "standard": { "eingefuehrtMit": "2.2", "entfallenAb": null },
+      "beschreibung": "Bedienelemente müssen mindestens 24 mal 24 Pixel groß sein oder ausreichend Abstand zueinander haben.",
+      "anwendbarWenn": "button, a[href], input, select, textarea, [role=button], [role=link], [role=checkbox], [role=radio], [role=tab]",
+      "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "eigen",
+          "regelIds": ["zielgroesse-24"],
+          "hinweis": "Misst die Umrissrechtecke aller Bedienelemente und prüft bei Unterschreitung den Abstand zu benachbarten Zielen."
+        }
+      ],
+      "empfehlung": {
+        "text": "Vergrößern Sie kleine Bedienelemente über Innenabstand statt über die Schriftgröße. Betroffen sind typischerweise Symbolschaltflächen, Schließkreuze, Auswahlkästchen und dicht gesetzte Links in Fußzeilen.",
+        "codeBeispiel": {
+          "vorher": ".schliessen { width: 16px; height: 16px; }",
+          "nachher": ".schliessen {\n  min-width: 24px;\n  min-height: 24px;\n  padding: 4px;\n}"
+        },
+        "referenzen": [
+          { "titel": "W3C: Zielgröße Minimum verstehen", "url": "https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html" }
+        ]
+      }
+    }
+  ]
+}
