@@ -45,6 +45,12 @@
       "anwendbarWenn": "audio, video",
       "pruefungen": [
         {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["audio-caption"],
+          "hinweis": "Erkennt fehlende Untertitelspuren an audio-Elementen. Das Transkript selbst bleibt manuell zu prüfen."
+        },
+        {
           "typ": "manuell",
           "frage": "Gibt es zu jeder reinen Tonaufnahme ein vollständiges Transkript und zu jedem stummen Video eine Textbeschreibung?",
           "kontextSelektor": "audio, video"
@@ -298,7 +304,13 @@
         {
           "typ": "auto",
           "engine": "axe",
-          "regelIds": ["autocomplete-valid"]
+          "regelIds": ["autocomplete-valid"],
+          "hinweis": "Erkennt nur unzulässige autocomplete-Werte. Ein ganz fehlendes Attribut bleibt unbemerkt und ist deshalb Gegenstand der manuellen Frage."
+        },
+        {
+          "typ": "manuell",
+          "frage": "Tragen alle Felder, die Daten der nutzenden Person abfragen — Name, Anschrift, Telefon, E-Mail, Geburtsdatum —, ein passendes autocomplete-Attribut?",
+          "kontextSelektor": "input:not([type=hidden]):not([type=submit]):not([type=button]), select, textarea"
         }
       ],
       "empfehlung": {

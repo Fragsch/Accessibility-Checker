@@ -13,7 +13,7 @@
         {
           "typ": "auto",
           "engine": "axe",
-          "regelIds": ["scrollable-region-focusable", "frame-focusable-content", "nested-interactive"]
+          "regelIds": ["scrollable-region-focusable", "frame-focusable-content", "nested-interactive", "server-side-image-map"]
         },
         {
           "typ": "auto",
@@ -571,6 +571,11 @@
       "beschreibung": "Bedienelemente müssen mindestens 24 mal 24 Pixel groß sein oder ausreichend Abstand zueinander haben.",
       "anwendbarWenn": "button, a[href], input, select, textarea, [role=button], [role=link], [role=checkbox], [role=radio], [role=tab]",
       "pruefungen": [
+        {
+          "typ": "auto",
+          "engine": "axe",
+          "regelIds": ["target-size"]
+        },
         {
           "typ": "auto",
           "engine": "eigen",
