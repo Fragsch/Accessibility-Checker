@@ -9,16 +9,18 @@
 
 import assert from 'node:assert/strict';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import { after, before, describe, it } from 'node:test';
 
 import { Browser } from '../src/scan/browser.js';
+import { projektWurzel } from '../src/plattform/pfade.js';
 import { Katalog } from '../src/katalog/laden.js';
 import { Protokoll } from '../src/protokoll.js';
 import { fuehreScanAus } from '../src/scan/runner.js';
+import { vorhandeneEngines } from '../src/stufe1/index.js';
 import type { ScanErgebnis } from '../src/typen/index.js';
 
-const WURZEL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const WURZEL = projektWurzel();
 const ZEITLIMIT = 120_000;
 
 function adresse(relativ: string): string {
@@ -89,14 +91,49 @@ describe('Scan einer Einzelseite', { timeout: ZEITLIMIT }, () => {
 
   it('setzt kein erfuellt ohne gelaufene Pruefung', async () => {
     const ergebnis = await scanne('test/referenzseiten/sauber.html');
+    const gebaut = vorhandeneEngines();
+
     for (const bewertung of ergebnis.seiten[0]!.bewertungen) {
       if (bewertung.status !== 'erfuellt') continue;
       const kriterium = katalog.findeKriterium(bewertung.kriterium)!;
-      assert.ok(
-        kriterium.pruefungen.every((p) => p.typ === 'auto' && p.engine === 'axe'),
-        `${bewertung.kriterium} gilt als erfuellt, obwohl es Pruefungen ausserhalb von axe hat`,
-      );
-      assert.equal(bewertung.herkunft, 'auto/axe');
+
+      // Ein Kriterium darf nur dann als erfuellt gelten, wenn jede seiner
+      // Pruefungen automatisch ist und die zustaendige Engine auch existiert.
+      // Sobald eine manuelle Frage oder eine Sprachmodell-Pruefung dazugehoert,
+      // bleibt etwas offen — dann ist erfuellt eine Luege.
+      for (const pruefung of kriterium.pruefungen) {
+        assert.equal(
+          pruefung.typ,
+          'auto',
+          `${bewertung.kriterium} gilt als erfuellt, hat aber eine Pruefung vom Typ "${pruefung.typ}"`,
+        );
+        if (pruefung.typ !== 'auto') continue;
+        assert.ok(
+          gebaut.has(pruefung.engine),
+          `${bewertung.kriterium} gilt als erfuellt, obwohl die Engine "${pruefung.engine}" fehlt`,
+        );
+      }
+
+      assert.match(bewertung.herkunft, /^auto\//, `${bewertung.kriterium} traegt die Herkunft "${bewertung.herkunft}"`);
+    }
+  });
+
+  it('meldet jede Engine des Katalogs als gebaut oder als offen', () => {
+    // Sobald der Katalog eine Engine nennt, die es nicht gibt, muessen die
+    // betroffenen Kriterien offen bleiben. Faellt dieser Test, ist entweder
+    // eine Engine dazugekommen oder eine aus dem Katalog verschwunden.
+    const gebaut = vorhandeneEngines();
+    const imKatalog = new Set(
+      katalog
+        .fuerStandard('2.2')
+        .flatMap((k) => k.pruefungen)
+        .filter((p) => p.typ === 'auto')
+        .map((p) => p.engine),
+    );
+
+    assert.deepEqual([...imKatalog].sort(), ['axe', 'eigen', 'html', 'ocr', 'pixel', 'sprache']);
+    for (const engine of imKatalog) {
+      assert.ok(gebaut.has(engine), `Engine "${engine}" steht im Katalog, ist aber nicht gebaut`);
     }
   });
 

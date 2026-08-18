@@ -1,21 +1,23 @@
 /**
  * Ablaufsteuerung eines Scans (ARCHITEKTUR 9 Schritte 4 bis 8).
  *
- * Je Seite: laden → Anwendbarkeit bestimmen → Stufe 1 ausfuehren → Befunde
- * zuordnen → Status ableiten. Danach Verdichtung auf Projektebene.
+ * Je Seite: laden → Anwendbarkeit bestimmen → Engines der Stufe 1 ausfuehren →
+ * Befunde zuordnen → Status ableiten. Danach die Vergleiche ueber mehrere
+ * Seiten und die Verdichtung auf Projektebene.
  *
  * Zwei Grundsaetze bestimmen den Aufbau:
  *   - Eine Seite, die nicht geladen werden kann, bricht den Scan nicht ab
  *     (ARCHITEKTUR 5.6).
- *   - Was nicht geprueft wurde, bekommt `pruefung_erforderlich`, nie `erfuellt`.
- *     Das gilt ausdruecklich auch fuer die Engines und Stufen, die es vor
- *     Phase 3 und 4 noch nicht gibt (CLAUDE.md, "Wichtig beim Einstieg").
+ *   - Was nicht geprueft wurde, bekommt `pruefung_erforderlich`, nie
+ *     `erfuellt`. Das gilt fuer fehlende Engines ebenso wie fuer einzelne
+ *     Regeln, die nicht gelaufen sind.
  */
 
 import type {
   Befund,
   Betriebsart,
   Bewertung,
+  Engine as EngineName,
   Hinweis,
   Kriterium,
   OffeneFrage,
@@ -29,14 +31,23 @@ import { Browser, SeitenLadeFehler, VIEWPORT_SCHREIBTISCH } from './browser.js';
 import type { Viewport } from './browser.js';
 import { ermittleAnwendbarkeit } from './anwendbarkeit.js';
 import type { AnwendbarkeitErgebnis } from './anwendbarkeit.js';
-import { fuehreAxeAus } from '../stufe1/axe.js';
-import { normalisiereAxe } from '../stufe1/normalisierung.js';
+import { findeEngine, vorhandeneEngines } from '../stufe1/index.js';
+import type { EngineKontext, RohBefund, RohHinweis } from '../stufe1/engine.js';
+import { fuegeZusammen } from '../stufe1/engine.js';
+import { BEWEGUNGSHOERER_SPITZEL } from '../stufe1/eigen/dom.js';
+import { lesMerkmale, vergleicheSeiten } from '../stufe1/eigen/mehrseitig.js';
+import type { SeitenMerkmale } from '../stufe1/eigen/mehrseitig.js';
+import { normalisiere } from '../stufe1/normalisierung.js';
 import { baueBewertung, verdichte } from './statusableitung.js';
 
-/** Engines, die in Phase 1 und 2 tatsaechlich laufen. */
-const VORHANDENE_ENGINES = new Set(['axe']);
-
 export const WERKZEUG_VERSION = '0.1.0';
+
+/** Viewports nach A-04. Der breiteste ist der Hauptdurchgang. */
+export const VIEWPORTS: Viewport[] = [
+  { breite: 1280, hoehe: 900 },
+  { breite: 768, hoehe: 1024 },
+  { breite: 320, hoehe: 640 },
+];
 
 export interface SeitenAuftrag {
   url: string;
@@ -48,6 +59,11 @@ export interface ScanAuftrag {
   standard?: Standard;
   betriebsart?: Betriebsart;
   viewport?: Viewport;
+  /**
+   * Zusaetzlich in schmalen Viewports pruefen (A-04). Kostet Zeit und ist
+   * deshalb abschaltbar — die Grundpruefung bleibt davon unberuehrt.
+   */
+  mehrereViewports?: boolean;
   /** Stufe 2 ist vor Phase 4 nicht vorhanden und bleibt abschaltbar (Regel 7). */
   stufe2Aktiv?: boolean;
   katalog?: Katalog;
@@ -65,28 +81,23 @@ export interface FortschrittMeldung {
   nummer: number;
   gesamt: number;
   text?: string;
-  /** Bei `seite-fertig` und `fehler`: das Ergebnis dieser Seite. */
   ergebnis?: SeitenErgebnis;
 }
 
-/**
- * Fuehrt einen vollstaendigen Scan aus.
- * Der Browser wird gestartet, wenn keiner uebergeben wurde — und dann auch
- * wieder geschlossen.
- */
+/** Fuehrt einen vollstaendigen Scan aus. */
 export async function fuehreScanAus(auftrag: ScanAuftrag): Promise<ScanErgebnis> {
   const protokoll = auftrag.protokoll ?? stillesProtokoll;
   const standard = auftrag.standard ?? '2.1';
   const betriebsart = auftrag.betriebsart ?? (auftrag.seiten.length > 1 ? 'profil' : 'einzelseite');
   const katalog = auftrag.katalog ?? Katalog.laden();
   const kriterien = katalog.fuerStandard(standard);
-  const zuordnung = katalog.regelZuordnung('axe', standard);
 
   const eigenerBrowser = auftrag.browser === undefined;
   const browser = auftrag.browser ?? (await Browser.starten({ protokoll }));
 
   const gestartetAm = new Date().toISOString();
   const seitenErgebnisse: SeitenErgebnis[] = [];
+  const merkmale: SeitenMerkmale[] = [];
 
   try {
     let nummer = 0;
@@ -104,19 +115,22 @@ export async function fuehreScanAus(auftrag: ScanAuftrag): Promise<ScanErgebnis>
         gesamt: auftrag.seiten.length,
       });
 
-      const ergebnis = await pruefeSeite({
+      const { ergebnis, merkmale: seitenMerkmale } = await pruefeSeite({
         browser,
         seitenAuftrag,
         kriterien,
-        zuordnung,
+        katalog,
         standard,
         betriebsart,
         protokoll,
         ...(auftrag.viewport ? { viewport: auftrag.viewport } : {}),
+        mehrereViewports: auftrag.mehrereViewports ?? false,
         stufe2Aktiv: auftrag.stufe2Aktiv ?? false,
       });
 
       seitenErgebnisse.push(ergebnis);
+      if (seitenMerkmale) merkmale.push(seitenMerkmale);
+
       auftrag.beiFortschritt?.({
         art: ergebnis.zustand === 'fehler' ? 'fehler' : 'seite-fertig',
         url: seitenAuftrag.url,
@@ -128,6 +142,10 @@ export async function fuehreScanAus(auftrag: ScanAuftrag): Promise<ScanErgebnis>
     }
   } finally {
     if (eigenerBrowser) await browser.schliessen();
+  }
+
+  if (betriebsart !== 'einzelseite') {
+    ergaenzeMehrseitiges(seitenErgebnisse, merkmale, katalog, standard, kriterien);
   }
 
   return {
@@ -143,36 +161,81 @@ export async function fuehreScanAus(auftrag: ScanAuftrag): Promise<ScanErgebnis>
   };
 }
 
+/**
+ * Traegt die Ergebnisse der seitenuebergreifenden Vergleiche nach.
+ *
+ * Diese Kriterien lassen sich an einer Seite nicht beurteilen; ihr Befund
+ * entsteht erst aus dem Vergleich. Er wird auf allen Seiten vermerkt, weil er
+ * fuer alle gilt.
+ */
+function ergaenzeMehrseitiges(
+  seiten: SeitenErgebnis[],
+  merkmale: readonly SeitenMerkmale[],
+  katalog: Katalog,
+  standard: Standard,
+  kriterien: readonly Kriterium[],
+): void {
+  const geprueft = new Set(kriterien.map((k) => k.id));
+  const vergleich = vergleicheSeiten(merkmale, katalog.regelZuordnung('eigen', standard), (id) => geprueft.has(id));
+  if (vergleich.befunde.length === 0) return;
+
+  for (const seite of seiten) {
+    if (seite.zustand !== 'fertig') continue;
+
+    for (const befund of vergleich.befunde) {
+      const bewertung = seite.bewertungen.find((b) => b.kriterium === befund.kriterium);
+      if (!bewertung) continue;
+
+      bewertung.befunde.push(befund);
+      bewertung.status = 'nicht_erfuellt';
+      if (!bewertung.herkunft.includes('auto/eigen')) {
+        bewertung.herkunft = bewertung.herkunft === 'ungeprueft' ? 'auto/eigen' : `${bewertung.herkunft} + auto/eigen`;
+      }
+    }
+  }
+}
+
 interface SeitenPruefungOptionen {
   browser: Browser;
   seitenAuftrag: SeitenAuftrag;
   kriterien: readonly Kriterium[];
-  zuordnung: Map<string, string[]>;
+  katalog: Katalog;
   standard: Standard;
   betriebsart: Betriebsart;
   protokoll: Protokoll;
   viewport?: Viewport;
+  mehrereViewports: boolean;
   stufe2Aktiv: boolean;
 }
 
-async function pruefeSeite(optionen: SeitenPruefungOptionen): Promise<SeitenErgebnis> {
-  const { browser, seitenAuftrag, kriterien, protokoll } = optionen;
+interface SeitenPruefungErgebnis {
+  ergebnis: SeitenErgebnis;
+  merkmale: SeitenMerkmale | null;
+}
+
+async function pruefeSeite(optionen: SeitenPruefungOptionen): Promise<SeitenPruefungErgebnis> {
+  const { browser, seitenAuftrag, kriterien, katalog, protokoll } = optionen;
+  const hauptViewport = optionen.viewport ?? VIEWPORT_SCHREIBTISCH;
 
   let geladen;
   try {
     geladen = await browser.ladeSeite(seitenAuftrag.url, {
-      viewport: optionen.viewport ?? VIEWPORT_SCHREIBTISCH,
+      viewport: hauptViewport,
+      spitzel: BEWEGUNGSHOERER_SPITZEL,
     });
   } catch (e) {
     const grund = e instanceof SeitenLadeFehler ? e.message : String(e);
     protokoll.fehler('scan', `Seite uebersprungen: ${seitenAuftrag.url}`, { grund });
     return {
-      url: seitenAuftrag.url,
-      bezeichnung: seitenAuftrag.bezeichnung ?? null,
-      titel: null,
-      zustand: 'fehler',
-      fehler: grund,
-      bewertungen: [],
+      ergebnis: {
+        url: seitenAuftrag.url,
+        bezeichnung: seitenAuftrag.bezeichnung ?? null,
+        titel: null,
+        zustand: 'fehler',
+        fehler: grund,
+        bewertungen: [],
+      },
+      merkmale: null,
     };
   }
 
@@ -181,42 +244,62 @@ async function pruefeSeite(optionen: SeitenPruefungOptionen): Promise<SeitenErge
       betriebsart: optionen.betriebsart,
       protokoll,
     });
-
+    const merkmale = await lesMerkmale(geladen.seite);
     const geprueft = new Set(kriterien.map((k) => k.id));
 
-    let befundeNachKriterium = new Map<string, Befund[]>();
-    let hinweiseNachKriterium = new Map<string, Hinweis[]>();
-    let ausgefuehrteRegeln = new Set<string>();
-    let axeGelaufen = false;
-    let axeFehler: string | null = null;
+    // Welche Engines sind ueberhaupt gefragt, und mit welchen Regeln?
+    const gefragteEngines = sammleEngines(kriterien);
+    const vorhanden = vorhandeneEngines();
 
-    try {
-      const axeErgebnis = await fuehreAxeAus(geladen.seite, {
-        standard: optionen.standard,
-        zusatzRegeln: [...optionen.zuordnung.keys()],
-      });
+    const kontext: EngineKontext = {
+      seite: geladen.seite,
+      browser,
+      url: geladen.url,
+      standard: optionen.standard,
+      viewport: hauptViewport,
+      quelltext: geladen.quelltext,
+      protokoll,
+    };
 
-      ausgefuehrteRegeln = new Set([
-        ...axeErgebnis.verstoesse.map((v) => v.id),
-        ...axeErgebnis.unentschieden.map((v) => v.id),
-        ...axeErgebnis.bestandenRegelIds,
-        ...axeErgebnis.nichtAnwendbarRegelIds,
-      ]);
-      axeGelaufen = true;
+    const rohBefunde: RohBefund[] = [];
+    const rohHinweise: RohHinweis[] = [];
+    const ausgefuehrteRegeln = new Set<string>();
+    const gescheiterteEngines = new Map<EngineName, string>();
 
-      const normalisiert = normalisiereAxe(axeErgebnis.verstoesse, axeErgebnis.unentschieden, {
-        zuordnung: optionen.zuordnung,
-        geprueftesKriterium: (id) => geprueft.has(id),
-        protokoll,
-      });
+    for (const [engineName, regeln] of gefragteEngines) {
+      if (!vorhanden.has(engineName)) continue;
+      const engine = findeEngine(engineName);
+      if (!engine) continue;
 
-      befundeNachKriterium = gruppiere(normalisiert.befunde, (b) => b.kriterium);
-      hinweiseNachKriterium = gruppiere(normalisiert.hinweise, (h) => h.kriterium);
-    } catch (e) {
-      // Stuerzt die Engine ab, ist das kein bestandener Test (ARCHITEKTUR 5.6).
-      axeFehler = e instanceof Error ? e.message.split('\n')[0] ?? e.message : String(e);
-      protokoll.fehler('scan', `axe-core fehlgeschlagen auf ${geladen.url}`, { ursache: axeFehler });
+      try {
+        const ergebnis = await engine.ausfuehren(kontext, [...regeln]);
+        rohBefunde.push(...ergebnis.befunde);
+        rohHinweise.push(...ergebnis.hinweise);
+        for (const regel of ergebnis.ausgefuehrteRegeln) ausgefuehrteRegeln.add(regel);
+      } catch (e) {
+        // Eine abgestuerzte Engine ist kein bestandener Test (ARCHITEKTUR 5.6).
+        const ursache = e instanceof Error ? e.message.split('\n')[0] ?? e.message : String(e);
+        gescheiterteEngines.set(engineName, ursache);
+        protokoll.fehler('scan', `Engine "${engineName}" fehlgeschlagen auf ${geladen.url}`, { ursache });
+      }
     }
+
+    // Zusaetzliche Viewports (A-04): dieselben Engines, schmalere Fenster.
+    if (optionen.mehrereViewports) {
+      const weitere = await pruefeWeitereViewports(kontext, gefragteEngines, vorhanden, hauptViewport, protokoll);
+      rohBefunde.push(...weitere.befunde);
+      rohHinweise.push(...weitere.hinweise);
+      for (const regel of weitere.ausgefuehrteRegeln) ausgefuehrteRegeln.add(regel);
+    }
+
+    const normalisiert = normalisiere(rohBefunde, rohHinweise, {
+      zuordnung: katalog.alleRegelZuordnungen(optionen.standard),
+      geprueftesKriterium: (id) => geprueft.has(id),
+      protokoll,
+    });
+
+    const befundeNachKriterium = gruppiere(normalisiert.befunde, (b) => b.kriterium);
+    const hinweiseNachKriterium = gruppiere(normalisiert.hinweise, (h) => h.kriterium);
 
     const bewertungen: Bewertung[] = kriterien.map((kriterium) =>
       bewerteKriterium({
@@ -225,23 +308,108 @@ async function pruefeSeite(optionen: SeitenPruefungOptionen): Promise<SeitenErge
         befunde: befundeNachKriterium.get(kriterium.id) ?? [],
         hinweise: [...(hinweiseNachKriterium.get(kriterium.id) ?? [])],
         ausgefuehrteRegeln,
-        axeGelaufen,
-        axeFehler,
+        vorhandeneEngines: vorhanden,
+        gescheiterteEngines,
         stufe2Aktiv: optionen.stufe2Aktiv,
       }),
     );
 
     return {
-      url: geladen.url,
-      bezeichnung: seitenAuftrag.bezeichnung ?? null,
-      titel: geladen.titel || null,
-      zustand: 'fertig',
-      fehler: null,
-      bewertungen,
+      ergebnis: {
+        url: geladen.url,
+        bezeichnung: seitenAuftrag.bezeichnung ?? null,
+        titel: geladen.titel || null,
+        zustand: 'fertig',
+        fehler: null,
+        bewertungen,
+      },
+      merkmale,
     };
   } finally {
     await geladen.schliessen();
   }
+}
+
+/**
+ * Wiederholt die Pruefung in den schmaleren Viewports.
+ *
+ * Gemeldet werden nur Befunde, die im Hauptdurchgang nicht schon auftraten —
+ * sonst stuende jeder Mangel dreimal im Ergebnis. Die Entdoppelung uebernimmt
+ * die Normalisierung; hier wird lediglich die Breite vermerkt, damit im Befund
+ * steht, wo er auftrat.
+ */
+async function pruefeWeitereViewports(
+  kontext: EngineKontext,
+  gefragteEngines: Map<EngineName, Set<string>>,
+  vorhanden: Set<EngineName>,
+  hauptViewport: Viewport,
+  protokoll: Protokoll,
+): Promise<{ befunde: RohBefund[]; hinweise: RohHinweis[]; ausgefuehrteRegeln: string[] }> {
+  const ergebnisse = [];
+
+  for (const viewport of VIEWPORTS) {
+    if (viewport.breite === hauptViewport.breite) continue;
+
+    try {
+      await kontext.seite.setViewportSize({ width: viewport.breite, height: viewport.hoehe });
+      await kontext.seite.waitForTimeout(400);
+
+      for (const [engineName, regeln] of gefragteEngines) {
+        if (!vorhanden.has(engineName)) continue;
+        // Im schmalen Fenster zaehlen nur die Engines, deren Urteil von der
+        // Darstellung abhaengt. Markupgueltigkeit und Sprache aendern sich nicht.
+        if (engineName !== 'axe' && engineName !== 'pixel' && engineName !== 'eigen') continue;
+
+        const engine = findeEngine(engineName);
+        if (!engine) continue;
+
+        const nurDarstellung = engineName === 'eigen' ? [...regeln].filter(istDarstellungsabhaengig) : [...regeln];
+        if (nurDarstellung.length === 0) continue;
+
+        ergebnisse.push(await engine.ausfuehren({ ...kontext, viewport }, nurDarstellung));
+      }
+    } catch (e) {
+      protokoll.warnung('scan', `Pruefung bei ${viewport.breite} Pixeln fehlgeschlagen: ${(e as Error).message}`);
+    }
+  }
+
+  await kontext.seite
+    .setViewportSize({ width: hauptViewport.breite, height: hauptViewport.hoehe })
+    .catch(() => undefined);
+
+  const zusammen = fuegeZusammen(ergebnisse);
+  return { befunde: zusammen.befunde, hinweise: zusammen.hinweise, ausgefuehrteRegeln: zusammen.ausgefuehrteRegeln };
+}
+
+/**
+ * Regeln, deren Urteil von der Fensterbreite abhaengt.
+ *
+ * `textabstand-test` gehoert ausdruecklich dazu: Ein Kasten mit fester Hoehe
+ * faellt bei 1280 Pixeln nicht auf, weil der Text auf eine Zeile passt. Erst
+ * wenn er im schmalen Fenster umbricht, wird er abgeschnitten.
+ */
+function istDarstellungsabhaengig(regel: string): boolean {
+  return [
+    'zielgroesse-24',
+    'dom-reihenfolge-vs-visuell',
+    'fokus-verdeckt',
+    'tooltip-hoverbar',
+    'textabstand-test',
+  ].includes(regel);
+}
+
+/** Welche Engine soll welche Regeln ausfuehren? Steht ausschliesslich im Katalog. */
+function sammleEngines(kriterien: readonly Kriterium[]): Map<EngineName, Set<string>> {
+  const gefragt = new Map<EngineName, Set<string>>();
+  for (const kriterium of kriterien) {
+    for (const pruefung of kriterium.pruefungen) {
+      if (pruefung.typ !== 'auto') continue;
+      const vorhanden = gefragt.get(pruefung.engine) ?? new Set<string>();
+      for (const regel of pruefung.regelIds) vorhanden.add(regel);
+      gefragt.set(pruefung.engine, vorhanden);
+    }
+  }
+  return gefragt;
 }
 
 interface KriteriumOptionen {
@@ -250,8 +418,8 @@ interface KriteriumOptionen {
   befunde: Befund[];
   hinweise: Hinweis[];
   ausgefuehrteRegeln: Set<string>;
-  axeGelaufen: boolean;
-  axeFehler: string | null;
+  vorhandeneEngines: Set<EngineName>;
+  gescheiterteEngines: Map<EngineName, string>;
   stufe2Aktiv: boolean;
 }
 
@@ -285,20 +453,21 @@ function bewerteKriterium(optionen: KriteriumOptionen): Bewertung {
 
   for (const pruefung of kriterium.pruefungen) {
     if (pruefung.typ === 'auto') {
-      if (!VORHANDENE_ENGINES.has(pruefung.engine)) {
+      if (!optionen.vorhandeneEngines.has(pruefung.engine)) {
         hinweise.push({
           kriterium: kriterium.id,
           herkunft: `auto/${pruefung.engine}`,
-          text: `Die Pruefung ueber "${pruefung.engine}" ist noch nicht vorhanden (Ausbaustufe). Dieser Teil des Kriteriums wurde nicht geprueft.`,
+          text: `Die Pruefung ueber "${pruefung.engine}" ist noch nicht vorhanden. Dieser Teil des Kriteriums wurde nicht geprueft.`,
         });
         continue;
       }
 
-      if (optionen.axeFehler) {
+      const gescheitert = optionen.gescheiterteEngines.get(pruefung.engine);
+      if (gescheitert) {
         hinweise.push({
           kriterium: kriterium.id,
-          herkunft: 'auto/axe',
-          text: `axe-core konnte auf dieser Seite nicht ausgefuehrt werden (${optionen.axeFehler}). Das Kriterium wurde nicht automatisch geprueft.`,
+          herkunft: `auto/${pruefung.engine}`,
+          text: `Die Engine "${pruefung.engine}" konnte auf dieser Seite nicht ausgefuehrt werden (${gescheitert}). Das Kriterium wurde insoweit nicht geprueft.`,
         });
         continue;
       }
@@ -308,13 +477,13 @@ function bewerteKriterium(optionen: KriteriumOptionen): Bewertung {
 
       if (gelaufen.length > 0) {
         autoPruefungGelaufen = true;
-        herkuenfte.add('auto/axe');
+        herkuenfte.add(`auto/${pruefung.engine}`);
       }
       if (ausgefallen.length > 0) {
         hinweise.push({
           kriterium: kriterium.id,
-          herkunft: 'auto/axe',
-          text: `Diese axe-Regeln wurden nicht ausgefuehrt: ${ausgefallen.join(', ')}. Der davon abgedeckte Teil des Kriteriums ist ungeprueft.`,
+          herkunft: `auto/${pruefung.engine}`,
+          text: `Diese Regeln wurden nicht ausgefuehrt: ${ausgefallen.join(', ')}. Der davon abgedeckte Teil des Kriteriums ist ungeprueft.`,
         });
       }
       continue;

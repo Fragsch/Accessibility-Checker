@@ -56,7 +56,7 @@ export function Ergebnisansicht({ ergebnis, kriterien, entwurf }: Eigenschaften)
   return (
     <>
       {entwurf && (
-        <div className="meldung meldung--entwurf">
+        <div className="meldung meldung--entwurf" role="status">
           <h2>Dieses Ergebnis ist ein Entwurf</h2>
           <p>
             Solange Kriterien den Status „Prüfung erforderlich“ tragen, ist die Prüfung nicht abgeschlossen. Offene

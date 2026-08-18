@@ -27,7 +27,7 @@ Wo das PRD eine Anforderung stellt, steht hier die technische Entscheidung dazu 
 |---|---|---|
 | Browsersteuerung | `playwright` | Nur Chromium wird geladen — spart ~500 MB |
 | Prüf-Engine 1 | `axe-core` + `@axe-core/playwright` | Hauptquelle |
-| Prüf-Engine 2 | `accessibility-checker` (IBM equal-access) | Ergänzung, erst ab Phase 3 |
+| ~~Prüf-Engine 2~~ | ~~`accessibility-checker` (IBM equal-access)~~ | **Gestrichen in Phase 3** — siehe unten |
 | HTML-Gültigkeit | `html-validate` | **Reines JavaScript.** Ersetzt den Nu-Validator, der Java bräuchte |
 | Spracherkennung | `franc-min` | Reines JavaScript. Nicht `cld3` (native Bindings) |
 | Texterkennung | `tesseract.js` | WebAssembly, keine Systeminstallation |
@@ -48,14 +48,14 @@ Wo das PRD eine Anforderung stellt, steht hier die technische Entscheidung dazu 
 # Phase 1 und 2 — das Nötigste
 npm install playwright axe-core @axe-core/playwright \
             fastify better-sqlite3 zod
-npm install -D typescript tsx @types/node
+npm install -D typescript @types/node
 
 # Oberfläche
 npm install react react-dom
 npm install -D vite @vitejs/plugin-react @types/react @types/react-dom
 
 # Phase 3 — weitere Prüfungen
-npm install accessibility-checker html-validate franc-min tesseract.js sharp
+npm install html-validate franc-min tesseract.js sharp @tesseract.js-data/deu
 
 # Phase 4 — Sprachmodell
 npm install ollama
@@ -78,6 +78,12 @@ Prüfen Sie nach der Installation die tatsächlichen Hauptversionen und halten S
 | `fastify` | 5.12.x | ab Phase 2 in Gebrauch |
 | `zod` | 4.4.x | |
 | `@types/better-sqlite3` | 9.6.x | `better-sqlite3` bringt keine eigenen Typen mit |
+| `html-validate` | 10.x | Ab Phase 3. Reines JavaScript, prüft den **Quelltext**, nicht das DOM |
+| `franc-min` | 6.x | Ab Phase 3 |
+| `tesseract.js` | 7.x | Ab Phase 3 |
+| `@tesseract.js-data/deu` | 1.0.0 | **Notwendig.** Ohne dieses Paket lädt tesseract.js seine Sprachdaten aus dem Netz — ein Datenabfluss (NF-02) |
+| `sharp` | 0.34.x | Ab Phase 3 |
+| ~~`tsx`~~ | — | **Entfernt in Phase 3** — siehe unten |
 
 **npm gibt Installationsskripte nicht mehr von selbst frei.** `better-sqlite3` und `esbuild` bauen beim Installieren native Teile. Ohne Freigabe bleiben sie unvollständig und brechen erst zur Laufzeit ab:
 
@@ -86,6 +92,10 @@ npm approve-scripts better-sqlite3 esbuild
 ```
 
 Die Freigabe steht in `package.json` unter `allowScripts` und gilt damit auch auf anderen Rechnern.
+
+**IBM equal-access ist gestrichen.** Das Paket `accessibility-checker` 4.0.30 hängt an `puppeteer` — das dieses Dokument unter „Ausdrücklich nicht verwenden" führt — und an `chromedriver` (16 MB, ein zweiter Browser-Unterbau neben Playwright). Sein `postinstall` startet `ibmtelemetry` und sendet an `www-api.ibm.com`, was der Zusage „läuft vollständig lokal" widerspricht. Der Nutzen wog das nicht auf: Der Katalog setzte IBM bei genau einem Kriterium ein (4.1.2), das axe dort mit 28 Regeln abdeckt. Die Prüfung ist aus dem Katalog entfernt, die Engine `ibm` bleibt im Schema zulässig.
+
+**tsx darf keinen Browser steuern.** esbuild — und damit tsx — baut in benannte Funktionen einen Hilfsaufruf `__name()` ein. Der existiert im Browser nicht, und jeder `page.evaluate`-Aufruf mit einer inneren Funktion scheitert dort mit `ReferenceError: __name is not defined`. Da die Fehler abgefangen wurden, sah das aus wie „keine Beanstandung": **Prüfungen liefen ins Leere, ohne dass es auffiel.** Deshalb laufen Tests, Befehlszeile und Selbstprüfung seit Phase 3 ausschließlich über den kompilierten Stand (`node --run build:node` als Vorstufe). `tsx` ist entfernt. Was geprüft wird, ist damit dasselbe, was ausgeliefert wird.
 
 **axe meldet auf Deutsch.** axe-core liefert unter `locales/de.json` eine Übersetzung mit. Sie wird beim Einspritzen über `axe.configure` gesetzt (`src/stufe1/axe.ts`), weil Befundtexte in Oberfläche und Bericht erscheinen und deutsch sein müssen (NF-05).
 
@@ -98,6 +108,7 @@ Die Freigabe steht in `package.json` unter `allowScripts` und gilt damit auch au
 | Tailwind, Bootstrap, MUI u. ä. | Siehe NF-01; Barrierefreiheit der eigenen Oberfläche ist Abnahmekriterium |
 | `puppeteer` | Playwright ist gesetzt |
 | Jede Cloud-KI als Voreinstellung | NF-02; Cloud nur als ausdrücklich zu aktivierender Adapter |
+| `accessibility-checker` (IBM equal-access) | Hängt an `puppeteer` und `chromedriver` und sendet beim Installieren Telemetrie an IBM — siehe unten |
 
 ## 3. Ordnerstruktur
 
@@ -129,7 +140,9 @@ accessibility-checker/
 │   ├── katalog-pruefen.mjs ✓ lauffähig, ohne Abhängigkeiten
 │   ├── axe-abgleich.mjs    ✓ lauffähig, sobald axe-core installiert ist
 │   ├── beiwerk-kopieren.mjs ✓ kopiert SQL-Dateien nach dist/
-│   └── scan.ts             ✓ Scan von der Befehlszeile
+│   ├── scan.ts             ✓ Scan von der Befehlszeile
+│   ├── selbstpruefung.ts   ✓ prüft die eigene Oberfläche
+│   └── verifikation.ts     ✓ misst gegen test/referenzseiten/soll.json
 │
 ├── vite.config.ts          ✓ Bau der Oberfläche
 ├── tsconfig.web.json       ✓ eigene Typprüfung für den Browser-Teil
@@ -149,16 +162,22 @@ accessibility-checker/
 │   │   ├── statusableitung.ts ✓ Status, Verdichtung, ACR (5.2–5.4)
 │   │   ├── crawl.ts
 │   │   └── anmeldung.ts        ← Übergabe an den Nutzer (6.1.1)
-│   ├── stufe1/                 ← Automatische Prüfungen
+│   ├── stufe1/             ✓ Automatische Prüfungen
+│   │   ├── engine.ts       ✓ Gemeinsamer Vertrag aller Engines
+│   │   ├── index.ts        ✓ Verzeichnis, Ausführungsreihenfolge
 │   │   ├── axe.ts          ✓
+│   │   ├── html.ts         ✓ html-validate, prüft den Quelltext
+│   │   ├── sprache.ts      ✓ franc-min
+│   │   ├── ocr.ts          ✓ tesseract.js, Sprachdaten lokal
+│   │   ├── pixel.ts        ✓ sharp, Kontrast auf Verlauf und Bild
 │   │   ├── normalisierung.ts ✓ Zusammenführen, Entdoppeln, Zuordnen
-│   │   ├── ibm.ts
-│   │   ├── html.ts
-│   │   ├── sprache.ts
-│   │   ├── ocr.ts
-│   │   ├── kontrast.ts
-│   │   ├── tastatur.ts         ← Tab-Durchlauf
-│   │   └── viewports.ts
+│   │   └── eigen/          ✓ Was keine Bibliothek abdeckt: Verhalten
+│   │       ├── index.ts    ✓
+│   │       ├── dom.ts      ✓ 12 Regeln in einem Durchgang
+│   │       ├── tastatur.ts ✓ Tab-Durchlauf vor und zurück
+│   │       ├── darstellung.ts ✓ Reflow, Zoom, Textabstand
+│   │       ├── formulare.ts ✓ Zustands-Traversierung (A-07)
+│   │       └── mehrseitig.ts ✓ Vergleiche über Seiten hinweg
 │   ├── stufe2/
 │   │   ├── adapter/
 │   │   │   ├── ollama.ts
@@ -188,6 +207,8 @@ accessibility-checker/
 ├── test/
 │   ├── *.test.ts           ✓ Tests, laufen über `npm test`
 │   ├── beispielseiten/     ✓ Kleine Seiten für einzelne Ablaufregeln
+│   │   ├── ohne-medien.html ✓ für die Anwendbarkeitserkennung
+│   │   └── verhalten.html  ✓ für die Prüfungen der Engine „eigen"
 │   └── referenzseiten/     ✓ Testseiten mit bekannten Fehlern (Phase 8)
 │
 └── daten/                      ← Datenbank, Belege und Protokoll; nicht versioniert
@@ -383,6 +404,35 @@ Kriterien mit `nurMehrseitig: true` sind bei der Betriebsart Einzelseite grunds�
 - **`keep_alive` setzen** (30 Minuten), sonst wird das Modell zwischen den Aufrufen entladen und muss jedes Mal neu geladen werden
 
 Einrichtung, Modellwahl je Hardware, Adaptergerüst und Fallstricke stehen ausführlich in **`ANLEITUNG-OLLAMA.md`**.
+
+## 5.8 Die Engines der Stufe 1
+
+Alle Engines erfüllen denselben Vertrag (`src/stufe1/engine.ts`): Sie melden **Regelverstöße**, keine Erfolgskriterien. Welches Kriterium betroffen ist, entscheidet ausschließlich der Katalog (5.1).
+
+| Engine | Bibliothek | Regeln | Deckt ab |
+|---|---|---|---|
+| `axe` | axe-core | 87 | Hauptquelle |
+| `html` | html-validate | 6 | 4.1.1, 1.3.1 — Gültigkeit des **Quelltexts** |
+| `sprache` | franc-min | 1 | 3.1.2 |
+| `pixel` | sharp | 4 | 1.4.3, 1.4.11 auf Verläufen und Bildern |
+| `ocr` | tesseract.js | 1 | 1.4.5 |
+| `eigen` | — | 25 | Verhalten: Tastatur, Viewports, Formulare, Vergleiche |
+
+**Die Reihenfolge ist bindend.** Zuerst laufen die Engines, die nur lesen; `eigen` kommt zuletzt. Der Tastatur-Durchlauf verschiebt den Fokus, die Formularprüfung löst Zustandsänderungen aus, die Darstellungsprüfung verändert den Viewport. Wer danach misst, prüft eine Seite, die das Werkzeug selbst umgebaut hat.
+
+### Zwei Verfahren müssen sich einig sein
+
+Bei 1.4.11 wird der Kontrast eines Bedienelements aus **Bildpunkten** gemessen *und* aus den **CSS-Werten** gerechnet. Ein Befund entsteht nur, wenn beide durchfallen. Grund: Eine Seite kann während des Scans ihre Höhe ändern, dann passen Bild und Koordinaten nicht mehr genau zusammen, und ein sauber umrandetes Eingabefeld fällt mit 1,00:1 durch. Was die Stilwerte für ausreichend halten, wird nicht gemeldet.
+
+### Was nicht beurteilt werden konnte, bleibt offen
+
+Die Spracherkennung braucht rund 120 Zeichen für ein belastbares Urteil. Findet sie auf einer Seite keinen einzigen ausreichend langen Abschnitt, entsteht ein **Hinweis** — nicht `erfuellt`. Dasselbe gilt für Bilder, die nicht geladen werden konnten (OCR), und für Formulare, die sich nicht gefahrlos absenden lassen. Diese Fälle sind bei der Verifikation aufgefallen: Ohne den Hinweis meldete das Werkzeug „erfüllt", obwohl nichts geprüft worden war.
+
+### Grenzen, die bleiben
+
+- **Kurze fremdsprachige Einschübe** (Zitate, Slogans, Fachbegriffe) erkennt keine statistische Spracherkennung verlässlich. Sie gehen als Hinweis in die manuelle Stufe.
+- **Quelltext ist keine Sprache.** Codebeispiele werden von der Spracherkennung ausgenommen — sonst gelten sie reihenweise als französisch oder portugiesisch.
+- **`title`-Attribute** werden bei 1.4.13 grundsätzlich beanstandet. Das ist streng, aber sachlich richtig: Der Browser-Tooltip lässt sich weder mit Escape schließen noch mit dem Zeiger erreichen.
 
 ## 6. Schnittstelle zwischen Oberfläche und Server
 

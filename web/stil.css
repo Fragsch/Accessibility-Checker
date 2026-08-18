@@ -181,6 +181,13 @@ label {
   color: var(--schrift-gedaempft);
   font-size: 0.9rem;
   margin: 0.3rem 0 0;
+  /*
+    Hier stehen Adressen. Eine lange URL enthaelt keine Leerzeichen und bricht
+    deshalb nicht um — bei 320 Pixeln Breite schob sie die ganze Seite auf 433
+    Pixel und erzwang seitliches Scrollen (1.4.10). Gefunden hat das die
+    Selbstpruefung.
+  */
+  overflow-wrap: anywhere;
 }
 
 input[type='text'],
@@ -327,7 +334,7 @@ button.zweitrangig:hover:not(:disabled) {
 
 .zaehlung {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
   gap: 0.75rem;
   margin: 0 0 1.5rem;
 }
@@ -460,7 +467,13 @@ button.zweitrangig:hover:not(:disabled) {
 .codevergleich {
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  /*
+    min() in der Spaltenbreite ist hier wesentlich: minmax(16rem, 1fr) erzwingt
+    zwei Spalten zu je 256 Pixeln und damit 512 Pixel Mindestbreite. Bei 320
+    Pixeln Fensterbreite muesste dann seitlich gescrollt werden (1.4.10). Die
+    eigene Selbstpruefung hat genau das gemeldet.
+  */
+  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
   margin: 0;
 }
 

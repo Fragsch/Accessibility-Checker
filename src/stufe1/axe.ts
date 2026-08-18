@@ -1,9 +1,9 @@
 /**
- * Anbindung von axe-core (ARCHITEKTUR 9 Schritt 6).
+ * Engine „axe" — Anbindung von axe-core.
  *
- * Dieses Modul fuehrt axe aus und gibt das Rohergebnis weiter. Die Zuordnung zu
- * Erfolgskriterien passiert in `normalisierung.ts` — hier wird nichts bewertet
- * und nichts geraten.
+ * Die Hauptquelle der Stufe 1. Dieses Modul fuehrt axe aus und liefert
+ * Rohbefunde; die Zuordnung zu Erfolgskriterien passiert in
+ * `normalisierung.ts` anhand des Katalogs.
  *
  * Welche Regeln laufen, ergibt sich aus zwei Quellen:
  *   1. alle Regeln mit einem Kennzeichen des gewaehlten Standards,
@@ -21,7 +21,9 @@ import { AxeBuilder } from '@axe-core/playwright';
 import type { Page } from 'playwright';
 import type { AxeResults, ImpactValue, Result } from 'axe-core';
 
-import type { Standard } from '../typen/index.js';
+import type { Schwere, Standard } from '../typen/index.js';
+import { kuerzeHtml } from './engine.js';
+import type { EngineErgebnis, EngineKontext, PruefEngine, RohBefund, RohHinweis } from './engine.js';
 
 const erfordere = createRequire(import.meta.url);
 
@@ -79,22 +81,14 @@ export interface AxeLaufOptionen {
 }
 
 export interface AxeLaufErgebnis {
-  /** Belegte Verstoesse. */
   verstoesse: Result[];
-  /** Faelle, die axe nicht entscheiden kann — fuehren zu `pruefung_erforderlich`. */
   unentschieden: Result[];
-  /** Bestandene Regeln — Beleg dafuer, dass tatsaechlich geprueft wurde. */
   bestandenRegelIds: string[];
-  /** Regeln, die auf dieser Seite gegenstandslos waren. */
   nichtAnwendbarRegelIds: string[];
   axeVersion: string;
 }
 
-/**
- * Fuehrt axe auf der geladenen Seite aus, einschliesslich erreichbarer iframes.
- * Ein Fehler wird nicht abgefangen — der Aufrufer entscheidet, ob daraus ein
- * Hinweis oder ein Abbruch wird.
- */
+/** Fuehrt axe auf der geladenen Seite aus, einschliesslich erreichbarer iframes. */
 export async function fuehreAxeAus(seite: Page, optionen: AxeLaufOptionen): Promise<AxeLaufErgebnis> {
   const vorhanden = await vorhandeneRegeln();
   const ausStandard = await regelnFuerStandard(optionen.standard);
@@ -118,7 +112,7 @@ export async function fuehreAxeAus(seite: Page, optionen: AxeLaufOptionen): Prom
 }
 
 /** Uebersetzt die Einstufung von axe in die eigene Schwereskala. */
-export function uebersetzeSchwere(impact: ImpactValue | null | undefined): 'kritisch' | 'ernst' | 'maessig' | 'gering' {
+export function uebersetzeSchwere(impact: ImpactValue | null | undefined): Schwere {
   switch (impact) {
     case 'critical':
       return 'kritisch';
@@ -131,4 +125,85 @@ export function uebersetzeSchwere(impact: ImpactValue | null | undefined): 'krit
     default:
       return 'maessig';
   }
+}
+
+export const axeEngine: PruefEngine = {
+  name: 'axe',
+
+  regeln(): readonly string[] {
+    // axe meldet seine Regeln erst zur Laufzeit; die Liste steht in
+    // `vorhandeneRegeln()`. Hier bleibt sie leer, weil der Aufrufer die
+    // gewuenschten Regeln ohnehin aus dem Katalog mitgibt.
+    return [];
+  },
+
+  async ausfuehren(kontext: EngineKontext, gewuenschteRegeln: readonly string[]): Promise<EngineErgebnis> {
+    const lauf = await fuehreAxeAus(kontext.seite, {
+      standard: kontext.standard,
+      zusatzRegeln: gewuenschteRegeln,
+    });
+
+    const befunde: RohBefund[] = [];
+    for (const verstoss of lauf.verstoesse) {
+      for (const stelle of verstoss.nodes) {
+        befunde.push({
+          regelId: verstoss.id,
+          engine: 'axe',
+          selektor: selektorAlsText(stelle.target),
+          htmlAusschnitt: kuerzeHtml(stelle.html),
+          beschreibung: beschreibe(verstoss, stelle.failureSummary),
+          schwere: uebersetzeSchwere(stelle.impact ?? verstoss.impact),
+          ...(verstoss.helpUrl ? { hilfeUrl: verstoss.helpUrl } : {}),
+        });
+      }
+    }
+
+    // `incomplete` sind Faelle, die axe nicht entscheiden kann. Sie werden zu
+    // Hinweisen, nie zu Befunden — und nie zu einem stillen Bestehen.
+    const hinweise: RohHinweis[] = lauf.unentschieden.map((fall) => {
+      const stellen = fall.nodes.map((n) => selektorAlsText(n.target)).filter((s): s is string => s !== null);
+      return {
+        regelId: fall.id,
+        engine: 'axe' as const,
+        text:
+          `axe konnte "${fall.help}" nicht abschliessend beurteilen` +
+          (stellen.length ? ` (${stellen.length} Stelle${stellen.length === 1 ? '' : 'n'}, z. B. ${stellen[0]})` : '') +
+          '. Bitte von Hand nachsehen.',
+      };
+    });
+
+    return {
+      befunde,
+      hinweise,
+      ausgefuehrteRegeln: [
+        ...new Set([
+          ...lauf.verstoesse.map((v) => v.id),
+          ...lauf.unentschieden.map((v) => v.id),
+          ...lauf.bestandenRegelIds,
+          ...lauf.nichtAnwendbarRegelIds,
+        ]),
+      ],
+    };
+  },
+};
+
+function beschreibe(verstoss: Result, zusammenfassung: string | undefined): string {
+  const kern = verstoss.help.trim();
+  if (!zusammenfassung) return kern;
+  const bereinigt = zusammenfassung
+    .split('\n')
+    .map((z) => z.trim())
+    .filter(Boolean)
+    .join(' ');
+  return `${kern} — ${bereinigt}`;
+}
+
+/** axe liefert Selektoren verschachtelt, wenn die Stelle in einem iframe liegt. */
+export function selektorAlsText(target: unknown): string | null {
+  if (typeof target === 'string') return target;
+  if (Array.isArray(target)) {
+    const teile = target.map((t) => selektorAlsText(t)).filter((t): t is string => Boolean(t));
+    return teile.length ? teile.join(' >>> ') : null;
+  }
+  return null;
 }

@@ -6,7 +6,7 @@ Prüft Webseiten und Webanwendungen gegen alle Erfolgskriterien, zeigt je Kriter
 
 ## Stand
 
-**Phase 2 abgeschlossen — das Werkzeug ist nutzbar.** Adresse eingeben, Prüfung starten, Ergebnis lesen. Je Kriterium gibt es Status, Fundstellen und eine Handlungsempfehlung mit Code-Beispiel.
+**Phase 3 abgeschlossen — die Automatik ist ausgereizt.** Sechs Prüf-Engines, 124 Regeln. Neben axe-core prüfen jetzt auch die Gültigkeit des Markups, die Spracherkennung, die Texterkennung in Bildern, die Kontrastmessung an Bildpunkten und eine eigene Engine für alles Verhaltensabhängige: Tastatur-Durchlauf, Reflow bei 320 Pixeln, 200 Prozent Zoom, erhöhter Textabstand, Formularfehler, Vergleiche über mehrere Seiten hinweg.
 
 ```bash
 npm run einrichten       # einmalig
@@ -14,16 +14,9 @@ npm run build
 npm start                # http://127.0.0.1:3000
 ```
 
-Oder ohne Oberfläche, direkt auf der Befehlszeile:
+Gemessen an den Referenzseiten: **74 % der eingebauten Verstöße belegt erkannt, kein einziger Fehlalarm, kein einziges übersehenes Kriterium.** Die übrigen bleiben als „Prüfung erforderlich" offen — sie hängen an der Sprachmodell-Stufe oder an inhaltlichen Fragen. Nachzuvollziehen mit `npm run verifikation`.
 
-```bash
-npm run scan -- https://example.org
-npm run scan -- https://example.org --standard 2.2 --ausfuehrlich --speichern
-```
-
-Die Oberfläche prüft sich selbst: `npm run pruefe:selbst` lässt den eigenen Scanner über alle drei Ansichten laufen.
-
-Noch nicht gebaut: weitere Prüf-Engines (Phase 3), Sprachmodell-Stufe (Phase 4), geführte manuelle Liste (Phase 5), Prüfprofile und Crawl (Phase 6), Bericht (Phase 7). Kriterien, die davon abhängen, tragen bis dahin `Prüfung erforderlich` — sie verschwinden nicht und gelten nie als erfüllt.
+Noch nicht gebaut: Sprachmodell-Stufe (Phase 4), geführte manuelle Liste (Phase 5), Prüfprofile und Crawl (Phase 6), Bericht (Phase 7). Kriterien, die davon abhängen, tragen bis dahin `Prüfung erforderlich` — sie verschwinden nicht und gelten nie als erfüllt.
 
 ## Was das Werkzeug können soll
 
@@ -73,6 +66,7 @@ daten/            Datenbank, Belege, Protokoll — nicht versioniert
 | `npm run scan -- <URL>` | Prüfen ohne Oberfläche |
 | `npm test` | Katalog, axe-Abgleich, Typen und Tests |
 | `npm run pruefe:selbst` | Die eigene Oberfläche mit dem eigenen Werkzeug prüfen |
+| `npm run verifikation` | Trefferquote und Fehlalarme gegen die Referenzseiten messen |
 | `node werkzeuge/katalog-pruefen.mjs` | Katalog prüfen — läuft ohne Installation |
 
 Der Katalog-Prüfer braucht nur Node und ist die schnellste Probe, ob die Grundlage unversehrt ist.

@@ -158,7 +158,7 @@ export function App(): React.ReactElement {
               </h2>
 
               {zustand?.zustand === 'abgebrochen' && (
-                <div className="meldung">
+                <div className="meldung" role="status">
                   <p>
                     Die Prüfung wurde abgebrochen. Angezeigt wird, was bis dahin geprüft wurde — die übrigen Seiten
                     fehlen.

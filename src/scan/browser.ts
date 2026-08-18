@@ -32,6 +32,11 @@ export interface LadeOptionen {
   /** Hoechstdauer fuer das Laden in Millisekunden. */
   zeitlimit?: number;
   /**
+   * JavaScript, das vor allem anderen in die Seite eingespritzt wird.
+   * Gebraucht fuer Beobachtungen, die nachtraeglich nicht mehr moeglich sind.
+   */
+  spitzel?: string;
+  /**
    * Wartezeit nach dem Laden, damit nachgeladene Inhalte im DOM stehen.
    * `anwendbarWenn` wird nach dem Rendern ausgewertet (ARCHITEKTUR 5.5).
    */
@@ -56,6 +61,13 @@ export interface GeladeneSeite {
   seite: Page;
   url: string;
   titel: string;
+  /**
+   * Quelltext, wie der Server ihn geliefert hat — vor jedem JavaScript.
+   * Wird fuer die Gueltigkeitspruefung des Markups gebraucht (4.1.1): Der
+   * Browser repariert fehlerhafte Verschachtelung beim Parsen, im DOM waere
+   * davon nichts mehr zu sehen.
+   */
+  quelltext: string | null;
   schliessen(): Promise<void>;
 }
 
@@ -96,7 +108,13 @@ export class Browser {
       const seite = await kontext.newPage();
       seite.setDefaultTimeout(zeitlimit);
 
+      // Muss vor dem Laden geschehen: registrierte Ereignisbehandler lassen
+      // sich nachtraeglich nicht mehr auslesen (2.5.4).
+      if (optionen.spitzel) await seite.addInitScript(optionen.spitzel);
+
       const antwort = await seite.goto(url, { waitUntil: 'domcontentloaded', timeout: zeitlimit });
+      const quelltext = antwort ? await antwort.text().catch(() => null) : null;
+
       if (antwort && !antwort.ok()) {
         this.#protokoll.warnung('browser', `${url} antwortet mit Status ${antwort.status()}`, {
           status: antwort.status(),
@@ -118,6 +136,7 @@ export class Browser {
         seite,
         url: seite.url(),
         titel,
+        quelltext,
         schliessen: async () => {
           await kontextZumSchliessen.close().catch(() => undefined);
         },

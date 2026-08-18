@@ -124,4 +124,29 @@ export class Katalog {
   regelIds(engine: Engine, standard: Standard): string[] {
     return [...this.regelZuordnung(engine, standard).keys()];
   }
+
+  /**
+   * Zuordnung Regel → Kriterien ueber alle Engines hinweg.
+   *
+   * Regel-IDs sind je Engine vergeben, ueberschneiden sich aber nicht — der
+   * Katalog-Pruefer wacht darueber. Deshalb genuegt eine gemeinsame Tabelle,
+   * und die Normalisierung braucht die Engine nicht zu kennen.
+   */
+  alleRegelZuordnungen(standard: Standard): Map<string, string[]> {
+    const gesamt = new Map<string, string[]>();
+    for (const kriterium of this.fuerStandard(standard)) {
+      for (const pruefung of kriterium.pruefungen) {
+        if (pruefung.typ !== 'auto') continue;
+        for (const regelId of pruefung.regelIds) {
+          const vorhanden = gesamt.get(regelId);
+          if (vorhanden) {
+            if (!vorhanden.includes(kriterium.id)) vorhanden.push(kriterium.id);
+          } else {
+            gesamt.set(regelId, [kriterium.id]);
+          }
+        }
+      }
+    }
+    return gesamt;
+  }
 }

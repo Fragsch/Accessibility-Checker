@@ -20,8 +20,11 @@ import { pathToFileURL } from 'node:url';
 import { Browser } from '../src/scan/browser.js';
 import { Katalog } from '../src/katalog/laden.js';
 import { Protokoll } from '../src/protokoll.js';
-import { fuehreAxeAus } from '../src/stufe1/axe.js';
-import { normalisiereAxe } from '../src/stufe1/normalisierung.js';
+import { ENGINES } from '../src/stufe1/index.js';
+import { fuegeZusammen } from '../src/stufe1/engine.js';
+import type { EngineErgebnis, EngineKontext } from '../src/stufe1/engine.js';
+import { normalisiere } from '../src/stufe1/normalisierung.js';
+import { VIEWPORT_SCHREIBTISCH } from '../src/scan/browser.js';
 import { projektWurzel } from '../src/plattform/pfade.js';
 import { baueServer } from '../src/server/index.js';
 import type { Befund, Standard } from '../src/typen/index.js';
@@ -71,7 +74,7 @@ const ANSICHTEN: Ansicht[] = [
 async function hauptlauf(): Promise<void> {
   const katalog = Katalog.laden();
   const protokoll = new Protokoll({ datei: null, konsoleAb: 'fehler' });
-  const zuordnung = katalog.regelZuordnung('axe', STANDARD);
+  const zuordnung = katalog.alleRegelZuordnungen(STANDARD);
   const geprueft = new Set(katalog.fuerStandard(STANDARD).map((k) => k.id));
 
   const server = baueServer({ katalog, protokoll });
@@ -88,11 +91,25 @@ async function hauptlauf(): Promise<void> {
       try {
         await ansicht.vorbereiten(geladen.seite);
 
-        const axeErgebnis = await fuehreAxeAus(geladen.seite, {
+        // Alle gebauten Engines, nicht nur axe: Die eigene Oberflaeche soll
+        // sich denselben Pruefungen stellen wie jede fremde Seite.
+        const kontext: EngineKontext = {
+          seite: geladen.seite,
+          browser,
+          url: geladen.url,
           standard: STANDARD,
-          zusatzRegeln: [...zuordnung.keys()],
-        });
-        const normalisiert = normalisiereAxe(axeErgebnis.verstoesse, axeErgebnis.unentschieden, {
+          viewport: VIEWPORT_SCHREIBTISCH,
+          quelltext: geladen.quelltext,
+          protokoll,
+        };
+
+        const ergebnisse: EngineErgebnis[] = [];
+        for (const engine of ENGINES) {
+          ergebnisse.push(await engine.ausfuehren(kontext, [...zuordnung.keys()]));
+        }
+        const roh = fuegeZusammen(ergebnisse);
+
+        const normalisiert = normalisiere(roh.befunde, roh.hinweise, {
           zuordnung,
           geprueftesKriterium: (id) => geprueft.has(id),
           protokoll,

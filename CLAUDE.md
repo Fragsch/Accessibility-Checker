@@ -61,26 +61,21 @@ node werkzeuge/katalog-pruefen.mjs   # Katalog prüfen — läuft ohne Abhängig
 
 ## Reihenfolge der Umsetzung
 
-Die Phasen aus `PRD.md` Abschnitt 9 sind bindend. Aktueller Stand: **Phase 1 und 2 abgeschlossen** — ein Mensch kann eine Adresse eingeben und das Ergebnis lesen.
+Die Phasen aus `PRD.md` Abschnitt 9 sind bindend. Aktueller Stand: **Phase 1 bis 3 abgeschlossen**.
 
-Alle zehn Schritte aus `ARCHITEKTUR.md` 9 sind erledigt:
-
-| # | Schritt | Wo |
+| Phase | Stand | Wo |
 |---|---|---|
-| 1 | Katalog einlesen und validieren | `src/katalog/` |
-| 2 | Typen aus 4.1 | `src/typen/` |
-| 3 | Datenbankschema | `src/db/` |
-| 4 | Playwright-Kapselung | `src/scan/browser.ts` |
-| 5 | axe-Abgleich | `npm run axe:abgleich` |
-| 6 | axe anbinden, Befunde zuordnen | `src/stufe1/` |
-| 7 | Anwendbarkeitserkennung | `src/scan/anwendbarkeit.ts` |
-| 8 | Statusableitung | `src/scan/statusableitung.ts` |
-| 9 | Fastify-Routen | `src/server/` |
-| 10 | Oberfläche | `web/` |
+| 1 | ✓ Erster vollständiger Scan | `src/katalog/`, `src/scan/`, `src/db/` |
+| 2 | ✓ Server und Oberfläche | `src/server/`, `web/` |
+| 3 | ✓ Automatik ausgereizt — sechs Engines, 124 Regeln | `src/stufe1/` |
 
-**Als Nächstes Phase 3:** weitere Prüf-Engines, Viewports, Tastatur-Durchlauf, Textabstände, Spracherkennung, OCR, Pixel-Kontrast. Die Anschlussstelle dafür ist `VORHANDENE_ENGINES` in `src/scan/runner.ts` — was dort nicht steht, erzeugt einen Hinweis statt eines stillen Bestehens.
+**Als Nächstes Phase 4:** die Sprachmodell-Stufe über Ollama. Vorher `ANLEITUNG-OLLAMA.md` lesen. Die Anschlussstelle ist der Zweig `pruefung.typ === 'llm'` in `src/scan/runner.ts`; er erzeugt heute einen Hinweis und muss dann das Modell befragen.
 
-**Bevor Sie an der Oberfläche etwas ändern:** `npm run build && npm run pruefe:selbst`. Der eigene Scanner läuft über alle drei Ansichten und meldet jeden Verstoß. Das ist keine Kür — die Oberfläche ist Abnahmekriterium (NF-01).
+### Drei Regeln aus Phase 3, die weitergelten
+
+1. **Kein `tsx` in einem Pfad, der einen Browser steuert.** esbuild baut `__name()` in benannte Funktionen ein; im Browser gibt es das nicht, und jeder `page.evaluate`-Aufruf scheitert stumm. Tests und Befehlszeile laufen über den kompilierten Stand.
+2. **Nach jeder Änderung an einer Engine: `npm run verifikation`.** Sie misst gegen `test/referenzseiten/soll.json`. Zwei Zahlen zählen — *übersehen* muss 0 bleiben, *Fehlalarme* müssen 0 bleiben.
+3. **Nach jeder Änderung an der Oberfläche: `npm run pruefe:selbst`.** Der eigene Scanner läuft über alle drei Ansichten.
 
 ## Wichtig beim Einstieg
 
@@ -88,7 +83,7 @@ Alle zehn Schritte aus `ARCHITEKTUR.md` 9 sind erledigt:
 
 **Der Katalog enthält 56 Kriterien.** 50 gelten unter WCAG 2.1, 55 unter WCAG 2.2 — der gewählte Standard wirkt als Filter über die Vermerke `standard.eingefuehrtMit` und `standard.entfallenAb`. 4.1.1 ist das einzige Kriterium, das in 2.2 entfällt.
 
-**Nicht alle im Katalog genannten Engines existieren zu Beginn.** Prüfungen mit `engine: "eigen"`, `"pixel"`, `"ocr"`, `"sprache"` sowie alle mit `typ: "llm"` gehören zu Phase 3 und 4. In Phase 1 und 2 werden sie eingelesen, aber nicht ausgeführt — die betroffenen Kriterien erhalten `pruefung_erforderlich`. Das ist richtig so und darf nicht durch ein vorschnelles `erfuellt` ersetzt werden.
+**Alle Engines der Stufe 1 sind seit Phase 3 gebaut:** `axe`, `html`, `sprache`, `pixel`, `ocr`, `eigen`. Die im Schema noch zulässige Engine `ibm` wird nicht verwendet — die Begründung steht in `ARCHITEKTUR.md` 2. Prüfungen mit `typ: "llm"` gehören zu Phase 4; sie erzeugen bis dahin einen Hinweis und damit `pruefung_erforderlich`. Das ist richtig so und darf nicht durch ein vorschnelles `erfuellt` ersetzt werden.
 
 ## Sprache im Code
 

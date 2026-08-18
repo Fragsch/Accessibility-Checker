@@ -6,13 +6,13 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 
+import { projektWurzel } from '../src/plattform/pfade.js';
 import { Katalog, KatalogFehler, standardKatalogPfad } from '../src/katalog/laden.js';
 import { ENGINES, LEVEL, PRINZIPIEN, kriteriumSchema } from '../src/katalog/schema.js';
 
-const WURZEL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const WURZEL = projektWurzel();
 
 describe('Katalog laden', () => {
   const katalog = Katalog.laden();
@@ -67,15 +67,28 @@ describe('Regelzuordnung', () => {
   });
 
   it('trennt die Engines', () => {
-    const axe = katalog.regelIds('axe', '2.1');
-    const ibm = katalog.regelIds('ibm', '2.1');
-    assert.ok(axe.length > 0);
-    assert.ok(ibm.length > 0, 'Engine ibm ist im Katalog vorgesehen');
-    assert.equal(
-      axe.filter((id) => ibm.includes(id)).length,
-      0,
-      'Regel-IDs verschiedener Engines duerfen sich nicht ueberschneiden',
-    );
+    const proEngine = (['axe', 'html', 'sprache', 'ocr', 'pixel', 'eigen'] as const).map((engine) => ({
+      engine,
+      regeln: katalog.regelIds(engine, '2.1'),
+    }));
+
+    for (const { engine, regeln } of proEngine) {
+      assert.ok(regeln.length > 0, `Engine ${engine} hat keine Regeln im Katalog`);
+    }
+
+    // Die gemeinsame Zuordnungstabelle setzt voraus, dass Regel-IDs eindeutig
+    // sind — sonst schriebe eine Engine die Zuordnung einer anderen um.
+    const alle = proEngine.flatMap((p) => p.regeln);
+    assert.equal(new Set(alle).size, alle.length, 'Regel-IDs verschiedener Engines duerfen sich nicht ueberschneiden');
+  });
+
+  it('fuehrt alle Regeln in der gemeinsamen Zuordnung', () => {
+    const gemeinsam = katalog.alleRegelZuordnungen('2.1');
+    for (const engine of ['axe', 'html', 'sprache', 'ocr', 'pixel', 'eigen'] as const) {
+      for (const regel of katalog.regelIds(engine, '2.1')) {
+        assert.ok(gemeinsam.has(regel), `${regel} fehlt in der gemeinsamen Zuordnung`);
+      }
+    }
   });
 });
 

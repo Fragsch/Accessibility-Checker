@@ -7,18 +7,19 @@
 
 import assert from 'node:assert/strict';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import { after, before, describe, it } from 'node:test';
 import type { FastifyInstance } from 'fastify';
 import type { Database } from 'better-sqlite3';
 
+import { projektWurzel } from '../src/plattform/pfade.js';
 import { Katalog } from '../src/katalog/laden.js';
 import { Protokoll } from '../src/protokoll.js';
 import { oeffneDatenbank } from '../src/db/index.js';
 import { baueServer, pruefeAdresse } from '../src/server/index.js';
 import type { ScanErgebnis } from '../src/typen/index.js';
 
-const WURZEL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const WURZEL = projektWurzel();
 
 describe('Adressen pruefen', () => {
   it('ergaenzt ein fehlendes Schema', () => {

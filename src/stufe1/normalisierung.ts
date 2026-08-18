@@ -5,15 +5,14 @@
  * Die Zuordnung Regel → Erfolgskriterium steht ausschliesslich im Katalog.
  * Ein Befund ohne Zuordnung wird protokolliert und verworfen — nie geraten,
  * auch dann nicht, wenn die Engine selbst ein Kriterium nennt.
+ *
+ * Entdoppelt wird erst hier, nach der Zuordnung. Zwei Engines koennen denselben
+ * Mangel an derselben Stelle melden; im Ergebnis soll er einmal stehen.
  */
 
-import type { Result } from 'axe-core';
-
-import type { Befund, Engine, Hinweis, Schwere } from '../typen/index.js';
+import type { Befund, Hinweis } from '../typen/index.js';
 import { Protokoll, stillesProtokoll } from '../protokoll.js';
-import { uebersetzeSchwere } from './axe.js';
-
-const HTML_HOECHSTLAENGE = 400;
+import type { RohBefund, RohHinweis } from './engine.js';
 
 export interface NormalisierungErgebnis {
   befunde: Befund[];
@@ -31,61 +30,51 @@ export interface NormalisierungOptionen {
 }
 
 /**
- * Wandelt axe-Ergebnisse in Befunde und Hinweise um.
- *
- * `violations` werden zu Befunden — sie belegen einen Verstoss.
- * `incomplete` werden zu Hinweisen — axe konnte nicht entscheiden, das Kriterium
- * bleibt offen. Ein unentschiedener Fall darf nie als bestanden gelten
- * (ARCHITEKTUR 5.6).
+ * Ordnet Rohbefunde und Rohhinweise den Erfolgskriterien zu.
+ * Ein Rohbefund kann mehrere Kriterien betreffen; dann entsteht je Kriterium
+ * ein Befund.
  */
-export function normalisiereAxe(
-  verstoesse: readonly Result[],
-  unentschieden: readonly Result[],
+export function normalisiere(
+  rohBefunde: readonly RohBefund[],
+  rohHinweise: readonly RohHinweis[],
   optionen: NormalisierungOptionen,
 ): NormalisierungErgebnis {
   const protokoll = optionen.protokoll ?? stillesProtokoll;
+  const verworfene = new Set<string>();
   const befunde: Befund[] = [];
   const hinweise: Hinweis[] = [];
-  const verworfene = new Set<string>();
 
-  for (const verstoss of verstoesse) {
-    const kriterien = zuordne(verstoss.id, optionen, protokoll, verworfene, 'Verstoss');
-    for (const kriterium of kriterien) {
-      for (const stelle of verstoss.nodes) {
-        befunde.push({
-          kriterium,
-          regelId: verstoss.id,
-          engine: 'axe' satisfies Engine,
-          selektor: selektorAlsText(stelle.target),
-          htmlAusschnitt: kuerze(stelle.html),
-          beschreibung: beschreibe(verstoss, stelle.failureSummary),
-          schwere: uebersetzeSchwere(stelle.impact ?? verstoss.impact) as Schwere,
-          ...(verstoss.helpUrl ? { hilfeUrl: verstoss.helpUrl } : {}),
-        });
-      }
-    }
-  }
-
-  for (const fall of unentschieden) {
-    const kriterien = zuordne(fall.id, optionen, protokoll, verworfene, 'Zweifelsfall');
-    for (const kriterium of kriterien) {
-      const stellen = fall.nodes.map((n) => selektorAlsText(n.target)).filter((s): s is string => s !== null);
-      hinweise.push({
+  for (const roh of rohBefunde) {
+    for (const kriterium of zuordne(roh.regelId, roh.engine, optionen, protokoll, verworfene, 'Verstoss')) {
+      befunde.push({
         kriterium,
-        herkunft: `axe/${fall.id}`,
-        text:
-          `axe konnte "${fall.help}" nicht abschliessend beurteilen` +
-          (stellen.length ? ` (${stellen.length} Stelle${stellen.length === 1 ? '' : 'n'}, z. B. ${stellen[0]})` : '') +
-          '. Bitte von Hand nachsehen.',
+        regelId: roh.regelId,
+        engine: roh.engine,
+        selektor: roh.selektor,
+        htmlAusschnitt: roh.htmlAusschnitt,
+        beschreibung: roh.beschreibung,
+        schwere: roh.schwere,
+        ...(roh.hilfeUrl ? { hilfeUrl: roh.hilfeUrl } : {}),
       });
     }
   }
 
-  return { befunde, hinweise: entdoppleHinweise(hinweise), verworfeneRegeln: [...verworfene] };
+  for (const roh of rohHinweise) {
+    for (const kriterium of zuordne(roh.regelId, roh.engine, optionen, protokoll, verworfene, 'Zweifelsfall')) {
+      hinweise.push({ kriterium, herkunft: `${roh.engine}/${roh.regelId}`, text: roh.text });
+    }
+  }
+
+  return {
+    befunde: entdopple(befunde, (b) => `${b.kriterium}|${b.selektor ?? ''}|${b.beschreibung}`),
+    hinweise: entdopple(hinweise, (h) => `${h.kriterium}|${h.herkunft}|${h.text}`),
+    verworfeneRegeln: [...verworfene],
+  };
 }
 
 function zuordne(
   regelId: string,
+  engine: string,
   optionen: NormalisierungOptionen,
   protokoll: Protokoll,
   verworfene: Set<string>,
@@ -94,11 +83,12 @@ function zuordne(
   const kriterien = optionen.zuordnung.get(regelId);
 
   if (!kriterien || kriterien.length === 0) {
-    if (!verworfene.has(regelId)) {
-      verworfene.add(regelId);
+    const schluessel = `${engine}/${regelId}`;
+    if (!verworfene.has(schluessel)) {
+      verworfene.add(schluessel);
       protokoll.warnung('normalisierung', `${art} der Regel "${regelId}" ohne Zuordnung im Katalog — verworfen`, {
         regelId,
-        engine: 'axe',
+        engine,
       });
     }
     return [];
@@ -109,42 +99,19 @@ function zuordne(
   return kriterien.filter((id) => optionen.geprueftesKriterium(id));
 }
 
-function beschreibe(verstoss: Result, zusammenfassung: string | undefined): string {
-  const kern = verstoss.help.trim();
-  if (!zusammenfassung) return kern;
-  // axe liefert die Zusammenfassung mehrzeilig mit fuehrenden Aufzaehlungen.
-  const bereinigt = zusammenfassung
-    .split('\n')
-    .map((z) => z.trim())
-    .filter(Boolean)
-    .join(' ');
-  return `${kern} — ${bereinigt}`;
-}
-
-/** axe liefert Selektoren verschachtelt, wenn die Stelle in einem iframe liegt. */
-function selektorAlsText(target: unknown): string | null {
-  if (typeof target === 'string') return target;
-  if (Array.isArray(target)) {
-    const teile = target.map((t) => selektorAlsText(t)).filter((t): t is string => Boolean(t));
-    return teile.length ? teile.join(' >>> ') : null;
-  }
-  return null;
-}
-
-function kuerze(html: string | undefined): string | null {
-  if (!html) return null;
-  const einzeilig = html.replace(/\s+/g, ' ').trim();
-  return einzeilig.length > HTML_HOECHSTLAENGE ? `${einzeilig.slice(0, HTML_HOECHSTLAENGE)}…` : einzeilig;
-}
-
-function entdoppleHinweise(hinweise: readonly Hinweis[]): Hinweis[] {
+/**
+ * Entfernt Doppelungen.
+ * Der erste Treffer bleibt stehen: bei gleicher Aussage ist die Herkunft
+ * gleichgueltig, und die Reihenfolge der Engines ist festgelegt.
+ */
+function entdopple<T>(eintraege: readonly T[], schluessel: (e: T) => string): T[] {
   const gesehen = new Set<string>();
-  const ergebnis: Hinweis[] = [];
-  for (const h of hinweise) {
-    const schluessel = `${h.kriterium}|${h.herkunft}|${h.text}`;
-    if (gesehen.has(schluessel)) continue;
-    gesehen.add(schluessel);
-    ergebnis.push(h);
+  const ergebnis: T[] = [];
+  for (const eintrag of eintraege) {
+    const k = schluessel(eintrag);
+    if (gesehen.has(k)) continue;
+    gesehen.add(k);
+    ergebnis.push(eintrag);
   }
   return ergebnis;
 }

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Beispielseite mit Verhaltensmängeln</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 0;
+      }
+      /* 2.4.11: feste Kopfzeile verdeckt fokussierte Elemente */
+      .kopfleiste {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        /* Hoch genug, um beim Zurücktabben fokussierte Elemente zu verdecken.
+           Bei 80 Pixeln landet der Fokus knapp darunter — dann gibt es nichts
+           zu beanstanden, und der Prüfer hat recht, wenn er schweigt. */
+        height: 160px;
+        background: #dddddd;
+      }
+      main {
+        padding: 180px 1rem 1rem;
+      }
+      /* 2.4.7: Fokus ohne jede Anzeige */
+      a:focus,
+      button:focus,
+      input:focus {
+        outline: none;
+      }
+      /* 1.4.10: feste Breite erzwingt seitliches Scrollen bei 320 Pixeln */
+      .starr {
+        width: 1100px;
+        background: #f0f0f0;
+      }
+      /* 1.4.12: feste Höhe schneidet bei erhöhtem Zeilenabstand ab */
+      .knapp {
+        /* Breit genug, dass der Text bei normalem Abstand auf eine Zeile passt.
+           Wäre er schon vorher abgeschnitten, wäre der erhöhte Textabstand
+           nicht die Ursache — und der Prüfer meldete zu Recht nichts. */
+        height: 28px;
+        line-height: 1;
+        overflow: hidden;
+        width: 480px;
+      }
+      /* 2.2.2: dauerhafte Bewegung ohne Schalter */
+      @keyframes wandern {
+        from {
+          transform: translateX(0);
+        }
+        to {
+          transform: translateX(60px);
+        }
+      }
+      .laufband {
+        animation: wandern 8s linear infinite;
+        width: 120px;
+        background: #eeeeee;
+      }
+      /* 2.5.8: zu kleine, dicht beieinander liegende Ziele */
+      .winzig {
+        width: 16px;
+        height: 16px;
+        padding: 0;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <!--
+      Beispielseite für die Prüfungen der Engine "eigen".
+
+      Jeder Mangel steht hier einzeln und benannt, damit ein fehlgeschlagener
+      Test unmittelbar auf seine Ursache zeigt. Die Referenzseiten unter
+      test/referenzseiten/ decken dagegen die Breite ab; sie sind für die
+      Messung der Trefferquote da, nicht für die Fehlersuche.
+    -->
+    <div class="kopfleiste">Feste Kopfzeile</div>
+
+    <main>
+      <h1>Beispielseite mit Verhaltensmängeln</h1>
+
+      <!-- 2.1.1: klickbares div ohne Tastaturzugang -->
+      <div role="button" onclick="alert(1)">Absenden</div>
+
+      <!-- 2.2.2: dauerhafte Animation, kein Schalter zum Anhalten -->
+      <p class="laufband">Dieser Inhalt bewegt sich unaufhörlich.</p>
+
+      <!-- 1.4.13: Zusatzinhalt nur über title -->
+      <span title="Diese Angabe erscheint später auf der Rechnung.">Hinweis</span>
+
+      <!-- 2.5.7: nur durch Ziehen bedienbar -->
+      <div draggable="true">Zum Sortieren ziehen</div>
+
+      <!-- 4.1.3: Statusbereich ohne Live-Kennzeichnung -->
+      <div id="statusbereich"></div>
+
+      <!-- 1.4.10: zu breit für schmale Fenster -->
+      <table class="starr">
+        <caption>
+          Sehr breite Tabelle
+        </caption>
+        <tr>
+          <th scope="col">Spalte</th>
+          <td>Wert</td>
+        </tr>
+      </table>
+
+      <!-- 1.4.12: wird bei erhöhtem Textabstand abgeschnitten -->
+      <div class="knapp">Dieser Text wird bei größerem Zeilenabstand abgeschnitten.</div>
+
+      <!-- 2.5.8: winzige Ziele dicht nebeneinander -->
+      <p><button class="winzig">a</button><button class="winzig">b</button><button class="winzig">c</button></p>
+
+      <!-- 3.1.2: englischer Absatz ohne eigene Sprachauszeichnung, lang genug für die Erkennung -->
+      <p>
+        This paragraph is written entirely in English and is long enough for a language detector to reach a
+        confident conclusion about it, even though the surrounding page declares German as its language.
+      </p>
+
+      <p>
+        Dieser Absatz ist auf Deutsch geschrieben und ebenfalls lang genug, damit die Spracherkennung ein
+        belastbares Urteil fällen kann, ohne dabei ins Raten zu geraten.
+      </p>
+
+      <!-- Genug Hoehe und genug Bedienelemente, damit beim Tabben gescrollt
+           wird und ein fokussiertes Element unter die feste Kopfzeile geraet -->
+      <section>
+        <h2>Weitere Links</h2>
+        <p><a href="#ziel">Erster Link ohne sichtbaren Fokus</a></p>
+        <p style="height: 300px">Abstandhalter</p>
+        <p><a href="#ziel">Zweiter Link ohne sichtbaren Fokus</a></p>
+        <p style="height: 300px">Abstandhalter</p>
+        <p><a href="#ziel">Dritter Link ohne sichtbaren Fokus</a></p>
+        <p style="height: 300px">Abstandhalter</p>
+        <p><a href="#ziel">Vierter Link ohne sichtbaren Fokus</a></p>
+        <p style="height: 300px">Abstandhalter</p>
+        <p><a href="#ziel">Fuenfter Link ohne sichtbaren Fokus</a></p>
+      </section>
+
+      <p id="ziel">Ende der Seite.</p>
+    </main>
+  </body>
+</html>

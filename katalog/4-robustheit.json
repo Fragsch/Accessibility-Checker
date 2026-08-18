@@ -47,11 +47,6 @@
           "typ": "auto",
           "engine": "axe",
           "regelIds": ["button-name", "link-name", "input-button-name", "select-name", "frame-title", "frame-title-unique", "aria-roles", "aria-valid-attr", "aria-valid-attr-value", "aria-required-attr", "aria-allowed-attr", "aria-allowed-role", "aria-prohibited-attr", "aria-conditional-attr", "aria-deprecated-role", "aria-roledescription", "aria-braille-equivalent", "aria-hidden-focus", "aria-command-name", "aria-meter-name", "aria-progressbar-name", "aria-tooltip-name", "aria-dialog-name", "aria-treeitem-name", "aria-tab-name", "summary-name", "nested-interactive", "presentation-role-conflict"]
-        },
-        {
-          "typ": "auto",
-          "engine": "ibm",
-          "regelIds": ["element_id_unique", "aria_role_valid", "aria_attribute_valid"]
         }
       ],
       "empfehlung": {
