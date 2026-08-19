@@ -5,6 +5,7 @@
 
   "seiten": {
     "mangelhaft.html": {
+      "zweck": "Die breite Seite: technische Verstöße quer durch alle vier Grundsätze",
       "erwarteteVerstoesse": [
         { "kriterium": "1.1.1", "stufe": "auto", "stelle": "img[src='team.jpg']", "was": "alt-Attribut fehlt" },
         { "kriterium": "1.1.1", "stufe": "manuell", "stelle": "img[src='trennlinie.png']", "was": "alt enthält den Dateinamen" },
@@ -56,8 +57,105 @@
     },
 
     "sauber.html": {
+      "zweck": "Gegenprobe zu mangelhaft.html — inhaltsgleich, alle Mängel behoben",
       "erwarteteVerstoesse": [],
       "hinweis": "Jeder Befund auf dieser Seite ist ein Fehlalarm-Verdacht und muss einzeln bewertet werden."
+    },
+
+    "bedienung-mangelhaft.html": {
+      "zweck": "Bedienung, Medien und Anzeige — was die breite Seite nicht abdeckt",
+      "erwarteteVerstoesse": [
+        { "kriterium": "1.2.1", "stufe": "auto", "stelle": "audio", "was": "Tonmitschnitt ohne Untertitelspur und ohne Transkript" },
+        { "kriterium": "1.3.2", "stufe": "auto", "stelle": ".schritte", "was": "column-reverse dreht die Quelltextreihenfolge um" },
+        { "kriterium": "1.3.4", "stufe": "auto", "stelle": ".drehung", "was": "Inhalt wird im Querformat zurückgedreht" },
+        { "kriterium": "2.1.4", "stufe": "auto", "stelle": "a[accesskey]", "was": "derselbe Tastenkurzbefehl zweimal vergeben" },
+        { "kriterium": "2.2.1", "stufe": "auto", "stelle": "meta[http-equiv='refresh']", "was": "selbsttätiges Neuladen ohne Abschaltung" },
+        { "kriterium": "2.4.3", "stufe": "auto", "stelle": ".schritte", "was": "Fokus läuft entgegen der sichtbaren Reihenfolge von unten nach oben" },
+        { "kriterium": "2.5.4", "stufe": "auto", "stelle": "body", "was": "Geräteneigung wird ausgewertet" },
+        { "kriterium": "2.5.7", "stufe": "auto", "stelle": "li[draggable]", "was": "Umsortieren nur durch Ziehen" }
+      ]
+    },
+
+    "bedienung-sauber.html": {
+      "zweck": "Gegenprobe zu bedienung-mangelhaft.html",
+      "erwarteteVerstoesse": []
+    },
+
+    "fehlererkennung-mangelhaft.html": {
+      "zweck": "Fehlerbehandlung und Anmeldung — nur durch Absenden eines Formulars prüfbar",
+      "erwarteteVerstoesse": [
+        { "kriterium": "3.3.1", "stufe": "auto", "stelle": "#kontakt", "was": "Fehler nur als rote Umrandung, keine Meldung in Textform" },
+        { "kriterium": "3.3.8", "stufe": "auto", "stelle": "#zugang", "was": "Captcha als einzige Hürde, Einfügen in Kennung und Passwort unterbunden" }
+      ]
+    },
+
+    "fehlererkennung-sauber.html": {
+      "zweck": "Gegenprobe zu fehlererkennung-mangelhaft.html",
+      "erwarteteVerstoesse": []
+    },
+
+    "fehlerempfehlung-mangelhaft.html": {
+      "zweck": "Die Meldung benennt den Fehler, sagt aber nicht, wie er zu beheben ist",
+      "erwarteteVerstoesse": [
+        { "kriterium": "3.3.3", "stufe": "auto", "stelle": "#buchung", "was": "Fehlermeldung ohne Weg zur Behebung" }
+      ]
+    },
+
+    "fehlerempfehlung-sauber.html": {
+      "zweck": "Gegenprobe zu fehlerempfehlung-mangelhaft.html",
+      "erwarteteVerstoesse": []
+    },
+
+    "tastaturfalle-mangelhaft.html": {
+      "zweck": "Steht für sich: die Falle bricht den Tastatur-Durchlauf ab",
+      "erwarteteVerstoesse": [
+        { "kriterium": "2.1.2", "stufe": "auto", "stelle": "#newsletter-mail", "was": "Feld fängt die Tabulatortaste ab und hält den Fokus fest" }
+      ]
+    },
+
+    "tastaturfalle-sauber.html": {
+      "zweck": "Gegenprobe zu tastaturfalle-mangelhaft.html",
+      "erwarteteVerstoesse": []
+    },
+
+    "fokuswechsel-mangelhaft.html": {
+      "zweck": "Steht für sich: das Durchtabben wechselt den Zusammenhang",
+      "erwarteteVerstoesse": [
+        { "kriterium": "3.2.1", "stufe": "auto", "stelle": "#bereich", "was": "Fokussieren allein springt an eine andere Stelle" }
+      ]
+    },
+
+    "fokuswechsel-sauber.html": {
+      "zweck": "Gegenprobe zu fokuswechsel-mangelhaft.html",
+      "erwarteteVerstoesse": []
+    }
+  },
+
+  "hinweisMehrseitig": "Drei Kriterien tragen im Katalog nurMehrseitig: true. Sie sind an einer Einzelseite zu Recht nicht anwendbar und lassen sich nur im Prüfprofil messen. Jede Gruppe wird als ein Scan über alle ihre Seiten geprüft.",
+
+  "gruppen": {
+    "mehrseitig-mangelhaft": {
+      "zweck": "Angebot aus drei Seiten — misst die seitenübergreifenden Kriterien",
+      "seiten": [
+        "mehrseitig-mangelhaft/start.html",
+        "mehrseitig-mangelhaft/kurse.html",
+        "mehrseitig-mangelhaft/kontakt.html"
+      ],
+      "erwarteteVerstoesse": [
+        { "kriterium": "2.4.5", "stufe": "auto", "stelle": "nav", "was": "nur die Navigation, weder Suche noch Inhaltsverzeichnis" },
+        { "kriterium": "3.2.3", "stufe": "auto", "stelle": "kurse.html nav", "was": "Navigation in abweichender Reihenfolge" },
+        { "kriterium": "3.2.6", "stufe": "auto", "stelle": "kontakt.html", "was": "Hilfezugang nur auf einer von drei Seiten" }
+      ]
+    },
+
+    "mehrseitig-sauber": {
+      "zweck": "Gegenprobe zu mehrseitig-mangelhaft",
+      "seiten": [
+        "mehrseitig-sauber/start.html",
+        "mehrseitig-sauber/kurse.html",
+        "mehrseitig-sauber/kontakt.html"
+      ],
+      "erwarteteVerstoesse": []
     }
   },
 

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kursmediathek der Musterakademie</title>
+
+  <!-- 2.2.1 VERSTOSS: die Seite laedt sich selbsttaetig neu, ohne dass sich das
+       abstellen oder verlaengern liesse. Zehn Minuten, damit der Neuladen
+       waehrend der Pruefung nicht dazwischenfunkt. -->
+  <meta http-equiv="refresh" content="600">
+
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; color: #1a1a1a; background: #ffffff; }
+    :focus-visible { outline: 3px solid #005fcc; outline-offset: 2px; }
+    a { color: #0b4da2; }
+    main { padding: 0 1rem 2rem; }
+    h1, h2 { line-height: 1.3; }
+
+    /* 1.3.4 VERSTOSS: im Querformat wird der Hinweiskasten zurueckgedreht.
+       Damit ist seine Anzeige an eine Geraetehaltung gebunden.
+
+       Bewusst nur der Kasten und nicht das ganze `main`: Eine Drehung des
+       gesamten Inhalts schiebt bei 200 Prozent Vergroesserung Text aus dem
+       Bild und loest zusaetzlich 1.4.4 aus. Ein Element, ein Verstoss — sonst
+       ist die Messung nicht mehr eindeutig zuzuordnen. */
+    @media (orientation: landscape) {
+      .drehung { transform: rotate(-90deg); transform-origin: left top; }
+    }
+    .drehung { width: 12rem; }
+
+    /* 1.3.2 VERSTOSS: die Reihenfolge im Quelltext ist genau umgekehrt zur
+       sichtbaren Anordnung. Sprachausgabe und Tastatur folgen dem Quelltext. */
+    .schritte { display: flex; flex-direction: column-reverse; gap: 2.5rem; }
+    .schritte a { display: block; padding: 1rem; border: 2px solid #0b4da2; }
+
+    .karte { border: 2px solid #767676; padding: 1rem; margin: 1rem 0; }
+    button { min-width: 24px; min-height: 24px; padding: .5rem 1rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <nav aria-label="Hauptnavigation">
+    <!-- 2.1.4 VERSTOSS: derselbe Tastenkurzbefehl zweimal vergeben. Welcher
+         gilt, entscheidet der Browser — und die Belegung laesst sich nirgends
+         abschalten oder umlegen. -->
+    <a href="/" accesskey="s">Start</a>
+    <a href="/mediathek" accesskey="s">Mediathek</a>
+  </nav>
+</header>
+
+<main>
+
+  <h1>Kursmediathek</h1>
+
+  <p class="drehung">Halten Sie das Geraet aufrecht.</p>
+
+  <h2>Mitschnitt der Einfuehrungsstunde</h2>
+
+  <!-- 1.2.1 VERSTOSS: reiner Tonmitschnitt ohne Untertitelspur und ohne
+       Verweis auf ein Transkript. Wer nicht hoert, erfaehrt den Inhalt nie. -->
+  <audio src="einfuehrung.mp3" controls></audio>
+
+  <h2>So gehen Sie vor</h2>
+
+  <!-- 1.3.2 VERSTOSS und 2.4.3 VERSTOSS: die Schritte stehen im Quelltext
+       rueckwaerts und werden erst durch CSS in die richtige Ordnung gebracht.
+       Der Tastaturfokus laeuft dadurch von unten nach oben. -->
+  <nav class="schritte" aria-label="Schritte der Anmeldung">
+    <a href="/schritt-4">Schritt 4: Bestaetigung abwarten</a>
+    <a href="/schritt-3">Schritt 3: Zahlungsweise waehlen</a>
+    <a href="/schritt-2">Schritt 2: Termin waehlen</a>
+    <a href="/schritt-1">Schritt 1: Kurs auswaehlen</a>
+  </nav>
+
+  <h2>Ihre Merkliste</h2>
+
+  <div class="karte">
+    <p>Ordnen Sie Ihre gemerkten Kurse in der gewuenschten Reihenfolge an.</p>
+
+    <!-- 2.5.7 VERSTOSS: die Reihenfolge laesst sich nur durch Ziehen aendern.
+         Es gibt keine Schaltflaechen und kein Auswahlfeld als zweiten Weg. -->
+    <ul>
+      <li draggable="true">Grundlagen der Barrierefreiheit</li>
+      <li draggable="true">Aufbaukurs Pruefverfahren</li>
+      <li draggable="true">Werkstatt: Berichte schreiben</li>
+    </ul>
+  </div>
+
+  <h2>Anzeige ausrichten</h2>
+
+  <p>Neigen Sie das Geraet nach links oder rechts, um zwischen den Kursbereichen zu wechseln.</p>
+
+</main>
+
+<script>
+  // 2.5.4 VERSTOSS: die Seite wertet Geraetebewegung aus. Wer das Geraet fest
+  // eingespannt hat oder es nicht bewegen kann, erreicht diese Funktion nicht;
+  // abschalten laesst sich die Auswertung ebenfalls nicht.
+  window.addEventListener('deviceorientation', function (e) {
+    if (e.gamma !== null && e.gamma > 30) document.title = 'Kursbereich rechts';
+  });
+</script>
+
+</body>
+</html>

@@ -35,6 +35,8 @@ import type {
   Stufe,
 } from '../typen/index.js';
 import type { Profil } from '../profil/index.js';
+import { EINSTUFUNG_TEXT, ladeAbdeckung } from '../katalog/abdeckung.js';
+import type { Abdeckungsmatrix, Einstufung } from '../katalog/abdeckung.js';
 import { verdichte } from '../scan/statusableitung.js';
 import { erkenneMuster, ranglisteSeiten } from './muster.js';
 import type { Muster, SeitenRang } from './muster.js';
@@ -191,6 +193,36 @@ export interface Methodikzeile {
   /** Woher die Bewertung tatsächlich stammt (E-05). */
   herkunft: string[];
   grenzen: string[];
+  /**
+   * Gemessene Abdeckung dieses Kriteriums (PRD 10, Phase 8).
+   *
+   * `null`, solange nicht gemessen wurde. Der Unterschied ist erheblich: Ein
+   * Bericht, der zu einem Kriterium „erfüllt" sagt, ohne dass je gemessen
+   * wurde, ob das Werkzeug dort überhaupt etwas findet, behauptet mehr, als er
+   * belegen kann.
+   */
+  abdeckung: MethodikAbdeckung | null;
+}
+
+export interface MethodikAbdeckung {
+  einstufung: Einstufung;
+  einstufungText: string;
+  testfaelle: number;
+  belegtErkannt: number;
+  uebersehen: number;
+  fehlalarme: number;
+}
+
+export interface Abdeckungsherkunft {
+  gemessenAm: string;
+  standard: string;
+  werkzeug: string;
+  referenzseiten: number;
+  kriterienMitTestfall: number;
+  kriterienGesamt: number;
+  erkennungsquote: number;
+  uebersehen: number;
+  fehlalarme: number;
 }
 
 export type VermerkArt = 'entwurf' | 'geschuetzt' | 'stufe2' | 'abbruch' | 'seitenfehler' | 'qualitaet';
@@ -212,6 +244,13 @@ export interface Berichtsdaten {
   konformitaet: Konformitaetszeile[];
   detailbefunde: Detailbefund[];
   methodik: Methodikzeile[];
+  /**
+   * Herkunft der Abdeckungszahlen — oder die Auskunft, dass es keine gibt.
+   *
+   * Steht als eigener Satz im Methodikteil. Wer den Bericht liest, muss
+   * wissen, wann zuletzt gemessen wurde und woran (X-15).
+   */
+  abdeckungsherkunft: Abdeckungsherkunft | null;
   /** Mängel ohne Kriterium im gewählten Standard (X-21). */
   qualitaetshinweise: { hinweis: Qualitaetshinweis; seiten: string[] }[];
   vermerke: Vermerk[];
@@ -228,6 +267,11 @@ export interface BerichtsOptionen {
   nurSeite?: string;
   /** Erzeugungszeitpunkt; einsetzbar, damit Tests reproduzierbar bleiben. */
   erstelltAm?: string;
+  /**
+   * Gemessene Abdeckung. Fehlt die Angabe, wird sie aus
+   * `katalog/abdeckung.json` gelesen; `null` schaltet sie ausdrücklich ab.
+   */
+  abdeckung?: Abdeckungsmatrix | null;
 }
 
 // ------------------------------------------------------------------ Aufbau
@@ -245,6 +289,7 @@ export function baueBerichtsdaten(optionen: BerichtsOptionen): Berichtsdaten {
   const kriterien = [...optionen.kriterien];
   const ergebnis = engeEin(optionen.ergebnis, optionen.nurSeite);
   const erstelltAm = optionen.erstelltAm ?? new Date().toISOString();
+  const abdeckung = optionen.abdeckung === undefined ? ladeAbdeckung() : optionen.abdeckung;
 
   const nachId = new Map(kriterien.map((k) => [k.id, k]));
 
@@ -281,7 +326,8 @@ export function baueBerichtsdaten(optionen: BerichtsOptionen): Berichtsdaten {
     },
     konformitaet,
     detailbefunde: baueDetailbefunde(projektebene, nachId, muster),
-    methodik: baueMethodik(kriterien, ergebnis),
+    methodik: baueMethodik(kriterien, ergebnis, abdeckung),
+    abdeckungsherkunft: baueAbdeckungsherkunft(abdeckung),
     qualitaetshinweise: sammleQualitaetshinweise(ergebnis),
     vermerke: baueVermerke(ergebnis, offene, kriterien),
   };
@@ -624,7 +670,11 @@ function baueDetailbefunde(
  * vorsieht, und woher die Bewertung tatsächlich stammt. Weicht beides
  * voneinander ab, ist etwas ausgefallen — und genau das soll sichtbar sein.
  */
-function baueMethodik(kriterien: readonly Kriterium[], ergebnis: ScanErgebnis): Methodikzeile[] {
+function baueMethodik(
+  kriterien: readonly Kriterium[],
+  ergebnis: ScanErgebnis,
+  abdeckung: Abdeckungsmatrix | null,
+): Methodikzeile[] {
   return kriterien.map((kriterium) => {
     const stufen = stufenDesKriteriums(kriterium);
     const herkunft = new Set<string>();
@@ -634,14 +684,42 @@ function baueMethodik(kriterien: readonly Kriterium[], ergebnis: ScanErgebnis): 
       if (bewertung?.herkunft) herkunft.add(bewertung.herkunft);
     }
 
+    const gemessen = abdeckung?.kriterien[kriterium.id] ?? null;
+
     return {
       kriterium: kriterium.id,
       titel: kriterium.titel,
       stufen,
       herkunft: [...herkunft],
       grenzen: stufen.map((s) => GRENZEN[s]),
+      abdeckung: gemessen
+        ? {
+            einstufung: gemessen.einstufung,
+            einstufungText: EINSTUFUNG_TEXT[gemessen.einstufung],
+            testfaelle: gemessen.testfaelle,
+            belegtErkannt: gemessen.belegtErkannt,
+            uebersehen: gemessen.uebersehen,
+            fehlalarme: gemessen.fehlalarme,
+          }
+        : null,
     };
   });
+}
+
+/** Woher die Abdeckungszahlen stammen — oder `null`, wenn es keine gibt. */
+function baueAbdeckungsherkunft(abdeckung: Abdeckungsmatrix | null): Abdeckungsherkunft | null {
+  if (!abdeckung) return null;
+  return {
+    gemessenAm: abdeckung.gemessenAm,
+    standard: abdeckung.standard,
+    werkzeug: abdeckung.werkzeug,
+    referenzseiten: abdeckung.referenzseiten.length,
+    kriterienMitTestfall: abdeckung.kennzahlen.mitTestfall,
+    kriterienGesamt: abdeckung.kennzahlen.kriterienGesamt,
+    erkennungsquote: abdeckung.kennzahlen.erkennungsquote,
+    uebersehen: abdeckung.kennzahlen.uebersehen,
+    fehlalarme: abdeckung.kennzahlen.fehlalarme,
+  };
 }
 
 /** Qualitätshinweise über alle Seiten, verdichtet (X-21). */

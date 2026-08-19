@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kontakt und Kundenzugang der Musterakademie</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; color: #1a1a1a; background: #ffffff; }
+    :focus-visible { outline: 3px solid #005fcc; outline-offset: 2px; }
+    a { color: #0b4da2; }
+    main { padding: 0 1rem 2rem; }
+    h1, h2 { line-height: 1.3; }
+    label { display: block; margin-top: 1rem; }
+    input, select, textarea { border: 1px solid #767676; padding: .4rem; min-height: 24px; }
+    button { min-width: 24px; min-height: 24px; padding: .5rem 1rem; }
+    fieldset { border: 2px solid #767676; margin: 1rem 0; }
+
+    /* 3.3.1 VERSTOSS: der Fehler wird ausschliesslich farblich angezeigt. */
+    .fehlerhaft { border: 3px solid #d40000; background: #ffecec; }
+  </style>
+</head>
+<body>
+
+<header>
+  <nav aria-label="Hauptnavigation">
+    <a href="/">Start</a>
+    <a href="/kontakt">Kontakt</a>
+  </nav>
+</header>
+
+<main>
+
+  <h1>Kontakt und Kundenzugang</h1>
+
+  <h2>Ihre Nachricht an uns</h2>
+
+  <form id="kontakt" novalidate>
+    <fieldset>
+      <legend>Angaben zur Nachricht</legend>
+
+      <label for="kontakt-name">Ihr Name</label>
+      <input type="text" id="kontakt-name" name="absender" autocomplete="name" aria-required="true">
+
+      <label for="kontakt-thema">Worum geht es?</label>
+      <select id="kontakt-thema" name="thema" aria-required="true">
+        <option value="">Bitte waehlen</option>
+        <option value="beratung">Beratung</option>
+        <option value="schulung">Schulung</option>
+      </select>
+
+      <label for="kontakt-text">Ihre Nachricht</label>
+      <textarea id="kontakt-text" name="nachricht" rows="4" aria-required="true"></textarea>
+    </fieldset>
+
+    <button type="submit">Nachricht senden</button>
+  </form>
+
+  <h2>Kundenzugang</h2>
+
+  <form id="zugang" action="/anmelden" method="post">
+    <fieldset>
+      <legend>Anmeldung am Kundenkonto</legend>
+
+      <label for="zugang-kennung">Benutzerkennung</label>
+      <!-- 3.3.8 VERSTOSS: Einfuegen ist unterbunden. Wer einen
+           Passwortspeicher benutzt, muss die Kennung abtippen. -->
+      <input type="text" id="zugang-kennung" name="benutzer" autocomplete="username"
+             onpaste="return false">
+
+      <label for="zugang-wort">Passwort</label>
+      <!-- 3.3.8 VERSTOSS: dasselbe beim Passwort. -->
+      <input type="password" id="zugang-wort" name="kennwort" autocomplete="current-password"
+             onpaste="event.preventDefault()">
+
+      <!-- 3.3.8 VERSTOSS: ein Bilderraetsel als einzige Huerde. Es gibt keinen
+           zweiten Weg ohne Erinnern, Abschreiben oder Bilderraten. -->
+      <div class="captcha">
+        <img src="captcha.png" alt="Sicherheitsabfrage: Zeichenfolge im Bild" width="200" height="60">
+        <label for="captcha-eingabe">Zeichenfolge aus dem Bild eintragen</label>
+        <input type="text" id="captcha-eingabe" name="pruefzeichen">
+      </div>
+    </fieldset>
+
+    <button type="submit">Anmelden</button>
+  </form>
+
+</main>
+
+<script>
+  // 3.3.1 VERSTOSS: Beim Absenden mit leeren Pflichtfeldern erscheint keine
+  // Fehlermeldung in Textform. Sichtbar wird der Fehler nur an der roten
+  // Umrandung — wer sie nicht sieht, erfaehrt nie, was zu tun ist.
+  document.getElementById('kontakt').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var leer = this.querySelectorAll('[aria-required=true]');
+    for (var i = 0; i < leer.length; i += 1) {
+      if (!leer[i].value) leer[i].classList.add('fehlerhaft');
+    }
+  });
+</script>
+
+</body>
+</html>

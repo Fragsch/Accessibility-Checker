@@ -6,6 +6,7 @@
  */
 
 import type {
+  Abdeckungsmatrix,
   Antwortwert,
   Auftrag,
   Berichtsdaten,
@@ -53,6 +54,16 @@ async function hole<T>(pfad: string, optionen?: RequestInit): Promise<T> {
 export async function ladeKatalog(standard: Standard): Promise<Kriterium[]> {
   const antwort = await hole<{ kriterien: Kriterium[] }>(`/api/katalog?standard=${standard}`);
   return antwort.kriterien;
+}
+
+/**
+ * Gemessene Abdeckung je Kriterium (PRD 10).
+ *
+ * Liefert `null`, wenn nie gemessen wurde. Das ist kein Fehlerfall — die
+ * Oberflaeche sagt dann, dass keine Messung vorliegt.
+ */
+export async function ladeAbdeckung(): Promise<{ matrix: Abdeckungsmatrix | null; hinweis?: string }> {
+  return hole<{ matrix: Abdeckungsmatrix | null; hinweis?: string }>('/api/abdeckung');
 }
 
 /**

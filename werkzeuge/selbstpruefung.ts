@@ -158,6 +158,16 @@ const ANSICHTEN: Ansicht[] = [
       await seite.getByRole('heading', { level: 1, name: 'Erklärung zur Barrierefreiheit' }).waitFor();
     },
   },
+  {
+    name: 'Abdeckungsmatrix — was dieses Werkzeug findet',
+    vorbereiten: async (seite) => {
+      await seite.getByRole('button', { name: 'Was dieses Werkzeug findet' }).click();
+      await seite.getByRole('heading', { name: 'Was dieses Werkzeug findet', level: 2 }).waitFor();
+      // Auf die Messwerte warten: Ohne sie stuenden nur zwei Absaetze da, und
+      // die Tabellen — das eigentlich zu Pruefende — waeren nie im DOM.
+      await seite.getByRole('heading', { level: 3, name: 'Woran gemessen wurde' }).waitFor({ timeout: 20_000 });
+    },
+  },
 ];
 
 function referenzseite(datei: string): string {

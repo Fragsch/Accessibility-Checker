@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kursmediathek der Musterakademie</title>
+
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; color: #1a1a1a; background: #ffffff; }
+    :focus-visible { outline: 3px solid #005fcc; outline-offset: 2px; }
+    a { color: #0b4da2; }
+    main { padding: 0 1rem 2rem; }
+    h1, h2 { line-height: 1.3; }
+
+    /* Der Inhalt fliesst in jeder Anzeigerichtung. Gedreht wird nichts. */
+    .schritte { display: flex; flex-direction: column; gap: 2.5rem; }
+    .schritte a { display: block; padding: 1rem; border: 2px solid #0b4da2; }
+
+    .karte { border: 2px solid #767676; padding: 1rem; margin: 1rem 0; }
+    button { min-width: 24px; min-height: 24px; padding: .5rem 1rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <nav aria-label="Hauptnavigation">
+    <a href="/" accesskey="s">Start</a>
+    <a href="/mediathek" accesskey="m">Mediathek</a>
+  </nav>
+</header>
+
+<main>
+
+  <h1>Kursmediathek</h1>
+
+  <h2>Mitschnitt der Einfuehrungsstunde</h2>
+
+  <!-- Untertitelspur und zusaetzlich ein Transkript im Volltext. -->
+  <audio controls>
+    <source src="einfuehrung.mp3" type="audio/mpeg">
+    <track kind="captions" src="einfuehrung-de.vtt" srclang="de" label="Deutsch" default>
+  </audio>
+  <p><a href="/einfuehrung-transkript">Transkript der Einfuehrungsstunde im Volltext</a></p>
+
+  <h2>So gehen Sie vor</h2>
+
+  <!-- Quelltextreihenfolge und sichtbare Anordnung stimmen ueberein. -->
+  <nav class="schritte" aria-label="Schritte der Anmeldung">
+    <a href="/schritt-1">Schritt 1: Kurs auswaehlen</a>
+    <a href="/schritt-2">Schritt 2: Termin waehlen</a>
+    <a href="/schritt-3">Schritt 3: Zahlungsweise waehlen</a>
+    <a href="/schritt-4">Schritt 4: Bestaetigung abwarten</a>
+  </nav>
+
+  <h2>Ihre Merkliste</h2>
+
+  <div class="karte">
+    <p>Ordnen Sie Ihre gemerkten Kurse in der gewuenschten Reihenfolge an.</p>
+
+    <!-- Ziehen bleibt moeglich, ist aber nicht der einzige Weg: jeder Eintrag
+         laesst sich auch mit Schaltflaechen verschieben. -->
+    <ul>
+      <li>
+        Grundlagen der Barrierefreiheit
+        <button type="button">Nach unten: Grundlagen der Barrierefreiheit</button>
+      </li>
+      <li>
+        Aufbaukurs Pruefverfahren
+        <button type="button">Nach oben: Aufbaukurs Pruefverfahren</button>
+        <button type="button">Nach unten: Aufbaukurs Pruefverfahren</button>
+      </li>
+      <li>
+        Werkstatt: Berichte schreiben
+        <button type="button">Nach oben: Werkstatt Berichte schreiben</button>
+      </li>
+    </ul>
+  </div>
+
+  <h2>Kursbereich wechseln</h2>
+
+  <p>Waehlen Sie den Kursbereich hier aus. Eine Neigung des Geraets wird nicht ausgewertet.</p>
+
+  <p>
+    <a href="/bereich/grundlagen">Bereich Grundlagen</a> ·
+    <a href="/bereich/aufbau">Bereich Aufbau</a>
+  </p>
+
+</main>
+
+</body>
+</html>

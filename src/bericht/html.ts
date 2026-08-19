@@ -470,12 +470,15 @@ function abschnittMethodik(daten: Berichtsdaten): string {
     '<h2>7 — Methodik und Grenzen</h2>',
     '<p>Geprüft wird in drei Stufen: automatisch über Prüf-Engines, textbewertend über ein lokal laufendes ' +
       'Sprachmodell, und über gezielte Fragen an die prüfende Person. Die Tabelle nennt je Kriterium, welche ' +
-      'Stufen der Prüfkatalog vorsieht und woher die Bewertung tatsächlich stammt.</p>',
+      'Stufen der Prüfkatalog vorsieht, woher die Bewertung tatsächlich stammt und wie belastbar das Werkzeug ' +
+      'bei diesem Kriterium gemessen wurde.</p>',
+    abdeckungsherkunft(daten),
     '<div class="tabellenrahmen" tabindex="0" role="region" aria-label="Abdeckungsmatrix">',
     '<table>',
     '<caption>Abdeckungsmatrix</caption>',
     '<thead><tr>',
-    '<th scope="col">Kriterium</th><th scope="col">Vorgesehene Stufen</th><th scope="col">Herkunft der Bewertung</th>',
+    '<th scope="col">Kriterium</th><th scope="col">Vorgesehene Stufen</th><th scope="col">Herkunft der Bewertung</th>' +
+      '<th scope="col">Gemessene Abdeckung</th>',
     '</tr></thead>',
     '<tbody>',
     ...daten.methodik.map(methodikzeile),
@@ -500,8 +503,50 @@ function methodikzeile(zeile: Methodikzeile): string {
     `<th scope="row"><span class="kennung">${esc(zeile.kriterium)}</span> ${esc(zeile.titel)}</th>`,
     `<td>${zeile.stufen.map((s) => esc(STUFE_KURZ[s])).join(', ')}</td>`,
     `<td>${zeile.herkunft.length > 0 ? esc(zeile.herkunft.join('; ')) : 'nicht bewertet'}</td>`,
+    `<td>${abdeckungszelle(zeile)}</td>`,
     '</tr>',
   ].join('');
+}
+
+/**
+ * Die gemessene Abdeckung eines Kriteriums.
+ *
+ * Ausgeschrieben statt als Symbol: Ein Zeichen ohne Text wäre für die
+ * Sprachausgabe nichts wert, und ausgerechnet in einem Bericht über
+ * Barrierefreiheit ist das keine Kleinigkeit.
+ */
+function abdeckungszelle(zeile: Methodikzeile): string {
+  const gemessen = zeile.abdeckung;
+  if (!gemessen) return 'nicht gemessen';
+
+  const zahlen =
+    gemessen.testfaelle > 0
+      ? ` <span class="kennung">${gemessen.belegtErkannt} von ${gemessen.testfaelle} Testfällen belegt</span>`
+      : '';
+
+  return `${esc(gemessen.einstufungText)}${zahlen}`;
+}
+
+/** Woher die Abdeckungszahlen stammen. Fehlt die Messung, wird das gesagt. */
+function abdeckungsherkunft(daten: Berichtsdaten): string {
+  const herkunft = daten.abdeckungsherkunft;
+
+  if (!herkunft) {
+    return (
+      '<p class="vermerk">Zu diesem Werkzeugstand liegt <strong>keine Messung der Abdeckung</strong> vor. ' +
+      'Die Spalte „Gemessene Abdeckung" bleibt daher leer — nicht, weil das Werkzeug nichts fände, sondern ' +
+      'weil nicht überprüft wurde, was es findet.</p>'
+    );
+  }
+
+  return (
+    `<p>Die Spalte „Gemessene Abdeckung" stammt aus einem Lauf gegen ${herkunft.referenzseiten} Referenzseiten ` +
+    `mit bekannter Fehlerlage, gemessen am ${datum(herkunft.gemessenAm)} mit ${esc(herkunft.werkzeug)} unter ` +
+    `WCAG ${esc(herkunft.standard)}. Für ${herkunft.kriterienMitTestfall} der ${herkunft.kriterienGesamt} ` +
+    `Kriterien gab es dabei mindestens einen Testfall; ${Math.round(herkunft.erkennungsquote * 100)} Prozent ` +
+    `der eingebauten Verstöße wurden belegt erkannt, ${herkunft.uebersehen} übersehen und ` +
+    `${herkunft.fehlalarme} Befunde ohne Sollwert gemeldet.</p>`
+  );
 }
 
 /** Kurzform der Prüfstufen — die Matrix in Abschnitt 7 hat wenig Platz. */

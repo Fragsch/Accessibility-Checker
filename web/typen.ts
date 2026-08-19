@@ -23,19 +23,23 @@ import type { Profil, ProfilSeite, Viewport } from '../src/profil/index';
 import type { GefundeneSeite } from '../src/scan/crawl';
 import type { Baustein, Muster, SeitenRang } from '../src/bericht/muster';
 import type { Berichtsdaten, Kennzahlen, Konformitaetszeile, Massnahme, Vermerk } from '../src/bericht/daten';
+import type { Abdeckungsmatrix, Einstufung, KriteriumAbdeckung } from '../src/katalog/abdeckung';
 import type { ScanUebersicht } from '../src/db/scan-speichern';
 
 export type {
+  Abdeckungsmatrix,
   Antwortwert,
   Baustein,
   BeantworteteFrage,
   Berichtsdaten,
   Betriebsart,
   Bewertung,
+  Einstufung,
   GefundeneSeite,
   Kennzahlen,
   Konformitaetszeile,
   Kriterium,
+  KriteriumAbdeckung,
   Massnahme,
   Muster,
   OffeneFrage,

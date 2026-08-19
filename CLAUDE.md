@@ -41,6 +41,10 @@ npm run build
 npm start                # Werkzeug starten
 npm test                 # Tests
 npm run axe:abgleich     # Katalog-Regel-IDs gegen installiertes axe-core prüfen
+npm run verifikation     # gegen die Referenzseiten messen, Abdeckungsmatrix schreiben
+npm run pruefe:selbst    # die eigene Oberfläche mit dem eigenen Werkzeug prüfen
+npm run modellvergleich  # Sprachmodelle gegen test/modellsatz/ messen (braucht Ollama)
+npm run abnahme          # Abnahme auf diesem Betriebssystem
 
 node werkzeuge/katalog-pruefen.mjs   # Katalog prüfen — läuft ohne Abhängigkeiten
 ```
@@ -61,7 +65,7 @@ node werkzeuge/katalog-pruefen.mjs   # Katalog prüfen — läuft ohne Abhängig
 
 ## Reihenfolge der Umsetzung
 
-Die Phasen aus `PRD.md` Abschnitt 9 sind bindend. Aktueller Stand: **Phase 1 bis 7 abgeschlossen**.
+Die Phasen aus `PRD.md` Abschnitt 9 sind bindend. Aktueller Stand: **Phase 1 bis 8 abgeschlossen**, mit drei benannten Rückständen bei der Abnahme.
 
 | Phase | Stand | Wo |
 |---|---|---|
@@ -72,16 +76,23 @@ Die Phasen aus `PRD.md` Abschnitt 9 sind bindend. Aktueller Stand: **Phase 1 bis
 | 5 | ✓ Geführte manuelle Prüfliste mit Persistenz | `src/stufe3/` |
 | 6 | ✓ Mehrseitig und WebApp-fähig | `src/profil/`, `src/scan/crawl.ts`, `src/scan/anmeldung.ts`, `src/bericht/muster.ts` |
 | 7 | ✓ Bericht nach WCAG-EM/ACR, PDF, EARL, Erklärung | `src/bericht/`, `web/bausteine/Berichtsansicht.tsx` |
+| 8 | ✓ Verifikation, Abdeckungsmatrix, Modellvergleich, Abnahme | `werkzeuge/verifikation.ts`, `werkzeuge/modellvergleich.ts`, `werkzeuge/abnahme.ts`, `katalog/abdeckung.json` |
 
-**Als Nächstes Phase 8:** Verifikation gegen Referenzseiten ausbauen, Falsch-Positiv- und Falsch-Negativ-Rate messen, Modellvergleich, Abnahme auf allen drei Betriebssystemen. `werkzeuge/verifikation.ts` und `test/referenzseiten/soll.json` sind die Grundlage; beide stehen und laufen bei jeder Engine-Änderung mit.
+**Stand der Messung (Phase 8):** 12 Referenzseiten und 2 mehrseitige Gruppen, 46 der 55 Kriterien mit Testfall, **81 % der eingebauten Verstöße belegt erkannt, 0 übersehen, 0 Fehlalarme.** Die neun Kriterien ohne Testfall haben keinen Automatikanteil — dort könnte eine Referenzseite nichts belegen.
+
+**Drei Rückstände, die offen benannt gehören:**
+
+1. **Modellvergleich unvollständig.** Gemessen wurde nur phi4-mini (3,8 B) — das einzige lokal vorhandene Modell. Ergebnis: 32 % Trefferquote, 52 % `unsicher`, 10 durchgewunkene Verstöße. Damit ist belegt, dass diese Größenordnung für Stufe 2 nicht genügt. PRD 10.1 verlangt zusätzlich ein 8B-, ein 12–14B- und ein Cloud-Modell. Nach `ollama pull <modell>` misst `npm run modellvergleich` sie ohne weitere Änderung mit; für das Cloud-Modell fehlt ein zweiter Adapter.
+2. **Abnahme nur auf macOS.** `npm run abnahme` ist gebaut und auf darwin/arm64 bestanden. Windows und Linux stehen aus; solange sie fehlen, ist NF-13 für diese Fassung nicht belegt.
+3. **W3C Before-and-After und eine extern geprüfte Seite** sind nicht eingebunden — beide brauchen Netzzugriff, die Verifikation läuft wie das Werkzeug ohne Datenabfluss. Wer sie heranzieht, spiegelt sie lokal und trägt sie als weiteres Paar in `soll.json` ein.
 
 **Keine Route antwortet mehr mit 501.** Die Schnittstelle aus `ARCHITEKTUR.md` 6 ist vollständig gebaut.
 
-### Elf Regeln aus Phase 3 bis 7, die weitergelten
+### Vierzehn Regeln aus Phase 3 bis 8, die weitergelten
 
 1. **Kein `tsx` in einem Pfad, der einen Browser steuert.** esbuild baut `__name()` in benannte Funktionen ein; im Browser gibt es das nicht, und jeder `page.evaluate`-Aufruf scheitert stumm. Tests und Befehlszeile laufen über den kompilierten Stand.
-2. **Nach jeder Änderung an einer Engine: `npm run verifikation`.** Sie misst gegen `test/referenzseiten/soll.json`. Zwei Zahlen zählen — *übersehen* muss 0 bleiben, *Fehlalarme* müssen 0 bleiben.
-3. **Nach jeder Änderung an der Oberfläche: `npm run pruefe:selbst`.** Der eigene Scanner läuft über alle zehn Ansichten — seit Phase 7 gehören der erzeugte Bericht und der Entwurf der Erklärung dazu. Neue Ansicht heißt: neuer Eintrag in `ANSICHTEN` in `werkzeuge/selbstpruefung.ts` — sonst wird sie nie geprüft.
+2. **Nach jeder Änderung an einer Engine: `npm run verifikation`.** Sie misst gegen `test/referenzseiten/soll.json` und schreibt `katalog/abdeckung.json` neu. Zwei Zahlen zählen — *übersehen* muss 0 bleiben, *Fehlalarme* müssen 0 bleiben. Die erzeugte Matrix gehört in denselben Commit: Wer die Engine ändert und die alte Messung stehen lässt, behauptet eine Abdeckung, die nicht mehr gemessen ist.
+3. **Nach jeder Änderung an der Oberfläche: `npm run pruefe:selbst`.** Der eigene Scanner läuft über alle elf Ansichten — seit Phase 7 gehören der erzeugte Bericht und der Entwurf der Erklärung dazu, seit Phase 8 die Abdeckungsmatrix. Neue Ansicht heißt: neuer Eintrag in `ANSICHTEN` in `werkzeuge/selbstpruefung.ts` — sonst wird sie nie geprüft.
 4. **Ein Urteil des Sprachmodells ist nie ein Verstoß.** `problem` und `unsicher` führen beide zu `pruefung_erforderlich`, niemals zu `nicht_erfuellt` (L-25). Wer das ändert, stellt Feststellungen in den Bericht, die niemand geprüft hat.
 5. **Eine manuelle Antwort kann keinen belegten Verstoß wegräumen.** Sie kann hinzufügen, was die Automatik nicht sieht — nicht überstimmen, was diese belegt hat. Die Reihenfolge aus `ARCHITEKTUR.md` 5.2 bleibt bindend.
 6. **Der angemeldete Browserkontext gehört der Anmeldung, nicht dem Scan.** `Browser.starten({ angemeldeterKontext })` startet keinen eigenen Browser und schließt den fremden Kontext nicht; je Seite wird nur die Seite geschlossen. Wer das umdreht, verliert die Sitzung nach der ersten Seite.
@@ -90,6 +101,9 @@ Die Phasen aus `PRD.md` Abschnitt 9 sind bindend. Aktueller Stand: **Phase 1 bis
 9. **Alle vier Ausgabewege des Berichts speisen sich aus `src/bericht/daten.ts`.** Wer für eine Ausgabe direkt aus dem Scanergebnis rechnet, erzeugt Zahlen, die im PDF anders lauten als im HTML — und macht den Bericht als Aussage gegenüber Dritten wertlos.
 10. **Die Konformitätstabelle entsteht aus dem Katalog, nicht aus der gespeicherten Verdichtung.** Sonst fehlt unter einem gewechselten Standard stillschweigend ein Kriterium, und im fertigen Bericht ist das nicht zu bemerken (X-19).
 11. **Nach jeder Änderung an `src/bericht/html.ts`: `npm run pruefe:selbst`.** Der erzeugte Bericht ist ein Erzeugnis dieses Werkzeugs und wird von der Selbstprüfung mitgeprüft — ein Bericht über Barrierefreiheit, den ein Teil seiner Leser nicht lesen kann, widerlegt sich selbst.
+12. **Eine gemessene Lücke schlägt jede andere Einstufung der Abdeckung.** Ein Kriterium, bei dem einmal etwas übersehen wurde, ist nicht „teilweise belegt", auch wenn neun andere Testfälle sauber liefen. Wer das aufweicht, baut eine Matrix, die genau dort beruhigend aussieht, wo ein Verstoß durchgewunken wurde.
+13. **Neue Prüfung heißt neuer Testfall.** Eine Regel ohne Eintrag in `soll.json` ist unbelegt und erscheint in der Matrix zu Recht als „ungemessen". Umgekehrt gilt: Wer einen Fehlalarm abstellt, prüft an der sauberen Gegenprobe nach — nicht am Einzelfall.
+14. **`unsicher` ist im Modellvergleich nie ein Sollwert.** Es ist eine Kenngröße für die anfallende Nacharbeit (L-23). Die schlechte Zahl ist das falsche `ok`: ein Verstoß, den das Modell durchwinkt. Wer `unsicher` als Soll zulässt, macht aus dem Ausweichen des Modells ein bestandenes Ergebnis.
 
 ## Wichtig beim Einstieg
 

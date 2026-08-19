@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kurs buchen bei der Musterakademie</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; color: #1a1a1a; background: #ffffff; }
+    :focus-visible { outline: 3px solid #005fcc; outline-offset: 2px; }
+    a { color: #0b4da2; }
+    main { padding: 0 1rem 2rem; }
+    h1 { line-height: 1.3; }
+    label { display: block; margin-top: 1rem; }
+    input, select { border: 1px solid #767676; padding: .4rem; min-height: 24px; }
+    button { min-width: 24px; min-height: 24px; padding: .5rem 1rem; }
+    fieldset { border: 2px solid #767676; margin: 1rem 0; }
+    .meldung { border: 3px solid #a30000; background: #ffecec; color: #1a1a1a; padding: .75rem; }
+    .erlaeuterung { color: #4a4a4a; }
+  </style>
+</head>
+<body>
+
+<header>
+  <nav aria-label="Hauptnavigation">
+    <a href="/">Start</a>
+    <a href="/kurse">Kurse</a>
+  </nav>
+</header>
+
+<main>
+
+  <h1>Kurs buchen</h1>
+
+  <form id="buchung" novalidate>
+    <div id="buchung-meldung" role="alert"></div>
+
+    <fieldset>
+      <legend>Angaben zur Buchung</legend>
+
+      <label for="buchung-kurs">Kurs</label>
+      <select id="buchung-kurs" name="kurs" aria-required="true">
+        <option value="">Bitte waehlen</option>
+        <option value="grundlagen">Grundlagen der Barrierefreiheit</option>
+        <option value="aufbau">Aufbaukurs Pruefverfahren</option>
+      </select>
+
+      <label for="buchung-datum">Wunschtermin</label>
+      <input type="text" id="buchung-datum" name="termin" aria-required="true"
+             aria-describedby="datum-erlaeuterung">
+      <span class="erlaeuterung" id="datum-erlaeuterung">Format TT.MM.JJJJ, zum Beispiel 12.03.2026</span>
+
+      <label for="buchung-anzahl">Zahl der Plaetze</label>
+      <input type="text" id="buchung-anzahl" name="plaetze" aria-required="true"
+             aria-describedby="anzahl-erlaeuterung">
+      <span class="erlaeuterung" id="anzahl-erlaeuterung">Eine Zahl von 1 bis 12</span>
+    </fieldset>
+
+    <button type="submit">Buchung abschliessen</button>
+  </form>
+
+</main>
+
+<script>
+  // Die Meldung benennt nicht nur den Fehler, sondern nennt die richtige
+  // Eingabe. Sie ist bekannt — also wird sie vorgeschlagen.
+  document.getElementById('buchung').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var rat = {
+      kurs: 'waehlen Sie unter "Kurs" einen der angebotenen Eintraege',
+      termin: 'geben Sie den Wunschtermin im Format TT.MM.JJJJ an, zum Beispiel 12.03.2026',
+      plaetze: 'geben Sie unter "Zahl der Plaetze" eine Zahl von 1 bis 12 an'
+    };
+    var pflicht = this.querySelectorAll('[aria-required=true]');
+    var wege = [];
+    for (var i = 0; i < pflicht.length; i += 1) {
+      if (!pflicht[i].value) wege.push(rat[pflicht[i].name]);
+    }
+    var kasten = document.getElementById('buchung-meldung');
+    if (wege.length === 0) {
+      kasten.className = '';
+      kasten.textContent = '';
+      return;
+    }
+    kasten.className = 'meldung';
+    kasten.textContent = 'Die Buchung ist unvollstaendig. So wird sie vollstaendig: ' + wege.join('; ') + '.';
+  });
+</script>
+
+</body>
+</html>

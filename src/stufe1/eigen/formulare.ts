@@ -172,8 +172,15 @@ async function sendeLeerAb(seite: import('playwright').Page, selektor: string): 
   const textNachher = await seite.evaluate(() => document.body.innerText);
   const neu = neuerText(textVorher, textNachher);
 
+  /*
+    „unvollstaendig" und „nicht ausgefuellt" sind in Phase 8 dazugekommen. Die
+    Referenzseite `fehlerempfehlung-sauber.html` meldet vorbildlich
+    „Die Buchung ist unvollstaendig. So wird sie vollstaendig: …" — und wurde
+    trotzdem als 3.3.1 gefuehrt, weil kein Wort der Liste vorkam. Ein Fehlalarm,
+    der ausgerechnet die saubere Loesung bestraft haette.
+  */
   const HINWEIS_AUF_FEHLER =
-    /pflicht|erforderlich|ausf(ü|ue)llen|fehlt|ung(ü|ue)ltig|nicht korrekt|bitte geben|bitte w(ä|ae)hlen|required|invalid|error/i;
+    /pflicht|erforderlich|ausf(ü|ue)llen|fehlt|fehlen|unvollst(ä|ae)ndig|nicht ausgef(ü|ue)llt|ung(ü|ue)ltig|nicht korrekt|bitte geben|bitte w(ä|ae)hlen|bitte erg(ä|ae)nzen|required|invalid|error/i;
   const HINWEIS_AUF_EMPFEHLUNG =
     /bitte|beispiel|format|mindestens|h(ö|oe)chstens|muss .*(enthalten|beginnen|bestehen)|z\.\s?B\.|etwa|geben Sie/i;
 

@@ -1,0 +1,68 @@
+{
+  "plattform": "darwin",
+  "architektur": "arm64",
+  "betriebssystem": "Darwin 25.5.0",
+  "node": "v24.18.1",
+  "gepruefLtAm": "2026-08-19",
+  "werkzeug": "Fassung 0.1.0",
+  "proben": [
+    {
+      "name": "1  Node-Laufzeit",
+      "ausgang": "ok",
+      "befund": "Node 24.18.1, arm64"
+    },
+    {
+      "name": "1  Speicherorte beschreibbar",
+      "ausgang": "ok",
+      "befund": "daten"
+    },
+    {
+      "name": "2  Prüfkatalog lesbar und gültig",
+      "ausgang": "ok",
+      "befund": "50 Kriterien unter 2.1, 55 unter 2.2"
+    },
+    {
+      "name": "2  Prompts der Stufe 2 lesbar",
+      "ausgang": "ok",
+      "befund": "11 Prompts"
+    },
+    {
+      "name": "2  Abdeckungsmatrix vorhanden",
+      "ausgang": "ok",
+      "befund": "gemessen am 2026-08-19, 46 Kriterien mit Testfall",
+      "optional": true
+    },
+    {
+      "name": "3  Datenbank (better-sqlite3) samt Schema",
+      "ausgang": "ok",
+      "befund": "10 Tabellen angelegt"
+    },
+    {
+      "name": "4  Chromium startet und lädt eine Seite",
+      "ausgang": "ok",
+      "befund": "Seite geladen: „Barrierefreiheit prüfen – Musterakademie\""
+    },
+    {
+      "name": "5  Alle sechs Engines an einer echten Seite",
+      "ausgang": "ok",
+      "befund": "23 Verstoesse auf mangelhaft.html, 55 Kriterien bewertet"
+    },
+    {
+      "name": "6  Bericht als HTML und PDF",
+      "ausgang": "ok",
+      "befund": "HTML 45 kB, PDF 472 kB"
+    },
+    {
+      "name": "7  Hardware-Erkennung",
+      "ausgang": "ok",
+      "befund": "apple-silicon, 8 GB → phi4-mini"
+    },
+    {
+      "name": "7  Ollama erreichbar (darf fehlen)",
+      "ausgang": "ok",
+      "befund": "0.32.14, 1 Modell(e)",
+      "optional": true
+    }
+  ],
+  "bestanden": true
+}

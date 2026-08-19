@@ -24,6 +24,7 @@ import {
   starteScan,
 } from './api';
 import type { Auftrag, Fragenliste, Kriterium, Projektansicht as Projektdaten, ScanZustand } from './typen';
+import { Abdeckungsansicht } from './bausteine/Abdeckungsansicht';
 import { Berichtsansicht } from './bausteine/Berichtsansicht';
 import { Ergebnisansicht } from './bausteine/Ergebnisansicht';
 import { Fortschritt } from './bausteine/Fortschritt';
@@ -33,7 +34,7 @@ import { Pruefauftrag } from './bausteine/Pruefauftrag';
 import { Pruefliste } from './bausteine/Pruefliste';
 import { Scanliste } from './bausteine/Scanliste';
 
-type Ansicht = 'auftrag' | 'profile' | 'scans' | 'laeuft' | 'ergebnis';
+type Ansicht = 'auftrag' | 'profile' | 'scans' | 'abdeckung' | 'laeuft' | 'ergebnis';
 type Sicht = 'befunde' | 'projekt' | 'pruefliste' | 'bericht';
 
 export function App(): React.ReactElement {
@@ -189,6 +190,21 @@ export function App(): React.ReactElement {
     }
   }
 
+  /**
+   * Die Abdeckungsmatrix ansehen (PRD 10).
+   *
+   * Der Katalog wird dabei nachgeholt, falls noch keiner geladen ist — sonst
+   * stuenden in der Matrix nur Kennungen und keine Titel. Schlaegt das fehl,
+   * ist das kein Grund, die Ansicht zu verweigern: Die Messwerte stehen dann
+   * eben ohne Titel da.
+   */
+  async function zeigeAbdeckung(): Promise<void> {
+    if (kriterien.length === 0) {
+      setzeKriterien(await ladeKatalog(zustand?.standard ?? '2.1').catch(() => []));
+    }
+    setzeAnsicht('abdeckung');
+  }
+
   function vonVorn(): void {
     abmelden.current?.();
     abmelden.current = null;
@@ -254,6 +270,9 @@ export function App(): React.ReactElement {
                 <button type="button" className="zweitrangig" onClick={() => setzeAnsicht('scans')}>
                   Bisherige Prüfungen
                 </button>
+                <button type="button" className="zweitrangig" onClick={() => void zeigeAbdeckung()}>
+                  Was dieses Werkzeug findet
+                </button>
               </div>
             </>
           )}
@@ -273,6 +292,18 @@ export function App(): React.ReactElement {
                 Bisherige Prüfungen
               </h2>
               <Scanliste beiOeffnen={(scanId) => void oeffneScan(scanId)} beiFertig={() => setzeAnsicht('auftrag')} />
+            </>
+          )}
+
+          {ansicht === 'abdeckung' && (
+            <>
+              <h2 tabIndex={-1} ref={ueberschrift}>
+                Was dieses Werkzeug findet
+              </h2>
+              <Abdeckungsansicht
+                kriterien={kriterien}
+                beiZurueck={() => setzeAnsicht(zustand?.ergebnis ? 'ergebnis' : 'auftrag')}
+              />
             </>
           )}
 
@@ -382,6 +413,9 @@ export function App(): React.ReactElement {
                 </button>
                 <button type="button" className="zweitrangig" onClick={() => setzeAnsicht('scans')}>
                   Bisherige Prüfungen
+                </button>
+                <button type="button" className="zweitrangig" onClick={() => void zeigeAbdeckung()}>
+                  Was dieses Werkzeug findet
                 </button>
               </div>
             </>

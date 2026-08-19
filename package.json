@@ -26,7 +26,11 @@
     "prepruefe:selbst": "node --run build",
     "pruefe:selbst": "node dist/werkzeuge/selbstpruefung.js",
     "preverifikation": "node --run build:node",
-    "verifikation": "node dist/werkzeuge/verifikation.js"
+    "verifikation": "node dist/werkzeuge/verifikation.js",
+    "premodellvergleich": "node --run build:node",
+    "modellvergleich": "node dist/werkzeuge/modellvergleich.js",
+    "preabnahme": "node --run build:node",
+    "abnahme": "node dist/werkzeuge/abnahme.js"
   },
   "dependencies": {
     "@axe-core/playwright": "^4.13.0",

@@ -1,0 +1,736 @@
+{
+  "beschreibung": "Gemessene Abdeckung je Erfolgskriterium (PRD 10). Erzeugt von werkzeuge/verifikation.ts — nicht von Hand pflegen, sondern neu messen.",
+  "gemessenAm": "2026-08-19",
+  "standard": "2.2",
+  "werkzeug": "accessibility-checker 0.1.0",
+  "referenzseiten": [
+    {
+      "datei": "mangelhaft.html",
+      "zweck": "Die breite Seite: technische Verstöße quer durch alle vier Grundsätze",
+      "sollverstoesse": 31,
+      "gepruefteKriterien": 55
+    },
+    {
+      "datei": "sauber.html",
+      "zweck": "Gegenprobe zu mangelhaft.html — inhaltsgleich, alle Mängel behoben",
+      "sollverstoesse": 0,
+      "gepruefteKriterien": 55
+    },
+    {
+      "datei": "bedienung-mangelhaft.html",
+      "zweck": "Bedienung, Medien und Anzeige — was die breite Seite nicht abdeckt",
+      "sollverstoesse": 8,
+      "gepruefteKriterien": 55
+    },
+    {
+      "datei": "bedienung-sauber.html",
+      "zweck": "Gegenprobe zu bedienung-mangelhaft.html",
+      "sollverstoesse": 0,
+      "gepruefteKriterien": 55
+    },
+    {
+      "datei": "fehlererkennung-mangelhaft.html",
+      "zweck": "Fehlerbehandlung und Anmeldung — nur durch Absenden eines Formulars prüfbar",
+      "sollverstoesse": 2,
+      "gepruefteKriterien": 55
+    },
+    {
+      "datei": "fehlererkennung-sauber.html",
+      "zweck": "Gegenprobe zu fehlererkennung-mangelhaft.html",
+      "sollverstoesse": 0,
+      "gepruefteKriterien": 55
+    },
+    {
+      "datei": "fehlerempfehlung-mangelhaft.html",
+      "zweck": "Die Meldung benennt den Fehler, sagt aber nicht, wie er zu beheben ist",
+      "sollverstoesse": 1,
+      "gepruefteKriterien": 55
+    },
+    {
+      "datei": "fehlerempfehlung-sauber.html",
+      "zweck": "Gegenprobe zu fehlerempfehlung-mangelhaft.html",
+      "sollverstoesse": 0,
+      "gepruefteKriterien": 55
+    },
+    {
+      "datei": "tastaturfalle-mangelhaft.html",
+      "zweck": "Steht für sich: die Falle bricht den Tastatur-Durchlauf ab",
+      "sollverstoesse": 1,
+      "gepruefteKriterien": 55
+    },
+    {
+      "datei": "tastaturfalle-sauber.html",
+      "zweck": "Gegenprobe zu tastaturfalle-mangelhaft.html",
+      "sollverstoesse": 0,
+      "gepruefteKriterien": 55
+    },
+    {
+      "datei": "fokuswechsel-mangelhaft.html",
+      "zweck": "Steht für sich: das Durchtabben wechselt den Zusammenhang",
+      "sollverstoesse": 1,
+      "gepruefteKriterien": 55
+    },
+    {
+      "datei": "fokuswechsel-sauber.html",
+      "zweck": "Gegenprobe zu fokuswechsel-mangelhaft.html",
+      "sollverstoesse": 0,
+      "gepruefteKriterien": 55
+    },
+    {
+      "datei": "mehrseitig-mangelhaft",
+      "zweck": "Angebot aus drei Seiten — misst die seitenübergreifenden Kriterien",
+      "sollverstoesse": 3,
+      "gepruefteKriterien": 55
+    },
+    {
+      "datei": "mehrseitig-sauber",
+      "zweck": "Gegenprobe zu mehrseitig-mangelhaft",
+      "sollverstoesse": 0,
+      "gepruefteKriterien": 55
+    }
+  ],
+  "kennzahlen": {
+    "kriterienGesamt": 55,
+    "mitTestfall": 46,
+    "ohneTestfall": 9,
+    "testfaelle": 47,
+    "belegtErkannt": 38,
+    "alsOffenGemeldet": 9,
+    "uebersehen": 0,
+    "fehlalarme": 0,
+    "erkennungsquote": 0.809,
+    "erkennungsquoteAuto": 0.86,
+    "testfaelleAuto": 43,
+    "fehlalarmquote": 0
+  },
+  "kriterien": {
+    "1.1.1": {
+      "stufen": [
+        "auto",
+        "manuell"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "1.2.1": {
+      "stufen": [
+        "auto",
+        "manuell"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 0,
+      "alsOffenGemeldet": 1,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "nur_hinweis"
+    },
+    "1.2.2": {
+      "stufen": [
+        "auto",
+        "manuell"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 0,
+      "alsOffenGemeldet": 1,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "nur_hinweis"
+    },
+    "1.2.3": {
+      "stufen": [
+        "manuell"
+      ],
+      "testfaelle": 0,
+      "belegtErkannt": 0,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "ungeprueft"
+    },
+    "1.2.4": {
+      "stufen": [
+        "manuell"
+      ],
+      "testfaelle": 0,
+      "belegtErkannt": 0,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "ungeprueft"
+    },
+    "1.2.5": {
+      "stufen": [
+        "manuell"
+      ],
+      "testfaelle": 0,
+      "belegtErkannt": 0,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "ungeprueft"
+    },
+    "1.3.1": {
+      "stufen": [
+        "auto",
+        "llm"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "1.3.2": {
+      "stufen": [
+        "auto",
+        "llm"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "1.3.3": {
+      "stufen": [
+        "llm"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 0,
+      "alsOffenGemeldet": 1,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "nur_hinweis"
+    },
+    "1.3.4": {
+      "stufen": [
+        "auto"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "1.3.5": {
+      "stufen": [
+        "auto",
+        "manuell"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 0,
+      "alsOffenGemeldet": 1,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "nur_hinweis"
+    },
+    "1.4.1": {
+      "stufen": [
+        "auto",
+        "manuell"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "1.4.2": {
+      "stufen": [
+        "auto"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 0,
+      "alsOffenGemeldet": 1,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "nur_hinweis"
+    },
+    "1.4.3": {
+      "stufen": [
+        "auto"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "1.4.4": {
+      "stufen": [
+        "auto"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "1.4.5": {
+      "stufen": [
+        "auto"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 0,
+      "alsOffenGemeldet": 1,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "nur_hinweis"
+    },
+    "1.4.10": {
+      "stufen": [
+        "auto"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "1.4.11": {
+      "stufen": [
+        "auto"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "1.4.12": {
+      "stufen": [
+        "auto"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "1.4.13": {
+      "stufen": [
+        "auto",
+        "manuell"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "2.1.1": {
+      "stufen": [
+        "auto"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "2.1.2": {
+      "stufen": [
+        "auto"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "2.1.4": {
+      "stufen": [
+        "auto",
+        "manuell"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "2.2.1": {
+      "stufen": [
+        "auto",
+        "manuell"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "2.2.2": {
+      "stufen": [
+        "auto",
+        "manuell"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "2.3.1": {
+      "stufen": [
+        "manuell"
+      ],
+      "testfaelle": 0,
+      "belegtErkannt": 0,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "ungeprueft"
+    },
+    "2.4.1": {
+      "stufen": [
+        "auto"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "2.4.2": {
+      "stufen": [
+        "auto",
+        "llm"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 0,
+      "alsOffenGemeldet": 1,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "nur_hinweis"
+    },
+    "2.4.3": {
+      "stufen": [
+        "auto",
+        "llm"
+      ],
+      "testfaelle": 2,
+      "belegtErkannt": 2,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "2.4.4": {
+      "stufen": [
+        "auto",
+        "llm"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "2.4.5": {
+      "stufen": [
+        "auto"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "2.4.6": {
+      "stufen": [
+        "auto",
+        "llm"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 0,
+      "alsOffenGemeldet": 1,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "nur_hinweis"
+    },
+    "2.4.7": {
+      "stufen": [
+        "auto"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "2.4.11": {
+      "stufen": [
+        "auto"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "2.5.1": {
+      "stufen": [
+        "manuell"
+      ],
+      "testfaelle": 0,
+      "belegtErkannt": 0,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "ungeprueft"
+    },
+    "2.5.2": {
+      "stufen": [
+        "manuell"
+      ],
+      "testfaelle": 0,
+      "belegtErkannt": 0,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "ungeprueft"
+    },
+    "2.5.3": {
+      "stufen": [
+        "auto"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "2.5.4": {
+      "stufen": [
+        "auto",
+        "manuell"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "2.5.7": {
+      "stufen": [
+        "auto",
+        "manuell"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "2.5.8": {
+      "stufen": [
+        "auto"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "3.1.1": {
+      "stufen": [
+        "auto"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "3.1.2": {
+      "stufen": [
+        "auto"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 0,
+      "alsOffenGemeldet": 1,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "nur_hinweis"
+    },
+    "3.2.1": {
+      "stufen": [
+        "auto"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "3.2.2": {
+      "stufen": [
+        "auto",
+        "manuell"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "3.2.3": {
+      "stufen": [
+        "auto"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "3.2.4": {
+      "stufen": [
+        "llm"
+      ],
+      "testfaelle": 0,
+      "belegtErkannt": 0,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "ungeprueft"
+    },
+    "3.2.6": {
+      "stufen": [
+        "auto",
+        "llm"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "3.3.1": {
+      "stufen": [
+        "auto"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "3.3.2": {
+      "stufen": [
+        "auto",
+        "llm"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "3.3.3": {
+      "stufen": [
+        "auto",
+        "llm"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "3.3.4": {
+      "stufen": [
+        "manuell"
+      ],
+      "testfaelle": 0,
+      "belegtErkannt": 0,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "ungeprueft"
+    },
+    "3.3.7": {
+      "stufen": [
+        "manuell"
+      ],
+      "testfaelle": 0,
+      "belegtErkannt": 0,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "ungeprueft"
+    },
+    "3.3.8": {
+      "stufen": [
+        "auto",
+        "manuell"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "4.1.2": {
+      "stufen": [
+        "auto"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    },
+    "4.1.3": {
+      "stufen": [
+        "auto",
+        "manuell"
+      ],
+      "testfaelle": 1,
+      "belegtErkannt": 1,
+      "alsOffenGemeldet": 0,
+      "uebersehen": 0,
+      "fehlalarme": 0,
+      "einstufung": "belegt"
+    }
+  }
+}

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kursbereiche der Musterakademie</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; color: #1a1a1a; background: #ffffff; }
+    :focus-visible { outline: 3px solid #005fcc; outline-offset: 2px; }
+    a { color: #0b4da2; }
+    main { padding: 0 1rem 2rem; }
+    h1, h2 { line-height: 1.3; }
+    label { display: block; margin-top: 1rem; }
+    select { border: 1px solid #767676; padding: .4rem; min-height: 24px; }
+    section { margin-top: 3rem; }
+  </style>
+</head>
+<body>
+
+<!--
+  Diese Seite steht fuer sich, weil sie beim blossen Durchtabben den
+  Zusammenhang wechselt. Jede weitere Pruefung auf derselben Seite wuerde einen
+  Zustand vorfinden, den niemand absichtlich herbeigefuehrt hat.
+-->
+
+<header>
+  <nav aria-label="Hauptnavigation">
+    <a href="/">Start</a>
+  </nav>
+</header>
+
+<main>
+
+  <h1>Kursbereiche</h1>
+
+  <label for="bereich">Kursbereich</label>
+  <!-- 3.2.1 VERSTOSS: Schon das Fokussieren springt an eine andere Stelle des
+       Angebots. Ein Wechsel des Zusammenhangs darf erst auf eine bewusste
+       Handlung folgen, nicht schon auf den Fokus. -->
+  <select id="bereich" name="bereich" onfocus="location.hash = '#aufbau'">
+    <option value="grundlagen">Grundlagen</option>
+    <option value="aufbau">Aufbau</option>
+  </select>
+
+  <section id="grundlagen">
+    <h2>Grundlagen</h2>
+    <p>Einstieg in die Pruefung digitaler Barrierefreiheit.</p>
+  </section>
+
+  <section id="aufbau">
+    <h2>Aufbau</h2>
+    <p>Vertiefung der Pruefverfahren und der Berichtsformen.</p>
+  </section>
+
+</main>
+
+</body>
+</html>

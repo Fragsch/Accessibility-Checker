@@ -1,0 +1,454 @@
+{
+  "beschreibung": "Testsatz für den Modellvergleich (PRD 10.1). Je Prüfung aus prompts/stufe2.md Beispiele mit bekanntem Sollurteil, darunter bewusst Grenzfälle.",
+  "hinweis": "Das Sollurteil ist immer 'ok' oder 'problem'. 'unsicher' ist nie ein Sollwert — es ist eine gemessene Kenngröße, kein Ziel und kein Mangel.",
+
+  "arten": {
+    "buendel": "Jeder Fall ist ein Element. Alle Fälle einer Prüfung gehen gebündelt in einen Aufruf, genau wie im Betrieb.",
+    "folge": "Jeder Fall ist eine Abfolge und braucht einen eigenen Aufruf — das Urteil hängt am Zusammenhang der Elemente.",
+    "seite": "Jeder Fall beschreibt eine ganze Seite und braucht einen eigenen Aufruf."
+  },
+
+  "pruefungen": {
+    "linkzweck": {
+      "kriterium": "2.4.4",
+      "art": "buendel",
+      "faelle": [
+        { "soll": "problem", "warum": "nackter Verweistext ohne Ziel", "werte": { "text": "hier", "kontext": "Unsere Bedingungen finden Sie hier.", "href": "/agb" } },
+        { "soll": "problem", "warum": "nichtssagend", "werte": { "text": "mehr", "kontext": "Datenschutz mehr", "href": "/datenschutz" } },
+        { "soll": "problem", "warum": "nichtssagend", "werte": { "text": "weiterlesen", "kontext": "Neuer Kurs im Maerz weiterlesen", "href": "/blog/kurs-maerz" } },
+        { "soll": "problem", "warum": "nackte Adresse als Linktext", "werte": { "text": "https://www.musterakademie.example/kurse/grundlagen-2026", "kontext": "Alle Angaben zum Kurs:", "href": "/kurse/grundlagen" } },
+        { "soll": "problem", "warum": "reines Zeichen ohne Bedeutung", "werte": { "text": ">>", "kontext": "Naechste Seite >>", "href": "/kurse?seite=2" } },
+        { "soll": "ok", "warum": "benennt das Ziel vollstaendig", "werte": { "text": "Kursprogramm 2026 herunterladen (PDF, 2 MB)", "kontext": "Alle Termine auf einen Blick.", "href": "/programm-2026.pdf" } },
+        { "soll": "ok", "warum": "benennt die Handlung", "werte": { "text": "Zum Aufbaukurs Pruefverfahren anmelden", "kontext": "Noch drei Plaetze frei.", "href": "/anmeldung/aufbau" } },
+        { "soll": "ok", "warum": "benennt das Ziel", "werte": { "text": "Erklaerung zur Barrierefreiheit", "kontext": "Rechtliches", "href": "/barrierefreiheit" } },
+        { "soll": "ok", "warum": "eindeutige Handlung mit Gegenstand", "werte": { "text": "Rechnung 2026-0042 als PDF oeffnen", "kontext": "Ihre Rechnungen", "href": "/rechnungen/2026-0042.pdf" } },
+        { "soll": "ok", "warum": "Grenzfall: kurz, aber eindeutig", "werte": { "text": "Impressum", "kontext": "Rechtliches", "href": "/impressum" } },
+        { "soll": "problem", "warum": "Grenzfall: Handlungsaufforderung ohne Gegenstand", "werte": { "text": "Klicken Sie hier", "kontext": "Um den Newsletter zu bestellen: Klicken Sie hier", "href": "/newsletter" } },
+        { "soll": "ok", "warum": "Grenzfall: Fachbegriff, aber im Kontext eindeutig benannt", "werte": { "text": "BITV-Test beauftragen", "kontext": "Fuer eine rechtsverbindliche Aussage", "href": "/bitv-test" } }
+      ]
+    },
+
+    "seitentitel": {
+      "kriterium": "2.4.2",
+      "art": "seite",
+      "faelle": [
+        { "soll": "problem", "warum": "sagt nichts ueber den Inhalt", "seitenwerte": { "titel": "Startseite", "h1": "Willkommen", "einleitung": "Wir schulen und pruefen digitale Barrierefreiheit." } },
+        { "soll": "problem", "warum": "Vorgabe des Redaktionssystems", "seitenwerte": { "titel": "Unbenanntes Dokument", "h1": "Kursprogramm", "einleitung": "Alle Termine des kommenden Halbjahres." } },
+        { "soll": "problem", "warum": "nur der Firmenname", "seitenwerte": { "titel": "Musterakademie GmbH", "h1": "Kontakt", "einleitung": "So erreichen Sie uns." } },
+        { "soll": "problem", "warum": "eine Adresse statt eines Titels", "seitenwerte": { "titel": "/kurse/grundlagen/index.html", "h1": "Grundlagen der Barrierefreiheit", "einleitung": "Zweitaegiger Einstieg." } },
+        { "soll": "ok", "warum": "benennt Seitenzweck und Angebot", "seitenwerte": { "titel": "Kursprogramm 2026 – Musterakademie", "h1": "Kursprogramm 2026", "einleitung": "Alle Termine des kommenden Halbjahres." } },
+        { "soll": "ok", "warum": "benennt den Vorgang", "seitenwerte": { "titel": "Anmeldung zum Aufbaukurs Pruefverfahren – Musterakademie", "h1": "Anmeldung", "einleitung": "Bitte tragen Sie Ihre Angaben ein." } },
+        { "soll": "ok", "warum": "Grenzfall: kurz, aber eindeutig", "seitenwerte": { "titel": "Impressum – Musterakademie", "h1": "Impressum", "einleitung": "Angaben nach § 5 DDG." } },
+        { "soll": "problem", "warum": "Grenzfall: traegt Inhalt, passt aber nicht zur Seite", "seitenwerte": { "titel": "Kontakt – Musterakademie", "h1": "Kursprogramm 2026", "einleitung": "Alle Termine des kommenden Halbjahres." } }
+      ]
+    },
+
+    "ueberschrift-aussagekraft": {
+      "kriterium": "2.4.6",
+      "art": "buendel",
+      "faelle": [
+        { "soll": "problem", "warum": "inhaltsleer", "werte": { "ebene": "h2", "text": "Informationen", "auszug": "Unsere Kurse finden in Musterstadt statt und dauern jeweils zwei Tage." } },
+        { "soll": "problem", "warum": "inhaltsleer", "werte": { "ebene": "h2", "text": "Sonstiges", "auszug": "Fuer Gruppen ab acht Personen schulen wir auch bei Ihnen im Haus." } },
+        { "soll": "problem", "warum": "inhaltsleer", "werte": { "ebene": "h3", "text": "Mehr", "auszug": "Die Anmeldung ist bis zwei Wochen vor Kursbeginn moeglich." } },
+        { "soll": "problem", "warum": "benennt die Textsorte, nicht den Inhalt", "werte": { "ebene": "h2", "text": "Text", "auszug": "Barrierefreiheit betrifft nicht nur blinde Menschen." } },
+        { "soll": "ok", "warum": "benennt den Abschnitt", "werte": { "ebene": "h2", "text": "Kursorte und Dauer", "auszug": "Unsere Kurse finden in Musterstadt statt und dauern jeweils zwei Tage." } },
+        { "soll": "ok", "warum": "benennt den Abschnitt", "werte": { "ebene": "h2", "text": "Schulungen bei Ihnen im Haus", "auszug": "Fuer Gruppen ab acht Personen schulen wir auch bei Ihnen im Haus." } },
+        { "soll": "ok", "warum": "benennt Frist und Gegenstand", "werte": { "ebene": "h3", "text": "Anmeldefrist", "auszug": "Die Anmeldung ist bis zwei Wochen vor Kursbeginn moeglich." } },
+        { "soll": "ok", "warum": "Grenzfall: knapp, aber treffend", "werte": { "ebene": "h2", "text": "Anfahrt", "auszug": "Vom Hauptbahnhof mit der Linie 4 bis Haltestelle Musterplatz." } },
+        { "soll": "problem", "warum": "Grenzfall: konkret, aber passt nicht zum Abschnitt", "werte": { "ebene": "h2", "text": "Zahlungsweisen", "auszug": "Vom Hauptbahnhof mit der Linie 4 bis Haltestelle Musterplatz." } },
+        { "soll": "ok", "warum": "Grenzfall: Fachbegriff, im Zusammenhang klar", "werte": { "ebene": "h3", "text": "Konformitaetsbewertung nach EN 301 549", "auszug": "Die Bewertung folgt der Bewertungssprache des ACR." } }
+      ]
+    },
+
+    "ueberschriftenhierarchie": {
+      "kriterium": "1.3.1",
+      "art": "folge",
+      "faelle": [
+        {
+          "warum": "stimmige Gliederung",
+          "elemente": [
+            { "soll": "ok", "werte": { "ebene": "1", "text": "Kursprogramm 2026" } },
+            { "soll": "ok", "werte": { "ebene": "2", "text": "Grundlagenkurse" } },
+            { "soll": "ok", "werte": { "ebene": "3", "text": "Termin im Maerz" } },
+            { "soll": "ok", "werte": { "ebene": "3", "text": "Termin im Juni" } },
+            { "soll": "ok", "werte": { "ebene": "2", "text": "Aufbaukurse" } }
+          ]
+        },
+        {
+          "warum": "der Unterpunkt steht ueber seinem Oberpunkt",
+          "elemente": [
+            { "soll": "ok", "werte": { "ebene": "1", "text": "Kursprogramm 2026" } },
+            { "soll": "ok", "werte": { "ebene": "3", "text": "Grundlagenkurse" } },
+            { "soll": "problem", "werte": { "ebene": "2", "text": "Termin im Maerz" } }
+          ]
+        },
+        {
+          "warum": "gleichrangige Abschnitte in gleicher Ebene",
+          "elemente": [
+            { "soll": "ok", "werte": { "ebene": "1", "text": "Anmeldung" } },
+            { "soll": "ok", "werte": { "ebene": "2", "text": "Ihre Angaben" } },
+            { "soll": "ok", "werte": { "ebene": "2", "text": "Zahlungsweise" } },
+            { "soll": "ok", "werte": { "ebene": "2", "text": "Bestaetigung" } }
+          ]
+        },
+        {
+          "warum": "eine Ebene wurde wegen der Schriftgroesse gewaehlt",
+          "elemente": [
+            { "soll": "ok", "werte": { "ebene": "1", "text": "Barrierefreiheit pruefen" } },
+            { "soll": "ok", "werte": { "ebene": "2", "text": "Was wir pruefen" } },
+            { "soll": "problem", "werte": { "ebene": "1", "text": "Automatische Pruefung" } },
+            { "soll": "ok", "werte": { "ebene": "2", "text": "Manuelle Pruefung" } }
+          ]
+        },
+        {
+          "warum": "uebersprungene Ebene, inhaltlich aber stimmig",
+          "elemente": [
+            { "soll": "ok", "werte": { "ebene": "1", "text": "Kontakt" } },
+            { "soll": "ok", "werte": { "ebene": "3", "text": "Anschrift" } },
+            { "soll": "ok", "werte": { "ebene": "3", "text": "Telefon" } }
+          ]
+        }
+      ]
+    },
+
+    "sensorische-anweisungen": {
+      "kriterium": "1.3.3",
+      "art": "buendel",
+      "faelle": [
+        { "soll": "problem", "warum": "nur Farbe und Lage", "werte": { "text": "Klicken Sie auf die gruene Schaltflaeche unten rechts, um fortzufahren." } },
+        { "soll": "problem", "warum": "nur Form", "werte": { "text": "Das runde Symbol oeffnet die Hilfe." } },
+        { "soll": "problem", "warum": "nur Lage", "werte": { "text": "Die Angaben finden Sie in der rechten Spalte." } },
+        { "soll": "problem", "warum": "nur Farbe", "werte": { "text": "Pflichtfelder sind rot umrandet." } },
+        { "soll": "ok", "warum": "benennt das Element, Farbe nur ergaenzend", "werte": { "text": "Klicken Sie auf die gruene Schaltflaeche \"Weiter\", um fortzufahren." } },
+        { "soll": "ok", "warum": "benennt das Element", "werte": { "text": "Die Hilfe oeffnet sich ueber die Schaltflaeche \"Hilfe\"." } },
+        { "soll": "ok", "warum": "benennt die Kennzeichnung ausserhalb des Sinnlichen", "werte": { "text": "Pflichtfelder sind mit einem Sternchen gekennzeichnet und rot umrandet." } },
+        { "soll": "ok", "warum": "keine Anweisung, blosse Beschreibung", "werte": { "text": "Unsere Kurse finden in Musterstadt statt und dauern jeweils zwei Tage." } },
+        { "soll": "problem", "warum": "Grenzfall: Groesse als einziges Merkmal", "werte": { "text": "Der grosse Knopf startet die Pruefung." } },
+        { "soll": "ok", "warum": "Grenzfall: Lage plus Bereichsname", "werte": { "text": "Die Suche steht oben in der Kopfzeile unter \"Suche im Angebot\"." } }
+      ]
+    },
+
+    "feldbeschriftung": {
+      "kriterium": "3.3.2",
+      "art": "buendel",
+      "faelle": [
+        { "soll": "problem", "warum": "nichtssagend", "werte": { "label": "Feld 3", "typ": "text", "placeholder": "", "beschreibung": "" } },
+        { "soll": "problem", "warum": "nichtssagend", "werte": { "label": "Wert", "typ": "text", "placeholder": "", "beschreibung": "" } },
+        { "soll": "problem", "warum": "Format noetig, aber nirgends erklaert", "werte": { "label": "Datum", "typ": "text", "placeholder": "", "beschreibung": "" } },
+        { "soll": "problem", "warum": "nur Platzhalter statt Beschriftung", "werte": { "label": "", "typ": "text", "placeholder": "Ihr Name", "beschreibung": "" } },
+        { "soll": "ok", "warum": "benennt die erwartete Angabe", "werte": { "label": "Ihr Vor- und Nachname", "typ": "text", "placeholder": "", "beschreibung": "" } },
+        { "soll": "ok", "warum": "Format ist erklaert", "werte": { "label": "Wunschtermin", "typ": "text", "placeholder": "", "beschreibung": "Format TT.MM.JJJJ, zum Beispiel 12.03.2026" } },
+        { "soll": "ok", "warum": "benennt Angabe und Grenzen", "werte": { "label": "Zahl der Plaetze", "typ": "number", "placeholder": "", "beschreibung": "Eine Zahl von 1 bis 12" } },
+        { "soll": "ok", "warum": "Grenzfall: Feldtyp traegt das Format", "werte": { "label": "E-Mail-Adresse", "typ": "email", "placeholder": "", "beschreibung": "" } },
+        { "soll": "problem", "warum": "Grenzfall: Beschriftung benennt nur die Technik", "werte": { "label": "Input 2", "typ": "text", "placeholder": "Eingabe", "beschreibung": "" } },
+        { "soll": "ok", "warum": "Grenzfall: Fachbegriff mit Erlaeuterung", "werte": { "label": "Kundennummer", "typ": "text", "placeholder": "", "beschreibung": "Achtstellig, steht oben rechts auf Ihrer Rechnung" } }
+      ]
+    },
+
+    "fehlerempfehlung": {
+      "kriterium": "3.3.3",
+      "art": "buendel",
+      "faelle": [
+        { "soll": "problem", "warum": "stellt nur den Fehler fest", "werte": { "feld": "Wunschtermin", "meldung": "Ungueltige Eingabe" } },
+        { "soll": "problem", "warum": "stellt nur den Fehler fest", "werte": { "feld": "E-Mail-Adresse", "meldung": "Fehler" } },
+        { "soll": "problem", "warum": "verlangt Korrektur ohne Anhalt", "werte": { "feld": "Kundennummer", "meldung": "Bitte korrigieren Sie Ihre Eingabe." } },
+        { "soll": "problem", "warum": "benennt nur die Unvollstaendigkeit", "werte": { "feld": "Kurs", "meldung": "Dieses Feld ist ein Pflichtfeld." } },
+        { "soll": "ok", "warum": "nennt Format und Beispiel", "werte": { "feld": "Wunschtermin", "meldung": "Bitte geben Sie den Termin im Format TT.MM.JJJJ an, zum Beispiel 12.03.2026." } },
+        { "soll": "ok", "warum": "nennt die erwartete Form", "werte": { "feld": "E-Mail-Adresse", "meldung": "Die Adresse braucht ein @ und eine Domain, etwa name@beispiel.de." } },
+        { "soll": "ok", "warum": "nennt Fundort und Form der richtigen Eingabe", "werte": { "feld": "Kundennummer", "meldung": "Die Kundennummer ist achtstellig und steht oben rechts auf Ihrer Rechnung." } },
+        { "soll": "ok", "warum": "nennt die zulaessigen Werte", "werte": { "feld": "Zahl der Plaetze", "meldung": "Bitte geben Sie eine Zahl von 1 bis 12 an." } },
+        { "soll": "problem", "warum": "Grenzfall: hoeflich, aber ohne Weg zur Behebung", "werte": { "feld": "Nachricht", "meldung": "Leider konnten wir Ihre Angabe nicht verarbeiten." } },
+        { "soll": "ok", "warum": "Grenzfall: nennt die Auswahl statt eines Formats", "werte": { "feld": "Kurs", "meldung": "Bitte waehlen Sie einen der angebotenen Kurse aus der Liste." } }
+      ]
+    },
+
+    "konsistente-bezeichnung": {
+      "kriterium": "3.2.4",
+      "art": "buendel",
+      "faelle": [
+        {
+          "soll": "problem",
+          "warum": "dieselbe Funktion, drei Namen",
+          "werte": {
+            "funktion": "Suche starten",
+            "vorkommen": [
+              { "beschriftung": "Suchen", "seite": "/start" },
+              { "beschriftung": "Finden", "seite": "/kurse" },
+              { "beschriftung": "Los", "seite": "/kontakt" }
+            ]
+          }
+        },
+        {
+          "soll": "problem",
+          "warum": "dieselbe Funktion, zwei Namen",
+          "werte": {
+            "funktion": "Formular abschicken",
+            "vorkommen": [
+              { "beschriftung": "Absenden", "seite": "/kontakt" },
+              { "beschriftung": "Abschicken", "seite": "/anmeldung" }
+            ]
+          }
+        },
+        {
+          "soll": "ok",
+          "warum": "durchgaengig benannt",
+          "werte": {
+            "funktion": "Zur Startseite",
+            "vorkommen": [
+              { "beschriftung": "Start", "seite": "/kurse" },
+              { "beschriftung": "Start", "seite": "/kontakt" },
+              { "beschriftung": "Start", "seite": "/anmeldung" }
+            ]
+          }
+        },
+        {
+          "soll": "ok",
+          "warum": "durchgaengig benannt",
+          "werte": {
+            "funktion": "Kursprogramm herunterladen",
+            "vorkommen": [
+              { "beschriftung": "Kursprogramm als PDF", "seite": "/start" },
+              { "beschriftung": "Kursprogramm als PDF", "seite": "/kurse" }
+            ]
+          }
+        },
+        {
+          "soll": "ok",
+          "warum": "verschiedene Namen, verschiedene Funktionen",
+          "werte": {
+            "funktion": "Etwas speichern",
+            "vorkommen": [
+              { "beschriftung": "Entwurf speichern", "seite": "/anmeldung" },
+              { "beschriftung": "Anmeldung abschliessen", "seite": "/anmeldung" }
+            ]
+          }
+        },
+        {
+          "soll": "problem",
+          "warum": "Grenzfall: dieselbe Funktion, einmal Verb, einmal Hauptwort",
+          "werte": {
+            "funktion": "Anmeldung oeffnen",
+            "vorkommen": [
+              { "beschriftung": "Anmelden", "seite": "/kurse" },
+              { "beschriftung": "Anmeldung", "seite": "/start" },
+              { "beschriftung": "Jetzt Platz sichern", "seite": "/aufbau" }
+            ]
+          }
+        },
+        {
+          "soll": "ok",
+          "warum": "Grenzfall: gleicher Name, unterschiedliche Zusaetze zum Gegenstand",
+          "werte": {
+            "funktion": "Kurs anzeigen",
+            "vorkommen": [
+              { "beschriftung": "Grundlagenkurs anzeigen", "seite": "/kurse" },
+              { "beschriftung": "Aufbaukurs anzeigen", "seite": "/kurse" }
+            ]
+          }
+        },
+        {
+          "soll": "problem",
+          "warum": "Grenzfall: Symbol statt Wort auf einer Seite",
+          "werte": {
+            "funktion": "Menue oeffnen",
+            "vorkommen": [
+              { "beschriftung": "Menue", "seite": "/start" },
+              { "beschriftung": "≡", "seite": "/kurse" }
+            ]
+          }
+        }
+      ]
+    },
+
+    "konsistente-hilfe": {
+      "kriterium": "3.2.6",
+      "art": "buendel",
+      "faelle": [
+        {
+          "soll": "problem",
+          "warum": "einmal Kopfzeile, einmal Fusszeile",
+          "werte": {
+            "beschriftung": "Hilfe",
+            "vorkommen": [
+              { "seite": "/start", "bereich": "Kopfzeile", "position": "1 von 4" },
+              { "seite": "/kurse", "bereich": "Fusszeile", "position": "3 von 3" }
+            ]
+          }
+        },
+        {
+          "soll": "problem",
+          "warum": "Reihenfolge innerhalb desselben Bereichs wechselt",
+          "werte": {
+            "beschriftung": "Kontakt",
+            "vorkommen": [
+              { "seite": "/start", "bereich": "Hauptnavigation", "position": "3 von 4" },
+              { "seite": "/kurse", "bereich": "Hauptnavigation", "position": "1 von 4" },
+              { "seite": "/kontakt", "bereich": "Hauptnavigation", "position": "3 von 4" }
+            ]
+          }
+        },
+        {
+          "soll": "ok",
+          "warum": "ueberall an derselben Stelle",
+          "werte": {
+            "beschriftung": "Hilfe",
+            "vorkommen": [
+              { "seite": "/start", "bereich": "Hauptnavigation", "position": "4 von 4" },
+              { "seite": "/kurse", "bereich": "Hauptnavigation", "position": "4 von 4" },
+              { "seite": "/kontakt", "bereich": "Hauptnavigation", "position": "4 von 4" }
+            ]
+          }
+        },
+        {
+          "soll": "ok",
+          "warum": "ueberall an derselben Stelle",
+          "werte": {
+            "beschriftung": "Telefonnummer im Impressumsblock",
+            "vorkommen": [
+              { "seite": "/start", "bereich": "Fusszeile", "position": "2 von 3" },
+              { "seite": "/kurse", "bereich": "Fusszeile", "position": "2 von 3" }
+            ]
+          }
+        },
+        {
+          "soll": "ok",
+          "warum": "kommt auf einer Seite gar nicht vor — das ist zulaessig",
+          "werte": {
+            "beschriftung": "Beratungschat",
+            "vorkommen": [
+              { "seite": "/kurse", "bereich": "Fusszeile", "position": "1 von 3" },
+              { "seite": "/anmeldung", "bereich": "Fusszeile", "position": "1 von 3" }
+            ]
+          }
+        },
+        {
+          "soll": "problem",
+          "warum": "Grenzfall: gleicher Bereich, aber vor statt nach dem Inhalt",
+          "werte": {
+            "beschriftung": "Haeufige Fragen",
+            "vorkommen": [
+              { "seite": "/kurse", "bereich": "Inhalt", "position": "vor dem Hauptteil" },
+              { "seite": "/anmeldung", "bereich": "Inhalt", "position": "nach dem Hauptteil" }
+            ]
+          }
+        },
+        {
+          "soll": "ok",
+          "warum": "Grenzfall: Bereich heisst anders, Stelle ist dieselbe",
+          "werte": {
+            "beschriftung": "Kontakt",
+            "vorkommen": [
+              { "seite": "/start", "bereich": "footer", "position": "1 von 2" },
+              { "seite": "/kurse", "bereich": "Fusszeile", "position": "1 von 2" }
+            ]
+          }
+        },
+        {
+          "soll": "problem",
+          "warum": "Grenzfall: auf einer Seite nur im aufklappbaren Menue",
+          "werte": {
+            "beschriftung": "Hilfe",
+            "vorkommen": [
+              { "seite": "/start", "bereich": "Hauptnavigation", "position": "4 von 4" },
+              { "seite": "/anmeldung", "bereich": "aufklappbares Menue \"Mehr\"", "position": "2 von 5" }
+            ]
+          }
+        }
+      ]
+    },
+
+    "fokusreihenfolge": {
+      "kriterium": "2.4.3",
+      "art": "folge",
+      "faelle": [
+        {
+          "warum": "folgt dem Bedienablauf",
+          "elemente": [
+            { "soll": "ok", "werte": { "element": "a", "beschriftung": "Zum Hauptinhalt springen", "bereich": "ohne Bereich" } },
+            { "soll": "ok", "werte": { "element": "a", "beschriftung": "Start", "bereich": "nav" } },
+            { "soll": "ok", "werte": { "element": "input", "beschriftung": "Ihr Name", "bereich": "form" } },
+            { "soll": "ok", "werte": { "element": "input", "beschriftung": "E-Mail-Adresse", "bereich": "form" } },
+            { "soll": "ok", "werte": { "element": "button", "beschriftung": "Absenden", "bereich": "form" } },
+            { "soll": "ok", "werte": { "element": "a", "beschriftung": "Impressum", "bereich": "footer" } }
+          ]
+        },
+        {
+          "warum": "die Absenden-Schaltflaeche kommt vor den Feldern",
+          "elemente": [
+            { "soll": "ok", "werte": { "element": "a", "beschriftung": "Start", "bereich": "nav" } },
+            { "soll": "problem", "werte": { "element": "button", "beschriftung": "Absenden", "bereich": "form" } },
+            { "soll": "ok", "werte": { "element": "input", "beschriftung": "Ihr Name", "bereich": "form" } },
+            { "soll": "ok", "werte": { "element": "input", "beschriftung": "E-Mail-Adresse", "bereich": "form" } }
+          ]
+        },
+        {
+          "warum": "die Fusszeile liegt zwischen zwei Formularfeldern",
+          "elemente": [
+            { "soll": "ok", "werte": { "element": "input", "beschriftung": "Ihr Name", "bereich": "form" } },
+            { "soll": "problem", "werte": { "element": "a", "beschriftung": "Impressum", "bereich": "footer" } },
+            { "soll": "ok", "werte": { "element": "input", "beschriftung": "E-Mail-Adresse", "bereich": "form" } },
+            { "soll": "ok", "werte": { "element": "button", "beschriftung": "Absenden", "bereich": "form" } }
+          ]
+        },
+        {
+          "warum": "Grenzfall: Sprunglink zuletzt statt zuerst",
+          "elemente": [
+            { "soll": "ok", "werte": { "element": "a", "beschriftung": "Start", "bereich": "nav" } },
+            { "soll": "ok", "werte": { "element": "a", "beschriftung": "Kurse", "bereich": "nav" } },
+            { "soll": "ok", "werte": { "element": "button", "beschriftung": "Kurs buchen", "bereich": "main" } },
+            { "soll": "problem", "werte": { "element": "a", "beschriftung": "Zum Hauptinhalt springen", "bereich": "footer" } }
+          ]
+        }
+      ]
+    },
+
+    "lesereihenfolge": {
+      "kriterium": "1.3.2",
+      "art": "folge",
+      "faelle": [
+        {
+          "warum": "sinnvolle Abfolge",
+          "elemente": [
+            { "soll": "ok", "werte": { "element": "h2", "text": "Grundlagen der Barrierefreiheit" } },
+            { "soll": "ok", "werte": { "element": "p", "text": "Zweitaegiger Einstieg in die Pruefung digitaler Angebote." } },
+            { "soll": "ok", "werte": { "element": "img", "text": "Teilnehmende an Rechnern im Schulungsraum" } },
+            { "soll": "ok", "werte": { "element": "figcaption", "text": "Abbildung 1: Schulungsraum in Musterstadt" } }
+          ]
+        },
+        {
+          "warum": "die Bildunterschrift steht vor dem Bild",
+          "elemente": [
+            { "soll": "ok", "werte": { "element": "h2", "text": "Grundlagen der Barrierefreiheit" } },
+            { "soll": "problem", "werte": { "element": "figcaption", "text": "Abbildung 1: Schulungsraum in Musterstadt" } },
+            { "soll": "ok", "werte": { "element": "img", "text": "Teilnehmende an Rechnern im Schulungsraum" } }
+          ]
+        },
+        {
+          "warum": "die Antwort steht vor der Frage",
+          "elemente": [
+            { "soll": "ok", "werte": { "element": "h2", "text": "Haeufige Fragen" } },
+            { "soll": "problem", "werte": { "element": "p", "text": "Ja, bis zwei Wochen vor Kursbeginn kostenfrei." } },
+            { "soll": "ok", "werte": { "element": "h3", "text": "Kann ich die Anmeldung stornieren?" } }
+          ]
+        },
+        {
+          "warum": "das Ergebnis steht vor der Eingabe",
+          "elemente": [
+            { "soll": "ok", "werte": { "element": "h1", "text": "Kurssuche" } },
+            { "soll": "problem", "werte": { "element": "p", "text": "3 Treffer gefunden." } },
+            { "soll": "ok", "werte": { "element": "label", "text": "Suchbegriff" } },
+            { "soll": "ok", "werte": { "element": "input", "text": "" } }
+          ]
+        },
+        {
+          "warum": "Grenzfall: Randspalte nach dem Hauptteil, inhaltlich unabhaengig",
+          "elemente": [
+            { "soll": "ok", "werte": { "element": "h1", "text": "Kursprogramm 2026" } },
+            { "soll": "ok", "werte": { "element": "p", "text": "Alle Termine des kommenden Halbjahres." } },
+            { "soll": "ok", "werte": { "element": "aside", "text": "Newsletter bestellen und keinen Termin verpassen." } }
+          ]
+        }
+      ]
+    }
+  }
+}

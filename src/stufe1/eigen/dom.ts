@@ -262,6 +262,15 @@ function sammleImBrowser(gewuenscht: string[]): RohTreffer[] {
 
       if (element.closest('[aria-live], [role=status], [role=alert], [role=log], output')) continue;
 
+      /*
+        `role="note"` ist die ausdrueckliche Auskunft des Autors, dass hier
+        beilaeufiger, stehender Inhalt steht — kein Zustand, der sich aendert.
+        Erlaeuterungskaesten heissen im Markup fast immer "meldung", "hinweis"
+        oder "info"; ohne diese Ausnahme meldet die Regel jeden einzelnen von
+        ihnen. Gefunden in Phase 8 an der eigenen Abdeckungsansicht.
+      */
+      if (element.closest('[role=note]')) continue;
+
       // Wiederkehrendes Muster: kein Einzelfall, also keine Meldung.
       if ((haeufigkeit.get(musterVon(element)) ?? 0) > 4) continue;
 

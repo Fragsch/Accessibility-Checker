@@ -133,7 +133,8 @@ accessibility-checker/
 │   ├── 1-wahrnehmbarkeit.json    ✓ 20 Kriterien
 │   ├── 2-bedienbarkeit.json      ✓ 20 Kriterien
 │   ├── 3-verstaendlichkeit.json  ✓ 13 Kriterien
-│   └── 4-robustheit.json         ✓  3 Kriterien
+│   ├── 4-robustheit.json         ✓  3 Kriterien
+│   └── abdeckung.json      ✓ gemessene Abdeckung — erzeugt, aber versioniert
 │
 ├── prompts/
 │   └── stufe2.md           ✓ 11 Klassifikationsprompts
@@ -144,7 +145,9 @@ accessibility-checker/
 │   ├── beiwerk-kopieren.mjs ✓ kopiert SQL-Dateien nach dist/
 │   ├── scan.ts             ✓ Scan von der Befehlszeile
 │   ├── selbstpruefung.ts   ✓ prüft die eigene Oberfläche
-│   └── verifikation.ts     ✓ misst gegen test/referenzseiten/soll.json
+│   ├── verifikation.ts     ✓ misst gegen test/referenzseiten/soll.json
+│   ├── modellvergleich.ts  ✓ misst Modelle gegen test/modellsatz/ (10.1)
+│   └── abnahme.ts          ✓ Abnahme je Betriebssystem (8.1, NF-13)
 │
 ├── vite.config.ts          ✓ Bau der Oberfläche
 ├── tsconfig.web.json       ✓ eigene Typprüfung für den Browser-Teil
@@ -156,6 +159,7 @@ accessibility-checker/
 │   │   └── scanverwaltung.ts ✓ laufende Scans, Ereignisstrom
 │   ├── katalog/            ✓ Laden, Validieren, Filtern nach Standard
 │   │   ├── laden.ts        ✓
+│   │   ├── abdeckung.ts    ✓ liest katalog/abdeckung.json (PRD 10)
 │   │   └── schema.ts       ✓ Laufzeitschema, gespiegelt aus katalog/schema.json
 │   ├── scan/
 │   │   ├── runner.ts       ✓ Ablaufsteuerung eines Scans
@@ -224,7 +228,9 @@ accessibility-checker/
 │   ├── beispielseiten/     ✓ Kleine Seiten für einzelne Ablaufregeln
 │   │   ├── ohne-medien.html ✓ für die Anwendbarkeitserkennung
 │   │   └── verhalten.html  ✓ für die Prüfungen der Engine „eigen"
-│   └── referenzseiten/     ✓ Testseiten mit bekannten Fehlern (Phase 8)
+│   ├── referenzseiten/     ✓ 12 Seiten und 2 Gruppen mit bekannter Fehlerlage
+│   ├── modellsatz/         ✓ Testsatz und Messergebnisse des Modellvergleichs
+│   └── abnahme/            ✓ Abnahmeprotokolle je Betriebssystem
 │
 └── daten/                      ← Datenbank, Belege und Protokoll; nicht versioniert
 ```
@@ -528,6 +534,7 @@ Fastify, JSON, kein Authentifizierungsverfahren — das Werkzeug lauscht nur auf
 | Methode | Pfad | Zweck |
 |---|---|---|
 | `GET` | `/api/katalog?standard=2.1` | Kriterien des gewählten Standards |
+| `GET` | `/api/abdeckung` | Gemessene Abdeckung je Kriterium (PRD 10) |
 | `GET` | `/api/profile` | Prüfprofile auflisten |
 | `GET` | `/api/profile/:id` | Ein Profil samt Austauschform (K-07) |
 | `POST` | `/api/profile` | Profil anlegen |
@@ -598,6 +605,31 @@ Ereignistypen: `seite-begonnen`, `seite-fertig`, `befund`, `stufe-fertig`, `fort
 - **Chromium meldet für Elemente in einem zugeklappten `details` weiterhin Maße.** Ein Verweis oder ein fokussierbarer Block darin sieht für jede Prüfung wie ein Sprung in der Lesereihenfolge aus (1.3.2). Das trifft nicht nur diesen Bericht: Aufklappbare Navigationen und FAQ-Listen sind Alltag. Der Sichtbarkeitstest in `src/stufe1/eigen/dom.ts` schließt diesen Fall jetzt aus — ein Fehlalarm, der auf jeder zweiten Seite gefeuert hätte.
 - Adressen und Selektoren sind lange Zeichenfolgen ohne Leerzeichen. Ohne `overflow-wrap: break-word` sprengen sie bei 320 Pixeln die Seite (1.4.10).
 
+### Stand nach Phase 8
+
+`GET /api/abdeckung` ist gebaut. Sie liefert die gemessene Abdeckungsmatrix aus `katalog/abdeckung.json` — oder `matrix: null` samt Hinweis, wenn nie gemessen wurde. **Antwortet immer mit 200:** „nicht gemessen" ist kein Fehler, sondern eine Auskunft.
+
+**Die Matrix ist erzeugt und trotzdem versioniert.** Beides ist Absicht. `npm run verifikation` schreibt sie; wer den Katalog ändert, ohne neu zu messen, sieht im Vergleich der Fassungen sofort, dass die Aussage über die Abdeckung veraltet ist. Fehlt die Datei, sagen Oberfläche und Bericht das ausdrücklich — eine unbelegte Zahl wäre schlimmer als keine.
+
+**Eine gemessene Lücke schlägt jede andere Einstufung** (`leiteEinstufungAb`). Ein Kriterium, bei dem einmal etwas übersehen wurde, ist nicht „teilweise belegt" — es ist eine Lücke, auch wenn neun andere Testfälle sauber liefen. Wer das umdreht, bekommt eine Matrix, die genau dort beruhigend aussieht, wo ein Verstoß durchgewunken wurde.
+
+**Die Zeilen der Matrix entstehen aus dem Katalog, nicht aus den Messungen.** Sonst fehlten genau die Kriterien, zu denen es keinen Testfall gibt — und über die eine Abdeckungsmatrix am dringendsten Auskunft geben muss. Dasselbe Muster wie X-19 bei der Konformitätstabelle, aus demselben Grund.
+
+**Mehrseitige Kriterien brauchen mehrseitige Referenzen.** 2.4.5, 3.2.3 und 3.2.6 tragen `nurMehrseitig: true` und sind an einer Einzelseite zu Recht nicht anwendbar. `soll.json` kennt deshalb neben `seiten` auch `gruppen`: Eine Gruppe läuft als **ein** Scan über alle ihre Seiten, gemessen wird die Projektebene. Ohne diesen Teil stünden die drei in der Matrix als „ungemessen", obwohl das Werkzeug sie prüft.
+
+**Vier Fehlalarme, gefunden durch die neuen Referenzseiten:**
+
+- **Der Fokusring eines `<audio controls>` steckt im Schattenbaum des Browsers.** Von außen ändert sich kein einziger gerechneter Stil, und die Messung in `tastatur.ts` sieht nichts. Der Halt trägt jetzt `eigeneFokusanzeige` und wird bei 2.4.7 übersprungen — sonst hätte die Regel auf jeder Seite mit eingebautem Abspieler gefeuert.
+- **`role="note"` ist die Auskunft, dass hier stehender Inhalt steht.** Erläuterungskästen heißen im Markup fast immer „meldung", „hinweis" oder „info"; ohne diese Ausnahme meldete die Regel zu 4.1.3 jeden einzelnen von ihnen. Gefunden an der eigenen Abdeckungsansicht.
+- **„unvollständig" fehlte im Wortschatz der Fehlererkennung.** Die Referenzseite `fehlerempfehlung-sauber.html` meldet vorbildlich „Die Buchung ist unvollständig. So wird sie vollständig: …" — und wurde trotzdem als 3.3.1 geführt. Ein Fehlalarm, der ausgerechnet die saubere Lösung bestraft hätte.
+- **Eine Drehung des ganzen `main` löst 1.4.4 mit aus.** Das ist kein Fehler des Werkzeugs, sondern der Referenzseite: Die Ausrichtungssperre steht jetzt auf einem kleinen Kasten. Ein Element, ein Verstoß — sonst ist die Messung nicht mehr eindeutig zuzuordnen.
+
+**Der Modellvergleich benutzt denselben Prompt wie der Betrieb.** `werkzeuge/modellvergleich.ts` baut die Aufgabe mit `setzeEin` aus derselben Vorlage und hält die Bündelgröße des Prompts ein. Ein eigener, „sauberer" Prompt für die Messung wäre wertlos — gemessen wird, was die Anwendung tatsächlich fragt.
+
+**`unsicher` ist nie ein Sollwert.** Es ist eine Kenngröße: Sie bestimmt, wie viel manuelle Nacharbeit anfällt (L-23). Die schlechte Zahl ist das **falsche `ok`** — ein Verstoß, den das Modell durchwinkt. Er wird gesondert ausgewiesen, aus demselben Grund wie „übersehen" bei den Referenzseiten: Beides sieht aus wie ein bestandener Test.
+
+**Die Abnahmeprotokolle sind der Beleg für NF-13.** `werkzeuge/abnahme.ts` prüft die Stellen, an denen Plattformunterschiede tatsächlich durchschlagen — native Datenbankbibliothek, Chromium, nachgeladenes WebAssembly, Schriftmaße, PDF-Druck — und schreibt `test/abnahme/<plattform>-<architektur>.json`. Wer wissen will, ob das Werkzeug unter Windows je gelaufen ist, sieht nach, ob dort eine Datei liegt. Eine Zusage im Fließtext beweist nichts.
+
 ## 7. Barrierefreiheit der eigenen Oberfläche (NF-01)
 
 Verbindlich von Anfang an, nicht nachträglich:
@@ -618,6 +650,8 @@ Der Lauf hat sich sofort bezahlt gemacht. Gefunden wurden:
 - eine große, fette Zahl in einem Absatz, die axe als verkleidete Überschrift wertet (1.3.1). Behoben durch eine Definitionsliste — die richtige Auszeichnung für Begriff und Wert
 
 Alle drei waren echte Mängel, keine Fehlalarme.
+
+Mit Phase 8 kam die elfte Ansicht dazu: **„Was dieses Werkzeug findet"** — die Abdeckungsmatrix. Sie ist von der Auftragsansicht und vom Ergebnis aus erreichbar, weil sie beides betrifft: Wer eine Prüfung beauftragt, soll wissen, was sie leisten kann; wer ein Ergebnis liest, soll wissen, wie weit es trägt. Der dort gefundene Mangel — ein Erläuterungskasten ohne Live-Bereich — war ein Fehlalarm und hat die Regel zu 4.1.3 geschärft.
 
 ## 8. Bereits vorhandene Werkzeuge
 

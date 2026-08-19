@@ -20,6 +20,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import { Katalog } from '../katalog/laden.js';
+import { ladeAbdeckung } from '../katalog/abdeckung.js';
 import { Browser } from '../scan/browser.js';
 import { crawle } from '../scan/crawl.js';
 import { Protokoll } from '../protokoll.js';
@@ -167,6 +168,22 @@ export function baueServer(optionen: ServerOptionen = {}): FastifyInstance {
     return {
       standard: gelesen.data.standard,
       kriterien: katalog.fuerStandard(gelesen.data.standard),
+    };
+  });
+
+  /**
+   * Gemessene Abdeckung je Kriterium (PRD 10).
+   *
+   * Antwortet auch dann mit 200, wenn nie gemessen wurde — dann eben mit
+   * `matrix: null`. Die Oberfläche sagt in dem Fall, dass keine Messung
+   * vorliegt. Das ist die richtige Auskunft; eine geschätzte Zahl wäre eine
+   * Behauptung, und genau die soll die Matrix ersetzen.
+   */
+  server.get('/api/abdeckung', async () => {
+    const matrix = ladeAbdeckung();
+    return {
+      matrix,
+      ...(matrix ? {} : { hinweis: 'Es liegt keine Messung vor. Zu erzeugen mit "npm run verifikation".' }),
     };
   });
 

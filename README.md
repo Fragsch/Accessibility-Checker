@@ -6,7 +6,7 @@ Prüft Webseiten und Webanwendungen gegen alle Erfolgskriterien, zeigt je Kriter
 
 ## Stand
 
-**Phase 7 abgeschlossen — das Ergebnis ist vorzeigbar.** Aus jeder Prüfung entsteht ein Bericht nach WCAG-EM mit der Bewertungssprache des ACR: als eigenständige HTML-Datei, als PDF, als EARL-Rohdaten für die maschinelle Weiterverarbeitung und als Entwurf der Erklärung zur Barrierefreiheit nach § 12b BGG.
+**Phase 8 abgeschlossen — die Genauigkeit ist gemessen, nicht behauptet.** Aus jeder Prüfung entsteht ein Bericht nach WCAG-EM mit der Bewertungssprache des ACR: als eigenständige HTML-Datei, als PDF, als EARL-Rohdaten für die maschinelle Weiterverarbeitung und als Entwurf der Erklärung zur Barrierefreiheit nach § 12b BGG. Dazu kommt eine Abdeckungsmatrix, die offenlegt, wo das Werkzeug zuverlässig ist und wo nicht.
 
 ```bash
 npm run einrichten       # einmalig
@@ -20,9 +20,13 @@ Was die Automatik und das Sprachmodell nicht entscheiden können, landet in eine
 
 Die Sprachmodell-Stufe ist **abschaltbar und standardmäßig aus**; jedes ihrer unsicheren Urteile wandert samt Begründung in die Prüfliste. Einrichtung: `ANLEITUNG-OLLAMA.md`.
 
-Gemessen an den Referenzseiten: **74 % der eingebauten Verstöße belegt erkannt, kein einziger Fehlalarm, kein einziges übersehenes Kriterium.** Nachzuvollziehen mit `npm run verifikation`.
+Gemessen an zwölf Referenzseiten und zwei mehrseitigen Angeboten: **81 % der eingebauten Verstöße belegt erkannt, kein einziger Fehlalarm, kein einziges übersehenes Kriterium.** 46 der 55 Kriterien haben einen Testfall; die übrigen neun haben keinen Automatikanteil, dort könnte eine Referenzseite nichts belegen. Nachzuvollziehen mit `npm run verifikation` — die Zahlen stehen in der Anwendung unter „Was dieses Werkzeug findet“ und im Methodikteil jedes Berichts.
 
-Als Nächstes: Verifikation ausbauen und Abnahme auf allen drei Betriebssystemen (Phase 8).
+Drei Dinge stehen aus und werden nicht verschwiegen:
+
+- **Der Modellvergleich ist unvollständig.** Gemessen wurde bislang nur ein 3,8-B-Modell — mit dem Ergebnis, dass diese Größenordnung für Stufe 2 nicht genügt (32 % Trefferquote, 52 % „unsicher“). Ein 8-B- und ein 12–14-B-Modell fehlen; sie sind Downloads von mehreren Gigabyte und werden nicht ungefragt nachgeladen.
+- **Die Abnahme lief bisher nur unter macOS.** Windows und Linux stehen aus; bis dahin ist „läuft auf drei Betriebssystemen“ für diese Fassung nicht belegt. `npm run abnahme` zeigt den Stand.
+- **Die W3C Before-and-After-Demonstration** ist nicht eingebunden, weil die Verifikation wie das Werkzeug selbst ohne Netzzugriff läuft.
 
 ## Was das Werkzeug können soll
 
@@ -31,7 +35,7 @@ Als Nächstes: Verifikation ausbauen und Abnahme auf allen drei Betriebssystemen
 | **Prüfumfang** | Einzelseite · gespeichertes Prüfprofil · Gesamtprüfung per Crawl |
 | **Geschützte Bereiche** | ja — Anmeldung erfolgt durch den Menschen im sichtbaren Browserfenster |
 | **Prüfstufen** | automatisch · lokales Sprachmodell · geführt manuell |
-| **Abdeckung** | rund 85 % der Kriterien belastbar bewertet, ohne Sprachmodell rund 60 % |
+| **Abdeckung** | gemessen: 46 von 55 Kriterien mit Testfall, 81 % der Verstöße belegt erkannt |
 | **Bericht** | Aufbau nach WCAG-EM, Bewertungssprache nach VPAT 2.5 / ACR, auf Deutsch — als HTML, PDF, EARL und Entwurf der Erklärung zur Barrierefreiheit |
 | **Betriebssysteme** | Windows, macOS, Linux |
 
@@ -52,12 +56,12 @@ ARCHITEKTUR.md      Womit gebaut wird — Bibliotheken, Struktur, Datenbank, Abl
 CLAUDE.md           Arbeitsanweisung für die Umsetzung
 ANLEITUNG-OLLAMA.md Sprachmodell einrichten und anbinden
 
-katalog/          Der Prüfkatalog als Daten: 56 Kriterien, Schema, Pflegeanleitung
+katalog/          Der Prüfkatalog als Daten: 56 Kriterien, Schema, gemessene Abdeckung
 prompts/          Prompts der Sprachmodell-Stufe
 src/              Server, Prüflogik, Datenbank
 web/              Oberfläche
 werkzeuge/        Prüfskripte und Befehlszeilenwerkzeuge
-test/             Referenz- und Beispielseiten, Tests
+test/             Referenzseiten, Modellsatz, Abnahmeprotokolle, Tests
 daten/            Datenbank, Belege, Protokoll — nicht versioniert
 ```
 
@@ -72,7 +76,9 @@ daten/            Datenbank, Belege, Protokoll — nicht versioniert
 | `npm run scan -- <URL>` | Prüfen ohne Oberfläche |
 | `npm test` | Katalog, axe-Abgleich, Typen und Tests |
 | `npm run pruefe:selbst` | Die eigene Oberfläche mit dem eigenen Werkzeug prüfen |
-| `npm run verifikation` | Trefferquote und Fehlalarme gegen die Referenzseiten messen |
+| `npm run verifikation` | Trefferquote und Fehlalarme messen, Abdeckungsmatrix schreiben |
+| `npm run modellvergleich` | Sprachmodelle gegen den Testsatz messen (braucht Ollama) |
+| `npm run abnahme` | Abnahme auf diesem Betriebssystem, siehe `test/abnahme/` |
 | `node werkzeuge/katalog-pruefen.mjs` | Katalog prüfen — läuft ohne Installation |
 
 Der Katalog-Prüfer braucht nur Node und ist die schnellste Probe, ob die Grundlage unversehrt ist.

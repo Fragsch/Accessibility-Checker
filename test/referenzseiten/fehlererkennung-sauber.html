@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kontakt und Kundenzugang der Musterakademie</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; color: #1a1a1a; background: #ffffff; }
+    :focus-visible { outline: 3px solid #005fcc; outline-offset: 2px; }
+    a { color: #0b4da2; }
+    main { padding: 0 1rem 2rem; }
+    h1, h2 { line-height: 1.3; }
+    label { display: block; margin-top: 1rem; }
+    input, select, textarea { border: 1px solid #767676; padding: .4rem; min-height: 24px; }
+    button { min-width: 24px; min-height: 24px; padding: .5rem 1rem; }
+    fieldset { border: 2px solid #767676; margin: 1rem 0; }
+
+    /* Die Umrandung kommt zur Meldung hinzu, sie ersetzt sie nicht. */
+    .fehlerhaft { border: 3px solid #a30000; background: #ffecec; }
+    .meldung { border: 3px solid #a30000; background: #ffecec; color: #1a1a1a; padding: .75rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <nav aria-label="Hauptnavigation">
+    <a href="/">Start</a>
+    <a href="/kontakt">Kontakt</a>
+  </nav>
+</header>
+
+<main>
+
+  <h1>Kontakt und Kundenzugang</h1>
+
+  <h2>Ihre Nachricht an uns</h2>
+
+  <form id="kontakt" novalidate>
+    <div id="kontakt-meldung" role="alert"></div>
+
+    <fieldset>
+      <legend>Angaben zur Nachricht</legend>
+
+      <label for="kontakt-name">Ihr Name</label>
+      <input type="text" id="kontakt-name" name="absender" autocomplete="name" aria-required="true">
+
+      <label for="kontakt-thema">Worum geht es?</label>
+      <select id="kontakt-thema" name="thema" aria-required="true">
+        <option value="">Bitte waehlen</option>
+        <option value="beratung">Beratung</option>
+        <option value="schulung">Schulung</option>
+      </select>
+
+      <label for="kontakt-text">Ihre Nachricht</label>
+      <textarea id="kontakt-text" name="nachricht" rows="4" aria-required="true"></textarea>
+    </fieldset>
+
+    <button type="submit">Nachricht senden</button>
+  </form>
+
+  <h2>Kundenzugang</h2>
+
+  <form id="zugang" action="/anmelden" method="post">
+    <fieldset>
+      <legend>Anmeldung am Kundenkonto</legend>
+
+      <label for="zugang-kennung">Benutzerkennung</label>
+      <!-- Einfuegen aus dem Passwortspeicher bleibt moeglich. -->
+      <input type="text" id="zugang-kennung" name="benutzer" autocomplete="username">
+
+      <label for="zugang-wort">Passwort</label>
+      <input type="password" id="zugang-wort" name="kennwort" autocomplete="current-password">
+
+      <!-- Kein Bilderraetsel. Verdaechtige Anmeldeversuche werden ueber einen
+           Bestaetigungslink per E-Mail abgesichert — ohne kognitiven Test. -->
+      <p>Bei einem ungewohnten Geraet schicken wir Ihnen einen Bestaetigungslink per E-Mail.</p>
+    </fieldset>
+
+    <button type="submit">Anmelden</button>
+  </form>
+
+</main>
+
+<script>
+  // Der Fehler wird benannt, nicht nur eingefaerbt, und die Meldung sagt
+  // zugleich, was zu tun ist.
+  document.getElementById('kontakt').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var offen = [];
+    var pflicht = this.querySelectorAll('[aria-required=true]');
+    for (var i = 0; i < pflicht.length; i += 1) {
+      if (pflicht[i].value) {
+        pflicht[i].classList.remove('fehlerhaft');
+        continue;
+      }
+      pflicht[i].classList.add('fehlerhaft');
+      var beschriftung = this.querySelector('label[for=' + pflicht[i].id + ']');
+      offen.push(beschriftung ? beschriftung.textContent : pflicht[i].name);
+    }
+    var kasten = document.getElementById('kontakt-meldung');
+    if (offen.length === 0) {
+      kasten.className = '';
+      kasten.textContent = '';
+      return;
+    }
+    kasten.className = 'meldung';
+    kasten.textContent =
+      'Diese Pflichtangaben fehlen: ' + offen.join(', ') + '. ' +
+      'Bitte geben Sie zum Beispiel unter "Ihr Name" Ihren Vor- und Nachnamen an und ' +
+      'waehlen Sie unter "Worum geht es?" einen der angebotenen Eintraege.';
+  });
+</script>
+
+</body>
+</html>

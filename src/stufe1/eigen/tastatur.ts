@@ -51,6 +51,17 @@ export interface Halt {
   imBild: boolean;
   verdeckt: boolean;
   fokusSichtbar: boolean;
+  /**
+   * Das Element bringt seine Fokusanzeige im eigenen Schattenbaum mit.
+   *
+   * Bei `audio` und `video` mit `controls` zeichnet der Browser den Fokusring
+   * an der Abspieltaste — innerhalb seines eigenen Schattenbaums. Von aussen
+   * aendert sich kein einziger gerechneter Stil, und die Messung unten sieht
+   * deshalb nichts. Gefunden in Phase 8 an `bedienung-sauber.html`: ein
+   * Fehlalarm, der auf jeder Seite mit einem eingebauten Abspieler
+   * losgegangen waere.
+   */
+  eigeneFokusanzeige: boolean;
   urlGeaendert: boolean;
 }
 
@@ -180,7 +191,7 @@ export async function pruefeTastatur(
 
   if (regeln.includes('fokus-sichtbarkeit')) {
     for (const halt of haltestellen) {
-      if (halt.fokusSichtbar) continue;
+      if (halt.fokusSichtbar || halt.eigeneFokusanzeige) continue;
       befunde.push({
         regelId: 'fokus-sichtbarkeit',
         engine: 'eigen',
@@ -375,6 +386,10 @@ async function lesFokus(seite: import('playwright').Page, protokoll: import('../
 
       const fokusSichtbar = (umrissDa && umrissAnders) || rahmenAnders || schattenAnders || grundAnders;
 
+      // Der Fokusring des eingebauten Abspielers steckt im Schattenbaum des
+      // Browsers und ist von aussen weder auslesbar noch abschaltbar.
+      const eigeneFokusanzeige = element.matches('audio[controls], video[controls]');
+
       // Verdeckung (2.4.11): Ueberlappt eine fest stehende Leiste das fokussierte
       // Element — und liegt sie tatsaechlich darueber?
       //
@@ -433,6 +448,7 @@ async function lesFokus(seite: import('playwright').Page, protokoll: import('../
         imBild,
         verdeckt,
         fokusSichtbar,
+        eigeneFokusanzeige,
         urlGeaendert: false,
       };
     })
