@@ -592,6 +592,194 @@ button.zweitrangig:hover:not(:disabled) {
   font-weight: 600;
 }
 
+/* --------------------------------------- Profile, Tabellen, Projektebene */
+
+select,
+input[type='number'],
+input[type='file'] {
+  padding: 0.6rem;
+  font: inherit;
+  color: var(--schrift);
+  background: var(--grund);
+  border: 2px solid var(--linie-kraeftig);
+  border-radius: var(--radius);
+  max-width: 100%;
+}
+
+input[type='number'] {
+  width: 8rem;
+}
+
+select {
+  width: 100%;
+}
+
+/*
+  Ankreuzfeld mit Beschriftung daneben. Die Beschriftung umschliesst das Feld,
+  damit auch ein Klick auf den Text wirkt — und die Trefferflaeche gross genug
+  bleibt (2.5.5).
+*/
+.ankreuzfeld {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-weight: 400;
+  margin: 0.5rem 0;
+}
+
+.ankreuzfeld input {
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+.knopfreihe--eng {
+  gap: 0.4rem;
+  font-size: 0.95rem;
+}
+
+.knopfreihe--eng button {
+  min-height: 2.25rem;
+  padding: 0.35rem 0.75rem;
+}
+
+/*
+  Der scrollbare Rahmen um eine Tabelle (1.4.10).
+
+  `overflow-x` auf der Tabelle selbst genuegt nicht: Ein `table` mit
+  `display: block` bildet innen weiterhin eine anonyme Tabellenbox, und die
+  laeuft am Rahmen vorbei — bei 320 Pixeln verschob sich dadurch die ganze
+  Seite um 242 Pixel. Gefunden hat das die Selbstpruefung.
+
+  Der Rahmen ist mit `tabindex="0"` erreichbar, weil ein Bereich, den man nur
+  mit der Maus schieben kann, mit der Tastatur unbedienbar waere (2.1.1). Als
+  `region` mit Namen, damit die Sprachausgabe sagen kann, worin man da steht.
+*/
+.tabellenrahmen {
+  overflow-x: auto;
+  margin: 0 0 1.5rem;
+  /*
+    `position: relative` ist hier keine Kosmetik, sondern der eigentliche Grund,
+    warum der Rahmen haelt: `.nur-fuer-screenreader` ist absolut positioniert.
+    Ohne positionierten Vorfahren bezieht sich das auf die Seite selbst — die
+    versteckten Texte in den Knoepfen der letzten Spalte lagen dann bei 500
+    Pixeln und zogen die ganze Seite auf 562 Pixel, obwohl die Tabelle laengst
+    in ihrem Rahmen scrollte.
+  */
+  position: relative;
+}
+
+/*
+  Eine Tabelle mit sichtbaren Linien.
+
+  Zeilenkoepfe stehen als `th scope="row"` im Markup — ohne sie liest eine
+  Sprachausgabe in der vierten Spalte eine Zahl ohne Bezug vor (1.3.1).
+*/
+.tabelle {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.tabelle th,
+.tabelle td {
+  border: 1px solid var(--linie);
+  padding: 0.5rem 0.7rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.tabelle thead th {
+  background: var(--grund-vertieft);
+}
+
+.tabelle tbody th {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/*
+  Ein Knopf, der wie ein Verweis aussieht.
+
+  Er springt innerhalb der Seite zu einer anderen Ansicht — das ist eine
+  Handlung, kein Ziel, also bleibt es ein `button`. Die Unterstreichung ist
+  Pflicht: Farbe allein darf den Unterschied nicht tragen (1.4.1).
+*/
+.alsverweis {
+  min-height: 0;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--betont);
+  text-decoration: underline;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.alsverweis:hover:not(:disabled) {
+  background: none;
+  color: #0f3452;
+}
+
+.vermerk {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--pruefung-erforderlich);
+  border-radius: var(--radius);
+  color: var(--pruefung-erforderlich);
+  font-size: 0.85rem;
+}
+
+.aufklappbar {
+  margin: 0.5rem 0;
+}
+
+.aufklappbar > summary {
+  cursor: pointer;
+  padding: 0.35rem 0;
+}
+
+.musterliste {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+}
+
+.musterliste > li {
+  border: 1px solid var(--linie);
+  border-left: 6px solid var(--nicht-erfuellt);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.musterliste h4 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.kandidaten,
+.profilzeilen {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0;
+}
+
+.profilzeilen > li {
+  margin-bottom: 0.75rem;
+}
+
+.kandidaten > li {
+  border-bottom: 1px solid var(--linie);
+  padding: 0.35rem 0;
+}
+
+.kandidaten .hilfetext {
+  display: block;
+  margin: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;

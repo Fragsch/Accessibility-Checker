@@ -48,6 +48,7 @@ import type { Prompts } from '../stufe2/prompts.js';
 import type { ModellAdapter } from '../stufe2/adapter/typ.js';
 import type { Zwischenspeicher } from '../stufe2/cache.js';
 import { baueKatalogFragen } from '../stufe3/fragen.js';
+import { SITZUNGSVERLUST_MERKSATZ, pruefeSitzung } from './anmeldung.js';
 import type { ManuelleAntwort } from '../typen/index.js';
 
 export const WERKZEUG_VERSION = '0.1.0';
@@ -97,6 +98,16 @@ export interface ScanAuftrag {
   protokoll?: Protokoll;
   /** Abbruch durch den Nutzer (K-11). Wirkt zwischen zwei Seiten. */
   abbruch?: AbortSignal;
+  /**
+   * Adresse, auf der die Anmeldung stattfand.
+   *
+   * Nur gesetzt, wenn in einer angemeldeten Sitzung geprueft wird. Sie dient
+   * dazu, einen Sitzungsverlust von einer regulaeren Anmeldeseite zu
+   * unterscheiden (S-05).
+   */
+  anmeldeAdresse?: string;
+  /** Wird gerufen, wenn die Sitzung verloren ging (S-05). */
+  beiSitzungsverlust?: (grund: string) => void;
   /** Fortschrittsmeldung je Seite — Grundlage der Ereignisse (SSE, ARCHITEKTUR 6). */
   beiFortschritt?: (meldung: FortschrittMeldung) => void;
 }
@@ -166,6 +177,7 @@ export async function fuehreScanAus(auftrag: ScanAuftrag): Promise<ScanErgebnis>
         mehrereViewports: auftrag.mehrereViewports ?? false,
         stufe2Aktiv,
         ...(auftrag.fruehereAntworten ? { fruehereAntworten: auftrag.fruehereAntworten } : {}),
+        ...(auftrag.anmeldeAdresse ? { anmeldeAdresse: auftrag.anmeldeAdresse } : {}),
         ...(stufe2Aktiv && prompts && auftrag.stufe2Adapter
           ? {
               stufe2: {
@@ -180,6 +192,12 @@ export async function fuehreScanAus(auftrag: ScanAuftrag): Promise<ScanErgebnis>
 
       seitenErgebnisse.push(ergebnis);
       if (seitenMerkmale) merkmale.push(seitenMerkmale);
+
+      // Bei Sitzungsverlust anhalten statt weiterzupruefen (S-05).
+      if (ergebnis.zustand === 'fehler' && ergebnis.fehler?.includes(SITZUNGSVERLUST_MERKSATZ)) {
+        auftrag.beiSitzungsverlust?.(ergebnis.fehler);
+        break;
+      }
 
       auftrag.beiFortschritt?.({
         art: ergebnis.zustand === 'fehler' ? 'fehler' : 'seite-fertig',
@@ -260,6 +278,7 @@ interface SeitenPruefungOptionen {
   mehrereViewports: boolean;
   stufe2Aktiv: boolean;
   fruehereAntworten?: Map<string, Map<string, ManuelleAntwort>>;
+  anmeldeAdresse?: string;
   stufe2?: {
     adapter: ModellAdapter;
     prompts: Prompts;
@@ -300,6 +319,33 @@ async function pruefeSeite(optionen: SeitenPruefungOptionen): Promise<SeitenPrue
   }
 
   try {
+    /*
+      Sitzungsverlust erkennen (S-05).
+
+      Ohne diese Pruefung wuerde das Werkzeug ab dem Moment des Verlusts lauter
+      Anmeldemasken pruefen und deren Maengel als Maengel der eigentlichen
+      Anwendung melden. Das Ergebnis saehe vollstaendig aus und waere falsch —
+      ein stiller Fehlschlag der schlimmsten Sorte. Deshalb: anhalten und
+      Bescheid sagen, nicht weiterpruefen.
+    */
+    if (browser.angemeldet) {
+      const sitzung = await pruefeSitzung(geladen.seite, optionen.anmeldeAdresse ?? null);
+      if (sitzung.verloren) {
+        protokoll.warnung('scan', `Sitzungsverlust auf ${geladen.url}`, { grund: sitzung.grund });
+        return {
+          ergebnis: {
+            url: geladen.url,
+            bezeichnung: seitenAuftrag.bezeichnung ?? null,
+            titel: geladen.titel || null,
+            zustand: 'fehler',
+            fehler: sitzung.grund,
+            bewertungen: [],
+          },
+          merkmale: null,
+        };
+      }
+    }
+
     const anwendbarkeit = await ermittleAnwendbarkeit(geladen.seite, kriterien, {
       betriebsart: optionen.betriebsart,
       protokoll,

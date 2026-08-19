@@ -86,6 +86,42 @@ const ANSICHTEN: Ansicht[] = [
       await klappeAllesAuf(seite);
     },
   },
+  {
+    name: 'Prüfprofile — Liste und Formular',
+    vorbereiten: async (seite) => {
+      await seite.getByLabel('Gespeichertes Prüfprofil').check();
+      await seite.getByRole('button', { name: 'Profile verwalten' }).click();
+      await seite.getByRole('heading', { name: 'Gespeicherte Profile' }).waitFor();
+
+      // Auch die Eingabemaske messen: Dort steht das meiste Markup.
+      await seite.getByRole('button', { name: 'Neues Profil anlegen' }).click();
+      await seite.getByRole('heading', { name: 'Neues Profil' }).waitFor();
+      await seite.getByRole('button', { name: 'Seite hinzufügen' }).click();
+    },
+  },
+  {
+    name: 'Bisherige Prüfungen',
+    vorbereiten: async (seite) => {
+      await seite.getByRole('button', { name: 'Bisherige Prüfungen' }).click();
+      await seite.getByRole('heading', { name: 'Bisherige Prüfungen', level: 3 }).waitFor();
+    },
+  },
+  {
+    name: 'Projektebene über zwei Seiten',
+    vorbereiten: async (seite) => {
+      const mangelhaft = pathToFileURL(path.join(projektWurzel(), 'test', 'referenzseiten', 'mangelhaft.html')).href;
+      const sauber = pathToFileURL(path.join(projektWurzel(), 'test', 'referenzseiten', 'sauber.html')).href;
+
+      await seite.getByLabel('Zu prüfende Adressen').fill(`${mangelhaft}\n${sauber}`);
+      await seite.getByRole('button', { name: 'Prüfung starten' }).click();
+      await seite.getByRole('heading', { name: /^Ergebnis/ }).waitFor({ timeout: 180_000 });
+
+      await seite.getByLabel('Projektebene').check();
+      await seite.getByRole('heading', { name: 'Projektebene' }).waitFor();
+
+      await klappeAllesAuf(seite);
+    },
+  },
 ];
 
 /**

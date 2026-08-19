@@ -197,6 +197,17 @@ describe('Engines an einer Beispielseite', { timeout: ZEITLIMIT }, () => {
     assert.ok(ergebnis.befunde.some((b) => b.selektor === '#statusbereich'));
   });
 
+  it('haelt eine Anmeldung nicht fuer eine Meldung (4.1.3)', async () => {
+    // "Anmeldung" enthaelt "meldung". Ohne Ausnahme meldet die Regel auf jeder
+    // deutschen Seite mit Anmeldung einen Fehlalarm — in der eigenen
+    // Oberflaeche traf es den Hilfetext unter dem Ankreuzfeld.
+    const ergebnis = await regeln('statusmeldung-live-region');
+    assert.ok(
+      !ergebnis.befunde.some((b) => b.selektor?.includes('anmeldung-hilfe')),
+      'ein Hilfetext zur Anmeldung ist keine Statusmeldung',
+    );
+  });
+
   it('erkennt zu kleine, dicht beieinanderliegende Ziele (2.5.8)', async () => {
     const ergebnis = await regeln('zielgroesse-24');
     assert.ok(ergebnis.befunde.length >= 2, `nur ${ergebnis.befunde.length} Ziele beanstandet`);

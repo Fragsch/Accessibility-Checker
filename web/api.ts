@@ -5,7 +5,20 @@
  * was der Server nicht wissen kann — etwa dass er gar nicht antwortet.
  */
 
-import type { Antwortwert, Fragenliste, Kriterium, ScanZustand, Standard, Stufe2Zustand } from './typen';
+import type {
+  Antwortwert,
+  Auftrag,
+  Crawlergebnis,
+  Crawlvorgabe,
+  Fragenliste,
+  Kriterium,
+  Profil,
+  Projektansicht,
+  ScanUebersicht,
+  ScanZustand,
+  Standard,
+  Stufe2Zustand,
+} from './typen';
 
 export class ApiFehler extends Error {
   readonly status: number;
@@ -39,13 +52,102 @@ export async function ladeKatalog(standard: Standard): Promise<Kriterium[]> {
   return antwort.kriterien;
 }
 
-export async function starteScan(urls: string[], standard: Standard, stufe2 = false): Promise<number> {
+/**
+ * Startet einen Scan (K-01 bis K-09).
+ *
+ * Der Auftrag traegt seine Betriebsart bei sich: freie Adressen, ein
+ * gespeichertes Profil oder ein Crawl. Beim Profil bestimmt der Server den
+ * Pruefstandard aus dem Profil, damit Wiederholungslaeufe vergleichbar
+ * bleiben (K-13).
+ */
+export async function starteScan(auftrag: Auftrag): Promise<number> {
   const antwort = await hole<{ scanId: number }>('/api/scan', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ urls, standard, stufe2 }),
+    body: JSON.stringify(auftrag),
   });
   return antwort.scanId;
+}
+
+// ------------------------------------------------------------ Prüfprofile
+
+export async function ladeProfile(): Promise<Profil[]> {
+  const antwort = await hole<{ profile: Profil[] }>('/api/profile');
+  return antwort.profile;
+}
+
+export interface ProfilEingabe {
+  name: string;
+  standard: Standard;
+  seiten: { url: string; bezeichnung: string; zweck: string | null }[];
+}
+
+export async function legeProfilAn(eingabe: ProfilEingabe): Promise<Profil> {
+  const antwort = await hole<{ profil: Profil }>('/api/profile', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(eingabe),
+  });
+  return antwort.profil;
+}
+
+export async function aendereProfil(id: number, eingabe: ProfilEingabe): Promise<Profil> {
+  const antwort = await hole<{ profil: Profil }>(`/api/profile/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(eingabe),
+  });
+  return antwort.profil;
+}
+
+export async function loescheProfil(id: number): Promise<void> {
+  await hole(`/api/profile/${id}`, { method: 'DELETE' });
+}
+
+/** Profil als JSON, versionierbar im Projekt (K-07). */
+export async function holeProfilAustausch(id: number): Promise<unknown> {
+  const antwort = await hole<{ austausch: unknown }>(`/api/profile/${id}`);
+  return antwort.austausch;
+}
+
+export async function importiereProfil(austausch: unknown): Promise<Profil> {
+  const antwort = await hole<{ profil: Profil }>('/api/profile/import', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(austausch),
+  });
+  return antwort.profil;
+}
+
+/** Kandidatenliste für ein Profil aus einem einmaligen Crawl (K-06). */
+export async function schlageSeitenVor(vorgabe: Crawlvorgabe): Promise<Crawlergebnis> {
+  return hole<Crawlergebnis>('/api/profile/vorschlag', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(vorgabe),
+  });
+}
+
+// --------------------------------------------- Anmeldung und Scanverwaltung
+
+/** Bestätigt, dass die Anmeldung steht und die Prüfung beginnen darf (S-02). */
+export async function meldeAnmeldungFertig(scanId: number): Promise<void> {
+  await hole(`/api/scan/${scanId}/anmeldung-fertig`, { method: 'POST' });
+}
+
+export async function ladeScans(): Promise<ScanUebersicht[]> {
+  const antwort = await hole<{ scans: ScanUebersicht[] }>('/api/scans');
+  return antwort.scans;
+}
+
+/** Löscht einen Scan samt aller Belege (S-24). */
+export async function loescheScan(scanId: number): Promise<void> {
+  await hole(`/api/scan/${scanId}`, { method: 'DELETE' });
+}
+
+/** Verdichtete Sicht über alle Seiten: Projektebene, Muster, Rangliste (E-20 bis E-26). */
+export async function ladeProjekt(scanId: number): Promise<Projektansicht> {
+  return hole<Projektansicht>(`/api/scan/${scanId}/projekt`);
 }
 
 /** Zustand der Sprachmodell-Stufe: Hardware, Ollama, Modellvorschlag (L-40, L-42). */
@@ -103,7 +205,16 @@ export interface Ereignis {
 export function hoereAufScan(scanId: number, beiEreignis: (ereignis: Ereignis) => void): () => void {
   const quelle = new EventSource(`/api/scan/${scanId}/ereignisse`);
 
-  const arten = ['seite-begonnen', 'seite-fertig', 'befund', 'fortschritt', 'fehler', 'fertig'];
+  const arten = [
+    'seite-begonnen',
+    'seite-fertig',
+    'befund',
+    'fortschritt',
+    'anmeldung-noetig',
+    'sitzung-verloren',
+    'fehler',
+    'fertig',
+  ];
   for (const art of arten) {
     quelle.addEventListener(art, (ereignis) => {
       const daten = JSON.parse((ereignis as MessageEvent<string>).data) as Record<string, unknown>;

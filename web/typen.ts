@@ -9,25 +9,41 @@
 import type {
   Antwortwert,
   BeantworteteFrage,
+  Betriebsart,
   Bewertung,
   Kriterium,
   OffeneFrage,
+  ProjektBewertung,
   ScanErgebnis,
   SeitenErgebnis,
   Standard,
   Status,
 } from '../src/typen/index';
+import type { Profil, ProfilSeite, Viewport } from '../src/profil/index';
+import type { GefundeneSeite } from '../src/scan/crawl';
+import type { Baustein, Muster, SeitenRang } from '../src/bericht/muster';
+import type { ScanUebersicht } from '../src/db/scan-speichern';
 
 export type {
   Antwortwert,
+  Baustein,
   BeantworteteFrage,
+  Betriebsart,
   Bewertung,
+  GefundeneSeite,
   Kriterium,
+  Muster,
   OffeneFrage,
+  Profil,
+  ProfilSeite,
+  ProjektBewertung,
   ScanErgebnis,
+  ScanUebersicht,
   SeitenErgebnis,
+  SeitenRang,
   Standard,
   Status,
+  Viewport,
 };
 
 /** Eine Frage, die auf mehreren Seiten gleich lautet (M-07). */
@@ -65,6 +81,12 @@ export interface Stufe2Zustand {
   entfaelltOhneStufe2: string[];
 }
 
+/** Eine wartende Anmeldung (S-01, S-02). */
+export interface AnmeldeStand {
+  url: string;
+  zustand: 'wartet' | 'bestaetigt' | 'abgebrochen' | 'zeitueberschreitung';
+}
+
 export interface ScanZustand {
   scanId: number;
   zustand: 'laeuft' | 'fertig' | 'abgebrochen' | 'fehler';
@@ -76,7 +98,62 @@ export interface ScanZustand {
   laeuft: boolean;
   ergebnis: ScanErgebnis | null;
   entwurf: boolean;
+  anmeldung?: AnmeldeStand | null;
+  /** Der Scan lief in einem geschützten Bereich (S-22). */
+  geschuetzt?: boolean;
 }
+
+/** Verdichtete Sicht über alle Seiten eines Scans (E-20 bis E-26). */
+export interface Projektansicht {
+  projektebene: ProjektBewertung[];
+  muster: Muster[];
+  rangliste: SeitenRang[];
+  seiten: { url: string; bezeichnung: string | null; titel: string | null; zustand: string; fehler: string | null }[];
+}
+
+/** Kandidatenliste eines Crawls (K-06). */
+export interface Crawlergebnis {
+  seiten: GefundeneSeite[];
+  grenzeErreicht: 'tiefe' | 'anzahl' | null;
+  durchRobotsAusgeschlossen: string[];
+}
+
+/** Vorgaben für den Crawl (K-08, K-09). */
+export interface Crawlvorgabe {
+  start: string;
+  hoechsttiefe: number;
+  hoechstzahl: number;
+  einschluss?: string[];
+  ausschluss?: string[];
+  verzoegerungMs: number;
+  robotsBeachten: boolean;
+}
+
+/** Ein vollständiger Prüfauftrag, wie ihn die Oberfläche zusammenstellt. */
+export interface Auftrag {
+  betriebsart: Betriebsart;
+  standard: Standard;
+  stufe2: boolean;
+  urls?: string[];
+  profilId?: number;
+  crawl?: Crawlvorgabe;
+  anmeldung?: { url: string };
+}
+
+export const BETRIEBSART_TEXT: Record<Betriebsart, string> = {
+  einzelseite: 'Einzelseite',
+  profil: 'Prüfprofil',
+  gesamt: 'Gesamtprüfung',
+};
+
+export const BAUSTEIN_TEXT: Record<Baustein, string> = {
+  kopfbereich: 'Kopfbereich',
+  navigation: 'Navigation',
+  fussbereich: 'Fußbereich',
+  seitenleiste: 'Seitenleiste',
+  formular: 'Formular',
+  inhalt: 'Inhaltsbereich',
+};
 
 /** Reihenfolge, in der die Status angezeigt werden: Dringendes zuerst. */
 export const STATUS_REIHENFOLGE: Status[] = [

@@ -192,8 +192,32 @@ function sammleImBrowser(gewuenscht: string[]): RohTreffer[] {
       '.status', '.meldung', '.alert',
     ].join(', ');
 
+    /*
+      "Anmeldung" enthaelt "meldung" — und eine Anmeldemaske ist keine
+      Statusmeldung.
+
+      Ohne diese Ausnahme meldet die Regel auf jeder deutschen Seite mit einer
+      Anmeldung einen Fehlalarm; in der eigenen Oberflaeche traf es den
+      Hilfetext unter dem Ankreuzfeld fuer geschuetzte Bereiche. Dasselbe gilt
+      fuer "Abmeldung" und "Ummeldung". "Rueckmeldung" steht bewusst nicht
+      hier: das ist tatsaechlich eine Meldung.
+
+      Faellt ein Element ausserdem ueber eine Meldungsklasse oder eine andere
+      Kennung auf, bleibt es Kandidat — die Ausnahme gilt nur, wenn "meldung"
+      der einzige Anlass war.
+    */
+    const ANDERER_ANLASS = [
+      MIT_INHALT,
+      '[id*="status" i]', '[id*="alert" i]', '[id*="fehler" i]',
+      '[id*="error" i]', '[id*="notification" i]',
+    ].join(', ');
+    const istAnmeldung = (element: Element): boolean =>
+      /(an|ab|um)meldung/i.test(element.id) && !element.matches(ANDERER_ANLASS);
+
     const behandelt = new Set<Element>();
-    const kandidaten = Array.from(document.querySelectorAll(`${MIT_INHALT}, ${EINDEUTIG_BENANNT}`));
+    const kandidaten = Array.from(document.querySelectorAll(`${MIT_INHALT}, ${EINDEUTIG_BENANNT}`)).filter(
+      (element) => !istAnmeldung(element),
+    );
 
     /*
       Wie oft kommt dieselbe Klassenkombination vor?

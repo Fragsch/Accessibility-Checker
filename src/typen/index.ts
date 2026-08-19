@@ -205,6 +205,15 @@ export interface SeitenErgebnis {
 export interface ScanErgebnis {
   scanId: number | null;
   betriebsart: Betriebsart;
+  /** Profil, aus dem der Auftrag stammt (K-03). Fehlt bei freier Eingabe. */
+  profilId?: number | null;
+  /**
+   * Der Scan lief in einer angemeldeten Sitzung (S-22).
+   *
+   * Belege koennen dann personenbezogene Daten enthalten; vor dem Export wird
+   * darauf hingewiesen (S-23).
+   */
+  geschuetzt?: boolean;
   standard: Standard;
   gestartetAm: string;
   beendetAm: string | null;

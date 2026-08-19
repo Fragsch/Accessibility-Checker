@@ -20,6 +20,8 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import { Katalog } from '../katalog/laden.js';
+import { Browser } from '../scan/browser.js';
+import { crawle } from '../scan/crawl.js';
 import { Protokoll } from '../protokoll.js';
 import { oeffneDatenbank } from '../db/index.js';
 import type { Database } from 'better-sqlite3';
@@ -32,6 +34,19 @@ import { ladePrompts } from '../stufe2/prompts.js';
 import { fasseZusammen } from '../stufe3/fragen.js';
 import { lesAntworten, loescheAntwort, speichereAntwort } from '../stufe3/antworten.js';
 import { Scanverwaltung } from './scanverwaltung.js';
+import type { CrawlEingang } from './scanverwaltung.js';
+import {
+  aendereProfil,
+  alsAustausch,
+  ausAustausch,
+  findeProfil,
+  legeProfilAn,
+  listeProfile,
+  loescheProfil,
+  ProfilFehler,
+} from '../profil/index.js';
+import { erkenneMuster, ranglisteSeiten } from '../bericht/muster.js';
+import { bereinigeAdresse, pruefeAdresse } from '../scan/adressen.js';
 
 export interface ServerOptionen {
   db?: Database;
@@ -39,10 +54,33 @@ export interface ServerOptionen {
   protokoll?: Protokoll;
 }
 
+const crawlVorgabe = z.object({
+  start: z.string().min(1),
+  hoechsttiefe: z.number().int().min(0).max(6).default(2),
+  hoechstzahl: z.number().int().min(1).max(200).default(30),
+  einschluss: z.array(z.string()).optional(),
+  ausschluss: z.array(z.string()).optional(),
+  verzoegerungMs: z.number().int().min(0).max(10_000).default(500),
+  robotsBeachten: z.boolean().default(true),
+});
+
+/**
+ * Ein Prüfauftrag (K-01 bis K-13).
+ *
+ * Drei Wege führen zu einer Seitenliste: freie Adressen, ein gespeichertes
+ * Profil oder ein Crawl. Genau einer davon wird gebraucht — deshalb sind
+ * `urls` hier auch leer zulässig und die Prüfung erfolgt in der Route.
+ */
 const scanAnfrage = z.object({
-  urls: z.array(z.string().min(1)).min(1).max(200),
+  urls: z.array(z.string().min(1)).max(200).default([]),
   standard: z.enum(['2.1', '2.2']).default('2.1'),
   betriebsart: z.enum(['einzelseite', 'profil', 'gesamt']).optional(),
+  /** Scan aus einem gespeicherten Prüfprofil (K-03). */
+  profilId: z.number().int().positive().optional(),
+  /** Gesamtprüfung: Seitenliste aus einem Crawl (K-08, K-09). */
+  crawl: crawlVorgabe.optional(),
+  /** Anmeldung durch den Nutzer vor dem Scan (S-01, S-02). */
+  anmeldung: z.object({ url: z.string().min(1) }).optional(),
   /** Sprachmodell-Stufe fuer diesen Lauf zuschalten (L-46). */
   stufe2: z.boolean().default(false),
   /** Abweichendes Modell; sonst der Vorschlag nach Hardware (L-29). */
@@ -58,18 +96,40 @@ const antwortAnfrage = z.object({
   notiz: z.string().max(2000).nullable().default(null),
 });
 
+const viewportSchema = z.object({ breite: z.number().int().min(200).max(4000), hoehe: z.number().int().min(200).max(4000) });
+
+const profilAnfrage = z.object({
+  name: z.string().min(1).max(200),
+  standard: z.enum(['2.1', '2.2']).default('2.1'),
+  viewports: z.array(viewportSchema).optional(),
+  seiten: z
+    .array(
+      z.object({
+        url: z.string().min(1),
+        bezeichnung: z.string().max(200).default(''),
+        zweck: z.string().max(500).nullable().default(null),
+      }),
+    )
+    .min(1)
+    .max(500),
+});
+
 const standardAnfrage = z.object({
   standard: z.enum(['2.1', '2.2']).default('2.1'),
 });
 
+/**
+ * Was beim Warten auf die Anmeldung auf dem Bildschirm stehen muss (S-01).
+ *
+ * Der letzte Satz ist kein Beiwerk: Wer sein Kennwort in ein Fenster tippt,
+ * das ein Prüfwerkzeug geöffnet hat, soll wissen, woran er ist.
+ */
+const HINWEIS_ANMELDUNG =
+  'Ein sichtbares Browserfenster ist geöffnet. Melden Sie sich dort an und bestätigen Sie anschließend hier, ' +
+  'dass die Prüfung beginnen kann. Das Werkzeug erfasst keine Zugangsdaten.';
+
 /** Routen, die es laut ARCHITEKTUR 6 geben wird — mit der Phase, die sie bringt. */
 const SPAETERE_ROUTEN: { methode: 'GET' | 'POST' | 'PUT' | 'DELETE'; pfad: string; phase: string }[] = [
-  { methode: 'GET', pfad: '/api/profile', phase: '6 — Pruefprofile' },
-  { methode: 'POST', pfad: '/api/profile', phase: '6 — Pruefprofile' },
-  { methode: 'PUT', pfad: '/api/profile/:id', phase: '6 — Pruefprofile' },
-  { methode: 'DELETE', pfad: '/api/profile/:id', phase: '6 — Pruefprofile' },
-  { methode: 'POST', pfad: '/api/profile/vorschlag', phase: '6 — Gesamtpruefung per Crawl' },
-  { methode: 'POST', pfad: '/api/scan/:id/anmeldung-fertig', phase: '6 — Anmeldung durch den Nutzer' },
   { methode: 'GET', pfad: '/api/scan/:id/bericht', phase: '7 — Bericht nach WCAG-EM' },
 ];
 
@@ -101,22 +161,72 @@ export function baueServer(optionen: ServerOptionen = {}): FastifyInstance {
       return antwort.code(400).send({ fehler: 'Der Auftrag ist unvollständig. Mindestens eine Adresse wird gebraucht.' });
     }
 
+    const auftrag = gelesen.data;
+
+    /*
+      Aus dem Profil kommen Adressen, Bezeichnungen und der Prüfstandard.
+
+      Der Standard gehört zum Profil (K-13): Ein Wiederholungslauf, der
+      plötzlich gegen eine andere Fassung misst, ist mit dem Vorlauf nicht
+      vergleichbar, und eine Veränderung wäre nicht mehr der Seite zuzurechnen.
+    */
+    let standard = auftrag.standard;
+    let bezeichnungen: (string | null)[] | null = null;
+    let rohAdressen = auftrag.urls;
+
+    if (auftrag.profilId !== undefined) {
+      const profil = findeProfil(db, auftrag.profilId);
+      if (!profil) return antwort.code(404).send({ fehler: 'Dieses Profil gibt es nicht.' });
+
+      standard = profil.standard;
+      rohAdressen = profil.seiten.map((s) => s.url);
+      bezeichnungen = profil.seiten.map((s) => s.bezeichnung);
+    }
+
     const urls: string[] = [];
-    for (const eingabe of gelesen.data.urls) {
+    for (const eingabe of rohAdressen) {
       const geprueft = pruefeAdresse(eingabe);
       if (!geprueft) return antwort.code(400).send({ fehler: `Keine gültige Adresse: ${eingabe}` });
       urls.push(geprueft);
     }
 
+    let crawl: CrawlEingang | null = null;
+    if (auftrag.crawl) {
+      const start = pruefeAdresse(auftrag.crawl.start);
+      if (!start) return antwort.code(400).send({ fehler: `Keine gültige Adresse: ${auftrag.crawl.start}` });
+      crawl = { ...auftrag.crawl, start };
+    }
+
+    if (urls.length === 0 && !crawl) {
+      return antwort.code(400).send({ fehler: 'Der Auftrag ist unvollständig. Mindestens eine Adresse wird gebraucht.' });
+    }
+
+    let anmeldung: { url: string } | null = null;
+    if (auftrag.anmeldung) {
+      const angemeldetAuf = pruefeAdresse(auftrag.anmeldung.url);
+      if (!angemeldetAuf) return antwort.code(400).send({ fehler: `Keine gültige Adresse: ${auftrag.anmeldung.url}` });
+      anmeldung = { url: angemeldetAuf };
+    }
+
     const scanId = verwaltung.starte({
       urls,
-      standard: gelesen.data.standard,
-      stufe2Aktiv: gelesen.data.stufe2,
-      ...(gelesen.data.modell ? { modell: gelesen.data.modell } : {}),
-      ...(gelesen.data.betriebsart ? { betriebsart: gelesen.data.betriebsart } : {}),
+      standard,
+      stufe2Aktiv: auftrag.stufe2,
+      ...(bezeichnungen ? { bezeichnungen } : {}),
+      ...(auftrag.profilId !== undefined ? { profilId: auftrag.profilId } : {}),
+      ...(crawl ? { crawl } : {}),
+      ...(anmeldung ? { anmeldung } : {}),
+      ...(auftrag.modell ? { modell: auftrag.modell } : {}),
+      ...(auftrag.betriebsart ? { betriebsart: auftrag.betriebsart } : {}),
     });
 
-    return antwort.code(201).send({ scanId, urls, standard: gelesen.data.standard, stufe2: gelesen.data.stufe2 });
+    return antwort.code(201).send({
+      scanId,
+      urls,
+      standard,
+      stufe2: auftrag.stufe2,
+      ...(anmeldung ? { anmeldung: { url: anmeldung.url, hinweis: HINWEIS_ANMELDUNG } } : {}),
+    });
   });
 
   server.get('/api/scans', async () => ({ scans: listeScans(db) }));
@@ -181,6 +291,148 @@ export function baueServer(optionen: ServerOptionen = {}): FastifyInstance {
     });
 
     anfrage.raw.on('close', () => abmelden?.());
+  });
+
+  // --------------------------------------------------------- Prüfprofile
+
+  server.get('/api/profile', async () => ({ profile: listeProfile(db) }));
+
+  server.get<{ Params: { id: string } }>('/api/profile/:id', async (anfrage, antwort) => {
+    const profil = findeProfil(db, Number(anfrage.params.id));
+    if (!profil) return antwort.code(404).send({ fehler: 'Dieses Profil gibt es nicht.' });
+    return { profil, austausch: alsAustausch(profil) };
+  });
+
+  server.post('/api/profile', async (anfrage, antwort) => {
+    const gelesen = profilAnfrage.safeParse(anfrage.body);
+    if (!gelesen.success) return antwort.code(400).send({ fehler: 'Das Profil ist unvollständig.' });
+
+    try {
+      return antwort.code(201).send({ profil: legeProfilAn(db, gelesen.data) });
+    } catch (e) {
+      if (e instanceof ProfilFehler) return antwort.code(400).send({ fehler: e.message });
+      throw e;
+    }
+  });
+
+  server.put<{ Params: { id: string } }>('/api/profile/:id', async (anfrage, antwort) => {
+    const gelesen = profilAnfrage.safeParse(anfrage.body);
+    if (!gelesen.success) return antwort.code(400).send({ fehler: 'Das Profil ist unvollständig.' });
+
+    try {
+      const geaendert = aendereProfil(db, Number(anfrage.params.id), gelesen.data);
+      if (!geaendert) return antwort.code(404).send({ fehler: 'Dieses Profil gibt es nicht.' });
+      return { profil: geaendert };
+    } catch (e) {
+      if (e instanceof ProfilFehler) return antwort.code(400).send({ fehler: e.message });
+      throw e;
+    }
+  });
+
+  server.delete<{ Params: { id: string } }>('/api/profile/:id', async (anfrage, antwort) => {
+    if (!loescheProfil(db, Number(anfrage.params.id))) {
+      return antwort.code(404).send({ fehler: 'Dieses Profil gibt es nicht.' });
+    }
+    return { geloescht: true };
+  });
+
+  /** Profil aus einer JSON-Datei übernehmen (K-07). */
+  server.post('/api/profile/import', async (anfrage, antwort) => {
+    try {
+      return antwort.code(201).send({ profil: legeProfilAn(db, ausAustausch(anfrage.body)) });
+    } catch (e) {
+      if (e instanceof ProfilFehler) return antwort.code(400).send({ fehler: e.message });
+      throw e;
+    }
+  });
+
+  /**
+   * Vorschlagsfunktion (K-06).
+   *
+   * Ein einmaliger Crawl liefert eine Kandidatenliste — mehr nicht. Welche
+   * Seiten ins Profil kommen, entscheidet ein Mensch: Eine kuratierte Auswahl
+   * ist gegenüber einem Vollcrawl schneller und aussagekräftiger, weil jede
+   * Seite bewusst gewählt wurde.
+   */
+  server.post('/api/profile/vorschlag', async (anfrage, antwort) => {
+    const gelesen = crawlVorgabe.safeParse(anfrage.body);
+    if (!gelesen.success) return antwort.code(400).send({ fehler: 'Die Crawl-Angaben sind unvollständig.' });
+
+    const start = pruefeAdresse(gelesen.data.start);
+    if (!start) return antwort.code(400).send({ fehler: `Keine gültige Adresse: ${gelesen.data.start}` });
+
+    const browser = await Browser.starten({ protokoll });
+    try {
+      const ergebnis = await crawle({
+        ...gelesen.data,
+        start,
+        browser,
+        protokoll,
+      });
+      return ergebnis;
+    } finally {
+      await browser.schliessen();
+    }
+  });
+
+  // ---------------------------------------------- Anmeldung (S-01, S-02)
+
+  /**
+   * Bestätigung, dass die Anmeldung abgeschlossen ist (S-02).
+   *
+   * Der Scan wurde bereits gestartet; er hat ein sichtbares Browserfenster
+   * geöffnet, `anmeldung-noetig` gemeldet und wartet. Zugangsdaten sieht das
+   * Werkzeug dabei nie — es fragt nur, ob es weitergehen darf (S-03).
+   */
+  server.post<{ Params: { id: string } }>('/api/scan/:id/anmeldung-fertig', async (anfrage, antwort) => {
+    const scanId = Number(anfrage.params.id);
+    if (!verwaltung.zustand(scanId)) {
+      return antwort.code(404).send({ fehler: `Scan ${anfrage.params.id} ist nicht bekannt.` });
+    }
+
+    if (!verwaltung.bestaetigeAnmeldung(scanId)) {
+      return antwort.code(409).send({ fehler: 'Zu diesem Scan wird nicht auf eine Anmeldung gewartet.' });
+    }
+    return { bestaetigt: true };
+  });
+
+  /** Wartet dieser Scan gerade auf eine Anmeldung (S-01)? */
+  server.get<{ Params: { id: string } }>('/api/scan/:id/anmeldung', async (anfrage, antwort) => {
+    const anmeldung = verwaltung.anmeldung(Number(anfrage.params.id));
+    if (!anmeldung) return antwort.code(404).send({ fehler: 'Zu diesem Scan wird nicht auf eine Anmeldung gewartet.' });
+    return { ...anmeldung, hinweis: HINWEIS_ANMELDUNG };
+  });
+
+  // ------------------------------------- Projektebene und Musterkennung
+
+  /**
+   * Verdichtete Sicht über alle Seiten (E-20 bis E-26).
+   *
+   * Beides zugleich: Musterkennung, damit aus 25 Befunden eine Aufgabe wird,
+   * und Seitenrangliste, damit klar ist, wo man anfängt.
+   */
+  server.get<{ Params: { id: string } }>('/api/scan/:id/projekt', async (anfrage, antwort) => {
+    const ergebnis = verwaltung.ergebnis(Number(anfrage.params.id));
+    if (!ergebnis) return antwort.code(404).send({ fehler: `Scan ${anfrage.params.id} ist nicht bekannt.` });
+
+    return {
+      projektebene: ergebnis.projektebene,
+      muster: erkenneMuster(ergebnis),
+      rangliste: ranglisteSeiten(ergebnis),
+      seiten: ergebnis.seiten.map((s) => ({
+        url: s.url,
+        bezeichnung: s.bezeichnung,
+        titel: s.titel,
+        zustand: s.zustand,
+        fehler: s.fehler,
+      })),
+    };
+  });
+
+  /** Bereinigt eine Adresse für Anzeige und Export (S-07, S-33). */
+  server.get<{ Querystring: { url?: string } }>('/api/adresse/bereinigt', async (anfrage, antwort) => {
+    if (!anfrage.query.url) return antwort.code(400).send({ fehler: 'Eine Adresse wird gebraucht.' });
+    return bereinigeAdresse(anfrage.query.url);
   });
 
   // ----------------------------------------- Stufe 3 (geführte Prüfliste)
@@ -349,25 +601,7 @@ export function baueServer(optionen: ServerOptionen = {}): FastifyInstance {
   return server;
 }
 
-/**
- * Prueft und ergaenzt eine Adresse.
- * Ohne Schema wird `https://` angenommen — die haeufigste Eingabe ist
- * `beispiel.de`, und ein Tippfehler soll nicht als Dateipfad enden.
- */
-export function pruefeAdresse(eingabe: string): string | null {
-  const roh = eingabe.trim();
-  if (!roh) return null;
-
-  const mitSchema = /^[a-z]+:\/\//i.test(roh) ? roh : `https://${roh}`;
-  try {
-    const adresse = new URL(mitSchema);
-    if (!['http:', 'https:', 'file:'].includes(adresse.protocol)) return null;
-    if (adresse.protocol !== 'file:' && !adresse.hostname) return null;
-    return adresse.href;
-  } catch {
-    return null;
-  }
-}
+export { pruefeAdresse } from '../scan/adressen.js';
 
 /** Bindet die gebaute Oberflaeche ein, sofern sie vorliegt. */
 async function bindeOberflaecheEin(server: FastifyInstance): Promise<boolean> {

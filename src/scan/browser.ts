@@ -25,6 +25,14 @@ export interface BrowserOptionen {
   /** Sichtbares Fenster — noetig, sobald sich der Mensch anmelden muss (S-02). */
   sichtbar?: boolean;
   protokoll?: Protokoll;
+  /**
+   * Bestehender Kontext einer Anmeldung (S-04).
+   *
+   * Wird er uebergeben, laufen alle Seiten darin — mit den Sitzungsdaten, die
+   * der Mensch beim Anmelden erzeugt hat. Sie liegen ausschliesslich im
+   * Arbeitsspeicher und werden nie geschrieben.
+   */
+  angemeldeterKontext?: BrowserContext;
 }
 
 export interface LadeOptionen {
@@ -72,19 +80,34 @@ export interface GeladeneSeite {
 }
 
 export class Browser {
-  #browser: PwBrowser;
+  #browser: PwBrowser | null;
   #protokoll: Protokoll;
+  #angemeldeterKontext: BrowserContext | null;
 
-  private constructor(browser: PwBrowser, protokoll: Protokoll) {
+  private constructor(browser: PwBrowser | null, protokoll: Protokoll, angemeldeterKontext: BrowserContext | null) {
     this.#browser = browser;
     this.#protokoll = protokoll;
+    this.#angemeldeterKontext = angemeldeterKontext;
   }
 
   static async starten(optionen: BrowserOptionen = {}): Promise<Browser> {
     const protokoll = optionen.protokoll ?? stillesProtokoll;
+
+    // Mit angemeldetem Kontext wird kein eigener Browser gestartet: Die
+    // Sitzung haengt am Kontext, und ein zweiter Browser haette sie nicht.
+    if (optionen.angemeldeterKontext) {
+      protokoll.info('browser', 'Angemeldete Sitzung uebernommen');
+      return new Browser(null, protokoll, optionen.angemeldeterKontext);
+    }
+
     const browser = await chromium.launch({ headless: !optionen.sichtbar });
     protokoll.info('browser', `Chromium gestartet (${optionen.sichtbar ? 'sichtbar' : 'unsichtbar'})`);
-    return new Browser(browser, protokoll);
+    return new Browser(browser, protokoll, null);
+  }
+
+  /** Laeuft dieser Browser in einer angemeldeten Sitzung? */
+  get angemeldet(): boolean {
+    return this.#angemeldeterKontext !== null;
   }
 
   /**
@@ -99,14 +122,28 @@ export class Browser {
     const zeitlimit = optionen.zeitlimit ?? ZEITLIMIT_VORGABE;
 
     let kontext: BrowserContext | undefined;
+    let eigenerKontext = false;
     try {
-      kontext = await this.#browser.newContext({
-        viewport: { width: viewport.breite, height: viewport.hoehe },
-        // Kein Speichern von Sitzungsdaten ueber den Scan hinaus (S-03).
-        acceptDownloads: false,
-      });
+      if (this.#angemeldeterKontext) {
+        // Im angemeldeten Kontext bleiben: ein neuer haette die Sitzung nicht.
+        kontext = this.#angemeldeterKontext;
+      } else {
+        eigenerKontext = true;
+        kontext = await this.#browser!.newContext({
+          viewport: { width: viewport.breite, height: viewport.hoehe },
+          // Kein Speichern von Sitzungsdaten ueber den Scan hinaus (S-03).
+          acceptDownloads: false,
+        });
+      }
       const seite = await kontext.newPage();
       seite.setDefaultTimeout(zeitlimit);
+
+      // Der angemeldete Kontext bringt seine eigene Fenstergroesse mit; sie
+      // gilt es zu ueberschreiben, sonst laufen alle Viewports (A-04) auf der
+      // Groesse des Anmeldefensters.
+      if (!eigenerKontext) {
+        await seite.setViewportSize({ width: viewport.breite, height: viewport.hoehe }).catch(() => undefined);
+      }
 
       // Muss vor dem Laden geschehen: registrierte Ereignisbehandler lassen
       // sich nachtraeglich nicht mehr auslesen (2.5.4).
@@ -130,7 +167,7 @@ export class Browser {
       await seite.waitForTimeout(optionen.ruhezeit ?? RUHEZEIT_VORGABE);
 
       const titel = await seite.title().catch(() => '');
-      const kontextZumSchliessen = kontext;
+      const kontextZumSchliessen = eigenerKontext ? kontext : null;
 
       return {
         seite,
@@ -138,19 +175,27 @@ export class Browser {
         titel,
         quelltext,
         schliessen: async () => {
-          await kontextZumSchliessen.close().catch(() => undefined);
+          // Einen fremden, angemeldeten Kontext nicht schliessen — nur die
+          // Seite. Sonst waere die Sitzung nach der ersten Seite weg.
+          if (kontextZumSchliessen) await kontextZumSchliessen.close().catch(() => undefined);
+          else await seite.close().catch(() => undefined);
         },
       };
     } catch (e) {
-      await kontext?.close().catch(() => undefined);
+      if (eigenerKontext) await kontext?.close().catch(() => undefined);
       const ursache = e instanceof Error ? e.message.split('\n')[0] ?? e.message : String(e);
       this.#protokoll.fehler('browser', `Seitenpruefung abgebrochen: ${url}`, { ursache });
       throw new SeitenLadeFehler(url, ursache);
     }
   }
 
+  /**
+   * Schliesst den Browser.
+   * Ein uebergebener angemeldeter Kontext wird **nicht** geschlossen — er
+   * gehoert der Anmeldung, und die raeumt selbst auf.
+   */
   async schliessen(): Promise<void> {
-    await this.#browser.close().catch(() => undefined);
+    await this.#browser?.close().catch(() => undefined);
   }
 }
 

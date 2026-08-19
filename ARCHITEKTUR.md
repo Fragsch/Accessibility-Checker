@@ -518,7 +518,9 @@ Fastify, JSON, kein Authentifizierungsverfahren — das Werkzeug lauscht nur auf
 |---|---|---|
 | `GET` | `/api/katalog?standard=2.1` | Kriterien des gewählten Standards |
 | `GET` | `/api/profile` | Prüfprofile auflisten |
+| `GET` | `/api/profile/:id` | Ein Profil samt Austauschform (K-07) |
 | `POST` | `/api/profile` | Profil anlegen |
+| `POST` | `/api/profile/import` | Profil aus einer JSON-Datei übernehmen (K-07) |
 | `PUT` | `/api/profile/:id` | Profil ändern |
 | `DELETE` | `/api/profile/:id` | Profil löschen |
 | `POST` | `/api/profile/vorschlag` | Crawl für die Seitenauswahl (K-06) |
@@ -529,7 +531,10 @@ Fastify, JSON, kein Authentifizierungsverfahren — das Werkzeug lauscht nur auf
 | `DELETE` | `/api/scan/:id` | Scan samt Belegen löschen (S-24) |
 | `GET` | `/api/scan/:id/fragen` | Offene manuelle Fragen |
 | `POST` | `/api/scan/:id/antwort` | Manuelle Frage beantworten |
+| `GET` | `/api/scan/:id/projekt` | Projektebene, Muster und Seitenrangliste (E-20 bis E-26) |
+| `GET` | `/api/scan/:id/anmeldung` | Wartet dieser Scan auf eine Anmeldung? (S-01) |
 | `POST` | `/api/scan/:id/anmeldung-fertig` | Bestätigung nach der Anmeldung (S-02) |
+| `GET` | `/api/adresse/bereinigt?url=…` | Adresse ohne Sitzungskennungen (S-07, S-33) |
 | `GET` | `/api/scan/:id/bericht?format=html\|pdf\|earl` | Bericht erzeugen |
 | `GET` | `/api/system/hardware` | Erkannte Ausstattung, Modellvorschlag (L-42) |
 | `GET` | `/api/system/ollama` | Zustand der Ollama-Installation (L-40) |
@@ -541,7 +546,15 @@ Gebaut sind `GET /api/katalog`, `POST /api/scan`, `GET /api/scan/:id`, `GET /api
 
 Mit Phase 4 kamen `GET /api/system/hardware`, `GET /api/system/ollama` und `POST /api/system/ollama/einrichten` dazu, mit Phase 5 `GET /api/scan/:id/fragen`, `POST /api/scan/:id/antwort`, `DELETE /api/scan/:id/antwort` und ergänzend `GET /api/antworten`.
 
-Die übrigen Routen der Tabelle sind angelegt und antworten mit **501** samt Angabe der Phase, die sie bringt. Das hält die Schnittstelle sichtbar, ohne etwas vorzutäuschen — und die Oberfläche kann die Meldung unverändert anzeigen.
+### Stand nach Phase 6
+
+Gebaut sind alle Profil-Routen, `POST /api/profile/vorschlag`, `POST /api/scan/:id/anmeldung-fertig` sowie ergänzend `GET /api/profile/:id`, `POST /api/profile/import`, `GET /api/scan/:id/anmeldung`, `GET /api/scan/:id/projekt` und `GET /api/adresse/bereinigt`.
+
+`POST /api/scan` nimmt seither drei Formen von Auftrag an: freie Adressen, `profilId` oder `crawl`. Beim Profil stammt der **Prüfstandard aus dem Profil** und überschreibt die Angabe im Auftrag (K-13). Mit `anmeldung: { url }` öffnet der Lauf zuerst ein sichtbares Browserfenster, meldet `anmeldung-noetig` und wartet auf `POST /api/scan/:id/anmeldung-fertig` (S-01, S-02).
+
+Damit bleibt als spätere Route nur noch `GET /api/scan/:id/bericht`. Sie ist angelegt und antwortet mit **501** samt Angabe der Phase, die sie bringt. Das hält die Schnittstelle sichtbar, ohne etwas vorzutäuschen — und die Oberfläche kann die Meldung unverändert anzeigen.
+
+**Ein Umweg, der sich nicht gelohnt hätte:** Die Anmeldung zunächst als eigene Betriebsmittel-Route (`POST /api/anmeldung`, dann Übergabe der Kennung an den Scan) zu führen, erzeugte einen Zustand ohne Besitzer — ein offenes Browserfenster, zu dem kein Scan gehört. Am Scan aufgehängt stirbt die Sitzung mit ihm, und genau das verlangt S-04.
 
 **Zwei Fallstricke, die Zeit gekostet haben:**
 

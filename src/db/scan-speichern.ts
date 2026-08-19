@@ -34,6 +34,18 @@ export interface ScanAnlage {
   werkzeugVersion: string;
   gestartetAm: string;
   seiten: { url: string; bezeichnung?: string | undefined }[];
+  /** Profil, aus dem der Auftrag stammt (K-03). `null` bei freier Eingabe. */
+  profilId?: number | null | undefined;
+  /** Modell der Sprachmodell-Stufe, sofern eingeschaltet (L-29). */
+  stufe2Modell?: string | null | undefined;
+  /**
+   * Der Scan lief in einer angemeldeten Sitzung (S-22).
+   *
+   * Die Kennzeichnung entscheidet spaeter darueber, ob vor dem Export gewarnt
+   * wird: Belege aus geschuetzten Bereichen koennen personenbezogene Daten
+   * enthalten (S-23).
+   */
+  geschuetzt?: boolean | undefined;
 }
 
 /** Legt Scan und Seitenzeilen an. Alle Seiten starten im Zustand `offen`. */
@@ -43,9 +55,18 @@ export function legeScanAn(db: Database, anlage: ScanAnlage): number {
       .prepare(
         `INSERT INTO scan (profil_id, betriebsart, standard, gestartet_am, beendet_am,
                            stufe2_aktiv, stufe2_modell, geschuetzt, werkzeug_version)
-         VALUES (NULL, ?, ?, ?, NULL, ?, NULL, 0, ?)`,
+         VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?)`,
       )
-      .run(a.betriebsart, a.standard, a.gestartetAm, a.stufe2Aktiv ? 1 : 0, a.werkzeugVersion);
+      .run(
+        a.profilId ?? null,
+        a.betriebsart,
+        a.standard,
+        a.gestartetAm,
+        a.stufe2Aktiv ? 1 : 0,
+        a.stufe2Modell ?? null,
+        a.geschuetzt ? 1 : 0,
+        a.werkzeugVersion,
+      );
 
     const scanId = Number(scan.lastInsertRowid);
     const seiteEinfuegen = db.prepare(
@@ -56,6 +77,32 @@ export function legeScanAn(db: Database, anlage: ScanAnlage): number {
   });
 
   return anlegen(anlage);
+}
+
+/**
+ * Traegt Seiten nach, die erst waehrend des Laufs bekannt werden (K-08).
+ *
+ * Bei der Gesamtpruefung steht die Seitenliste beim Start noch nicht fest —
+ * sie entsteht erst im Crawl. Die Scan-Zeile muss aber sofort existieren,
+ * damit die Oberflaeche eine Kennung und einen Ereignisstrom hat.
+ */
+export function ergaenzeSeiten(
+  db: Database,
+  scanId: number,
+  seiten: readonly { url: string; bezeichnung?: string | undefined }[],
+): void {
+  const schreiben = db.transaction(() => {
+    const einfuegen = db.prepare(
+      `INSERT INTO scan_seite (scan_id, url, bezeichnung, titel, status) VALUES (?, ?, ?, NULL, 'offen')`,
+    );
+    for (const seite of seiten) einfuegen.run(scanId, seite.url, seite.bezeichnung ?? null);
+  });
+  schreiben();
+}
+
+/** Kennzeichnet einen Scan als aus einem geschuetzten Bereich stammend (S-22). */
+export function markiereGeschuetzt(db: Database, scanId: number): void {
+  db.prepare(`UPDATE scan SET geschuetzt = 1 WHERE id = ?`).run(scanId);
 }
 
 /**
@@ -131,11 +178,13 @@ export function speichereScan(db: Database, ergebnis: ScanErgebnis): number {
 
 interface ScanZeile {
   id: number;
+  profil_id: number | null;
   betriebsart: string;
   standard: string;
   gestartet_am: string;
   beendet_am: string | null;
   stufe2_aktiv: number;
+  geschuetzt: number;
   werkzeug_version: string;
 }
 
@@ -147,15 +196,22 @@ export interface ScanUebersicht {
   gestartetAm: string;
   beendetAm: string | null;
   seiten: number;
+  profilId: number | null;
+  /** Name des Profils, falls der Scan aus einem stammt — sonst `null`. */
+  profilName: string | null;
+  /** Der Scan enthaelt Belege aus einem geschuetzten Bereich (S-22). */
+  geschuetzt: boolean;
 }
 
 export function listeScans(db: Database, hoechstzahl = 50): ScanUebersicht[] {
   const zeilen = db
     .prepare(
-      `SELECT s.*, (SELECT COUNT(*) FROM scan_seite WHERE scan_id = s.id) AS seiten
+      `SELECT s.*,
+              (SELECT COUNT(*) FROM scan_seite WHERE scan_id = s.id) AS seiten,
+              (SELECT name FROM profil WHERE id = s.profil_id) AS profil_name
        FROM scan s ORDER BY s.id DESC LIMIT ?`,
     )
-    .all(hoechstzahl) as (ScanZeile & { seiten: number })[];
+    .all(hoechstzahl) as (ScanZeile & { seiten: number; profil_name: string | null })[];
 
   return zeilen.map((z) => ({
     scanId: z.id,
@@ -164,6 +220,9 @@ export function listeScans(db: Database, hoechstzahl = 50): ScanUebersicht[] {
     gestartetAm: z.gestartet_am,
     beendetAm: z.beendet_am,
     seiten: z.seiten,
+    profilId: z.profil_id,
+    profilName: z.profil_name,
+    geschuetzt: z.geschuetzt === 1,
   }));
 }
 
@@ -192,6 +251,8 @@ export function ladeScan(db: Database, scanId: number, kriterien: readonly Krite
   return {
     scanId: scan.id,
     betriebsart: scan.betriebsart as Betriebsart,
+    profilId: scan.profil_id,
+    geschuetzt: scan.geschuetzt === 1,
     standard: scan.standard as Standard,
     gestartetAm: scan.gestartet_am,
     beendetAm: scan.beendet_am,

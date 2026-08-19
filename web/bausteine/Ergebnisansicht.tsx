@@ -6,7 +6,7 @@
  * wie viel noch offen ist.
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { Kriterium, ScanErgebnis, SeitenErgebnis, Status } from '../typen';
 import { PRINZIP_TEXT, STATUS_ERLAEUTERUNG, STATUS_REIHENFOLGE, STATUS_TEXT, STATUS_ZEICHEN } from '../typen';
@@ -16,9 +16,16 @@ interface Eigenschaften {
   ergebnis: ScanErgebnis;
   kriterien: Kriterium[];
   entwurf: boolean;
+  /** Seite, zu der aus der Projektebene gesprungen wurde (E-22, E-23). */
+  angeforderteSeite?: string | null;
 }
 
-export function Ergebnisansicht({ ergebnis, kriterien, entwurf }: Eigenschaften): React.ReactElement {
+export function Ergebnisansicht({
+  ergebnis,
+  kriterien,
+  entwurf,
+  angeforderteSeite = null,
+}: Eigenschaften): React.ReactElement {
   const [seitenNummer, setzeSeitenNummer] = useState(0);
   const [gezeigteStatus, setzeGezeigteStatus] = useState<Status[]>([
     'nicht_erfuellt',
@@ -28,6 +35,14 @@ export function Ergebnisansicht({ ergebnis, kriterien, entwurf }: Eigenschaften)
 
   const gepruefteSeiten = ergebnis.seiten.filter((s) => s.zustand === 'fertig');
   const seite: SeitenErgebnis | undefined = gepruefteSeiten[seitenNummer];
+
+  // Sprung aus der Projektebene: dort steht, auf welchen Seiten ein Kriterium
+  // verletzt ist — von dort muss man ohne Suchen zur Seite kommen (E-22).
+  useEffect(() => {
+    if (!angeforderteSeite) return;
+    const nummer = gepruefteSeiten.findIndex((s) => s.url === angeforderteSeite);
+    if (nummer >= 0) setzeSeitenNummer(nummer);
+  }, [angeforderteSeite, gepruefteSeiten]);
 
   const zaehlung = useMemo(() => zaehle(seite), [seite]);
 
