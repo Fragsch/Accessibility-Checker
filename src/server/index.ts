@@ -46,6 +46,11 @@ import {
   ProfilFehler,
 } from '../profil/index.js';
 import { erkenneMuster, ranglisteSeiten } from '../bericht/muster.js';
+import { baueBerichtsdaten } from '../bericht/daten.js';
+import { alsHtml } from '../bericht/html.js';
+import { alsPdf } from '../bericht/pdf.js';
+import { alsEarl } from '../bericht/earl.js';
+import { baueErklaerung, erklaerungAlsHtml } from '../bericht/erklaerung.js';
 import { bereinigeAdresse, pruefeAdresse } from '../scan/adressen.js';
 
 export interface ServerOptionen {
@@ -128,10 +133,22 @@ const HINWEIS_ANMELDUNG =
   'Ein sichtbares Browserfenster ist geöffnet. Melden Sie sich dort an und bestätigen Sie anschließend hier, ' +
   'dass die Prüfung beginnen kann. Das Werkzeug erfasst keine Zugangsdaten.';
 
-/** Routen, die es laut ARCHITEKTUR 6 geben wird — mit der Phase, die sie bringt. */
-const SPAETERE_ROUTEN: { methode: 'GET' | 'POST' | 'PUT' | 'DELETE'; pfad: string; phase: string }[] = [
-  { methode: 'GET', pfad: '/api/scan/:id/bericht', phase: '7 — Bericht nach WCAG-EM' },
-];
+/**
+ * Ausgabewege des Berichts (X-02 bis X-06).
+ *
+ * `daten` ist die Zugabe: dasselbe Modell als JSON, damit die Oberfläche die
+ * Kennzahlen anzeigen kann, ohne den ganzen Bericht zu erzeugen und wieder zu
+ * zerlegen.
+ */
+const berichtAnfrage = z.object({
+  format: z.enum(['html', 'pdf', 'earl', 'erklaerung', 'daten']).default('html'),
+  /** Projektbericht oder Bericht über eine einzelne Seite (X-05). */
+  umfang: z.enum(['projekt', 'seite']).default('projekt'),
+  /** Bei `umfang=seite`: welche. */
+  url: z.string().min(1).optional(),
+  /** Name der prüfenden Person für das Deckblatt. */
+  person: z.string().max(200).optional(),
+});
 
 export function baueServer(optionen: ServerOptionen = {}): FastifyInstance {
   const protokoll = optionen.protokoll ?? new Protokoll({ datei: protokollDatei(), konsoleAb: 'warnung' });
@@ -580,25 +597,109 @@ export function baueServer(optionen: ServerOptionen = {}): FastifyInstance {
     return { ...bericht, messung };
   });
 
-  // ------------------------------------------------------ Spaetere Phasen
+  // --------------------------------------------------- Bericht (Phase 7)
 
-  for (const route of SPAETERE_ROUTEN) {
-    server.route({
-      method: route.methode,
-      url: route.pfad,
-      handler: async (_anfrage, antwort) =>
-        antwort.code(501).send({
-          fehler: 'Diese Funktion ist noch nicht gebaut.',
-          phase: route.phase,
-        }),
-    });
-  }
+  /**
+   * Bericht nach WCAG-EM mit ACR-Bewertungssprache (X-01 bis X-22).
+   *
+   * Ein laufender Scan liefert keinen Bericht: Ein Zwischenstand sähe aus wie
+   * ein Ergebnis, und ein Kriterium ohne Befund wäre nicht „erfüllt", sondern
+   * nur noch nicht geprüft. Der Unterschied verschwindet im fertigen Dokument.
+   */
+  server.get<{ Params: { id: string }; Querystring: Record<string, string> }>(
+    '/api/scan/:id/bericht',
+    async (anfrage, antwort) => {
+      const gelesen = berichtAnfrage.safeParse(anfrage.query);
+      if (!gelesen.success) return antwort.code(400).send({ fehler: 'Unbekanntes Berichtsformat.' });
+
+      const scanId = Number(anfrage.params.id);
+      const ergebnis = verwaltung.ergebnis(scanId);
+      if (!ergebnis) return antwort.code(404).send({ fehler: `Scan ${anfrage.params.id} ist nicht bekannt.` });
+
+      if (verwaltung.laeuft(scanId)) {
+        return antwort.code(409).send({
+          fehler: 'Dieser Scan läuft noch. Ein Bericht entsteht erst aus einem abgeschlossenen Lauf.',
+        });
+      }
+
+      const { format, umfang } = gelesen.data;
+
+      if (umfang === 'seite') {
+        if (!gelesen.data.url) return antwort.code(400).send({ fehler: 'Für einen Seitenbericht wird eine Adresse gebraucht.' });
+        if (!ergebnis.seiten.some((s) => s.url === gelesen.data.url)) {
+          return antwort.code(404).send({ fehler: `Zu diesem Scan gehört keine Seite ${gelesen.data.url}.` });
+        }
+      }
+
+      const daten = baueBerichtsdaten({
+        ergebnis,
+        kriterien: katalog.fuerStandard(ergebnis.standard),
+        profil: ergebnis.profilId ? findeProfil(db, ergebnis.profilId) : null,
+        ...(gelesen.data.person ? { pruefendePerson: gelesen.data.person } : {}),
+        ...(umfang === 'seite' && gelesen.data.url ? { nurSeite: gelesen.data.url } : {}),
+      });
+
+      const name = dateiname(daten.deckblatt.angebot, daten.deckblatt.gepruefteFassung);
+
+      switch (format) {
+        case 'daten':
+          return daten;
+
+        case 'earl':
+          void antwort
+            .header('Content-Type', 'application/ld+json; charset=utf-8')
+            .header('Content-Disposition', `attachment; filename="${name}.earl.json"`);
+          return alsEarl({ ergebnis, daten });
+
+        case 'erklaerung':
+          void antwort
+            .header('Content-Type', 'text/html; charset=utf-8')
+            .header('Content-Disposition', `inline; filename="Erklaerung-${name}.html"`);
+          return erklaerungAlsHtml(baueErklaerung(daten), daten.deckblatt.angebot);
+
+        case 'pdf': {
+          const pdf = await alsPdf(daten);
+          void antwort
+            .header('Content-Type', 'application/pdf')
+            .header('Content-Disposition', `attachment; filename="${name}.pdf"`);
+          return antwort.send(pdf);
+        }
+
+        case 'html':
+          void antwort
+            .header('Content-Type', 'text/html; charset=utf-8')
+            .header('Content-Disposition', `inline; filename="${name}.html"`);
+          return alsHtml(daten);
+      }
+    },
+  );
 
   server.addHook('onClose', async () => {
     if (!optionen.db) db.close();
   });
 
   return server;
+}
+
+/**
+ * Dateiname des Berichts.
+ *
+ * Umlaute und Sonderzeichen fallen heraus: Ein `Content-Disposition`-Kopf mit
+ * Zeichen ausserhalb von ASCII wird von Browsern unterschiedlich ausgelegt,
+ * und ein Bericht, der beim Herunterladen einen zerhackten Namen bekommt,
+ * findet sich spaeter nicht wieder.
+ */
+function dateiname(angebot: string, zeitpunkt: string): string {
+  const ersetzungen: Record<string, string> = { ä: 'ae', ö: 'oe', ü: 'ue', Ä: 'Ae', Ö: 'Oe', Ü: 'Ue', ß: 'ss' };
+
+  const kern = angebot
+    .replace(/[äöüÄÖÜß]/g, (zeichen) => ersetzungen[zeichen] ?? zeichen)
+    .replace(/[^A-Za-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+
+  const tag = zeitpunkt.slice(0, 10);
+  return `Barrierefreiheitsbericht-${kern || 'Pruefung'}-${tag}`;
 }
 
 export { pruefeAdresse } from '../scan/adressen.js';

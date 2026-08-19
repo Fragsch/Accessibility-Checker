@@ -108,6 +108,23 @@ function sammleImBrowser(gewuenscht: string[]): RohTreffer[] {
     const stil = getComputedStyle(element);
     if (stil.display === 'none' || stil.visibility === 'hidden' || stil.opacity === '0') return false;
     if (element.hasAttribute('hidden') || element.getAttribute('aria-hidden') === 'true') return false;
+
+    /*
+      Zugeklappte `details` verbergen ihren Inhalt — aber nicht so, dass es an
+      den Massen ablesbar waere: Chromium blendet ihn ueber
+      `content-visibility` aus, und `getBoundingClientRect` liefert fuer die
+      Kinder weiterhin Werte. Ohne diese Ausnahme gelten sie als sichtbar und
+      stehen an einer Stelle, an der nichts zu sehen ist.
+
+      Das trifft nicht nur diesen Bericht: Aufklappbare Navigationen, FAQ-Listen
+      und Filterbereiche sind Alltag. Die Regel zur Lesereihenfolge (1.3.2)
+      meldete dort reihenweise Spruenge, die niemand sieht — ein Fehlalarm auf
+      jeder zweiten Seite. Gefunden hat ihn die eigene Pruefung am erzeugten
+      Bericht.
+    */
+    const zugeklappt = element.closest('details:not([open])');
+    if (zugeklappt && element.closest('summary') === null) return false;
+
     const masse = element.getBoundingClientRect();
     return masse.width > 0 && masse.height > 0;
   }

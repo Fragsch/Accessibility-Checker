@@ -24,6 +24,7 @@ import {
   starteScan,
 } from './api';
 import type { Auftrag, Fragenliste, Kriterium, Projektansicht as Projektdaten, ScanZustand } from './typen';
+import { Berichtsansicht } from './bausteine/Berichtsansicht';
 import { Ergebnisansicht } from './bausteine/Ergebnisansicht';
 import { Fortschritt } from './bausteine/Fortschritt';
 import { Profilverwaltung } from './bausteine/Profilverwaltung';
@@ -33,7 +34,7 @@ import { Pruefliste } from './bausteine/Pruefliste';
 import { Scanliste } from './bausteine/Scanliste';
 
 type Ansicht = 'auftrag' | 'profile' | 'scans' | 'laeuft' | 'ergebnis';
-type Sicht = 'befunde' | 'projekt' | 'pruefliste';
+type Sicht = 'befunde' | 'projekt' | 'pruefliste' | 'bericht';
 
 export function App(): React.ReactElement {
   const [ansicht, setzeAnsicht] = useState<Ansicht>('auftrag');
@@ -213,6 +214,10 @@ export function App(): React.ReactElement {
     ...(fragen && fragen.fortschritt.gesamt > 0
       ? [{ wert: 'pruefliste' as Sicht, text: `Manuelle Prüfliste (${fragen.fortschritt.offen} offen)` }]
       : []),
+    // Ein laufender Scan liefert keinen Bericht: Ein Zwischenstand saehe aus
+    // wie ein Ergebnis, und ein noch nicht geprueftes Kriterium wie ein
+    // erfuelltes.
+    ...(zustand?.ergebnis && !zustand.laeuft ? [{ wert: 'bericht' as Sicht, text: 'Bericht' }] : []),
   ];
 
   return (
@@ -349,7 +354,9 @@ export function App(): React.ReactElement {
                 </fieldset>
               )}
 
-              {sicht === 'pruefliste' && fragen && zustand ? (
+              {sicht === 'bericht' && zustand?.ergebnis ? (
+                <Berichtsansicht scanId={zustand.scanId} ergebnis={zustand.ergebnis} />
+              ) : sicht === 'pruefliste' && fragen && zustand ? (
                 <Pruefliste
                   scanId={zustand.scanId}
                   liste={fragen}

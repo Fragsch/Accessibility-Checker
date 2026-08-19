@@ -22,6 +22,7 @@ import type {
   Hinweis,
   Kriterium,
   OffeneFrage,
+  Qualitaetshinweis,
   ScanErgebnis,
   SeitenErgebnis,
   Standard,
@@ -357,6 +358,21 @@ async function pruefeSeite(optionen: SeitenPruefungOptionen): Promise<SeitenPrue
     const gefragteEngines = sammleEngines(kriterien);
     const vorhanden = vorhandeneEngines();
 
+    /*
+      Regeln ohne Kriterium im gewaehlten Standard (X-21).
+
+      Unter WCAG 2.2 entfaellt 4.1.1; die Regeln zur HTML-Gueltigkeit haetten
+      damit niemanden mehr, der nach ihnen fragt. Sie werden trotzdem
+      ausgefuehrt — ihr Ergebnis landet aber nicht in der Bewertung, sondern
+      als Qualitaetshinweis daneben. Unter 2.1 ist die Menge leer.
+    */
+    const qualitaetsRegeln = katalog.qualitaetsRegeln(optionen.standard);
+    for (const [regelId, engineName] of qualitaetsRegeln) {
+      const vorhandeneRegeln = gefragteEngines.get(engineName) ?? new Set<string>();
+      vorhandeneRegeln.add(regelId);
+      gefragteEngines.set(engineName, vorhandeneRegeln);
+    }
+
     const kontext: EngineKontext = {
       seite: geladen.seite,
       browser,
@@ -477,6 +493,18 @@ async function pruefeSeite(optionen: SeitenPruefungOptionen): Promise<SeitenPrue
       }),
     );
 
+    // Verworfen im Sinne von Regel 8 — und trotzdem nicht verloren, weil hier
+    // bekannt ist, *warum* die Zuordnung fehlt (X-21).
+    const qualitaetshinweise: Qualitaetshinweis[] = normalisiert.verworfeneBefunde
+      .filter((roh) => qualitaetsRegeln.has(roh.regelId))
+      .map((roh) => ({
+        regelId: roh.regelId,
+        engine: roh.engine,
+        selektor: roh.selektor,
+        beschreibung: roh.beschreibung,
+        schwere: roh.schwere,
+      }));
+
     return {
       ergebnis: {
         url: geladen.url,
@@ -485,6 +513,7 @@ async function pruefeSeite(optionen: SeitenPruefungOptionen): Promise<SeitenPrue
         zustand: 'fertig',
         fehler: null,
         bewertungen,
+        ...(qualitaetshinweise.length > 0 ? { qualitaetshinweise } : {}),
       },
       merkmale,
     };

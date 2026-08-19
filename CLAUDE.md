@@ -61,7 +61,7 @@ node werkzeuge/katalog-pruefen.mjs   # Katalog prüfen — läuft ohne Abhängig
 
 ## Reihenfolge der Umsetzung
 
-Die Phasen aus `PRD.md` Abschnitt 9 sind bindend. Aktueller Stand: **Phase 1 bis 6 abgeschlossen**.
+Die Phasen aus `PRD.md` Abschnitt 9 sind bindend. Aktueller Stand: **Phase 1 bis 7 abgeschlossen**.
 
 | Phase | Stand | Wo |
 |---|---|---|
@@ -71,19 +71,25 @@ Die Phasen aus `PRD.md` Abschnitt 9 sind bindend. Aktueller Stand: **Phase 1 bis
 | 4 | ✓ Sprachmodell-Stufe über Ollama, optional zuschaltbar | `src/stufe2/` |
 | 5 | ✓ Geführte manuelle Prüfliste mit Persistenz | `src/stufe3/` |
 | 6 | ✓ Mehrseitig und WebApp-fähig | `src/profil/`, `src/scan/crawl.ts`, `src/scan/anmeldung.ts`, `src/bericht/muster.ts` |
+| 7 | ✓ Bericht nach WCAG-EM/ACR, PDF, EARL, Erklärung | `src/bericht/`, `web/bausteine/Berichtsansicht.tsx` |
 
-**Als Nächstes Phase 7:** Bericht nach WCAG-EM/ACR als HTML und PDF, EARL-Export, Entwurf der Erklärung zur Barrierefreiheit. `GET /api/scan/:id/bericht` ist die einzige Route, die heute noch mit 501 antwortet. `src/bericht/muster.ts` steht bereits — die Musterkennung ist die Grundlage der verdichteten Befundliste im Bericht.
+**Als Nächstes Phase 8:** Verifikation gegen Referenzseiten ausbauen, Falsch-Positiv- und Falsch-Negativ-Rate messen, Modellvergleich, Abnahme auf allen drei Betriebssystemen. `werkzeuge/verifikation.ts` und `test/referenzseiten/soll.json` sind die Grundlage; beide stehen und laufen bei jeder Engine-Änderung mit.
 
-### Acht Regeln aus Phase 3 bis 6, die weitergelten
+**Keine Route antwortet mehr mit 501.** Die Schnittstelle aus `ARCHITEKTUR.md` 6 ist vollständig gebaut.
+
+### Elf Regeln aus Phase 3 bis 7, die weitergelten
 
 1. **Kein `tsx` in einem Pfad, der einen Browser steuert.** esbuild baut `__name()` in benannte Funktionen ein; im Browser gibt es das nicht, und jeder `page.evaluate`-Aufruf scheitert stumm. Tests und Befehlszeile laufen über den kompilierten Stand.
 2. **Nach jeder Änderung an einer Engine: `npm run verifikation`.** Sie misst gegen `test/referenzseiten/soll.json`. Zwei Zahlen zählen — *übersehen* muss 0 bleiben, *Fehlalarme* müssen 0 bleiben.
-3. **Nach jeder Änderung an der Oberfläche: `npm run pruefe:selbst`.** Der eigene Scanner läuft über alle sieben Ansichten. Neue Ansicht heißt: neuer Eintrag in `ANSICHTEN` in `werkzeuge/selbstpruefung.ts` — sonst wird sie nie geprüft.
+3. **Nach jeder Änderung an der Oberfläche: `npm run pruefe:selbst`.** Der eigene Scanner läuft über alle zehn Ansichten — seit Phase 7 gehören der erzeugte Bericht und der Entwurf der Erklärung dazu. Neue Ansicht heißt: neuer Eintrag in `ANSICHTEN` in `werkzeuge/selbstpruefung.ts` — sonst wird sie nie geprüft.
 4. **Ein Urteil des Sprachmodells ist nie ein Verstoß.** `problem` und `unsicher` führen beide zu `pruefung_erforderlich`, niemals zu `nicht_erfuellt` (L-25). Wer das ändert, stellt Feststellungen in den Bericht, die niemand geprüft hat.
 5. **Eine manuelle Antwort kann keinen belegten Verstoß wegräumen.** Sie kann hinzufügen, was die Automatik nicht sieht — nicht überstimmen, was diese belegt hat. Die Reihenfolge aus `ARCHITEKTUR.md` 5.2 bleibt bindend.
 6. **Der angemeldete Browserkontext gehört der Anmeldung, nicht dem Scan.** `Browser.starten({ angemeldeterKontext })` startet keinen eigenen Browser und schließt den fremden Kontext nicht; je Seite wird nur die Seite geschlossen. Wer das umdreht, verliert die Sitzung nach der ersten Seite.
 7. **Bei Sitzungsverlust wird angehalten, nicht weitergeprüft (S-05).** Sonst prüft das Werkzeug Anmeldemasken und meldet deren Mängel als Mängel der Anwendung — ein vollständig aussehendes, falsches Ergebnis.
 8. **`beendet_am` wird geschrieben, bevor aufgeräumt wird.** Der Lauf steht zu diesem Zeitpunkt schon auf `fertig`; ein `await` davor reißt ein Fenster auf, in dem ein abgefragter Scan fertig ist, aber keinen Endzeitpunkt trägt.
+9. **Alle vier Ausgabewege des Berichts speisen sich aus `src/bericht/daten.ts`.** Wer für eine Ausgabe direkt aus dem Scanergebnis rechnet, erzeugt Zahlen, die im PDF anders lauten als im HTML — und macht den Bericht als Aussage gegenüber Dritten wertlos.
+10. **Die Konformitätstabelle entsteht aus dem Katalog, nicht aus der gespeicherten Verdichtung.** Sonst fehlt unter einem gewechselten Standard stillschweigend ein Kriterium, und im fertigen Bericht ist das nicht zu bemerken (X-19).
+11. **Nach jeder Änderung an `src/bericht/html.ts`: `npm run pruefe:selbst`.** Der erzeugte Bericht ist ein Erzeugnis dieses Werkzeugs und wird von der Selbstprüfung mitgeprüft — ein Bericht über Barrierefreiheit, den ein Teil seiner Leser nicht lesen kann, widerlegt sich selbst.
 
 ## Wichtig beim Einstieg
 

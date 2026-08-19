@@ -95,10 +95,11 @@ describe('Routen', { timeout: 180_000 }, () => {
     assert.equal(antwort.statusCode, 404);
   });
 
-  it('nennt bei spaeteren Funktionen die Phase, statt 404 zu melden', async () => {
-    const antwort = await server.inject({ method: 'GET', url: '/api/scan/1/bericht' });
-    assert.equal(antwort.statusCode, 501);
-    assert.match((antwort.json() as { phase: string }).phase, /Bericht/);
+  it('meldet einen Bericht zu einem unbekannten Scan als nicht vorhanden', async () => {
+    // Seit Phase 7 gibt es keine Route mehr, die mit 501 antwortet. Der
+    // Bericht ist gebaut; unbekannt ist hier der Scan, nicht die Funktion.
+    const antwort = await server.inject({ method: 'GET', url: '/api/scan/9999/bericht' });
+    assert.equal(antwort.statusCode, 404);
   });
 
   it('meldet den Zustand der Sprachmodell-Stufe, auch ohne Ollama', async () => {

@@ -101,6 +101,35 @@ export class Katalog {
   }
 
   /**
+   * Regeln, die im gewaehlten Standard kein Kriterium mehr haben (X-21).
+   *
+   * Betroffen ist genau ein Fall: 4.1.1 entfaellt mit WCAG 2.2, und mit ihm
+   * verlieren die Regeln zur HTML-Gueltigkeit ihre Zuordnung. Erhoben werden
+   * sie trotzdem — als allgemeiner Qualitaetshinweis ausserhalb der
+   * Konformitaetstabelle, ohne Einfluss auf die Bewertung.
+   *
+   * Unter 2.1 ist die Menge leer; dort aendert sich am Ablauf nichts.
+   */
+  qualitaetsRegeln(standard: Standard, engine: Engine = 'html'): Map<string, Engine> {
+    const geltend = new Set(this.fuerStandard(standard).map((k) => k.id));
+    const regeln = new Map<string, Engine>();
+
+    for (const kriterium of this.kriterien) {
+      if (geltend.has(kriterium.id)) continue;
+      for (const pruefung of kriterium.pruefungen) {
+        if (pruefung.typ !== 'auto' || pruefung.engine !== engine) continue;
+        for (const regelId of pruefung.regelIds) regeln.set(regelId, pruefung.engine);
+      }
+    }
+
+    // Was in einem geltenden Kriterium ohnehin vorkommt, ist kein
+    // Qualitaetshinweis, sondern regulaerer Befund.
+    for (const regelId of this.alleRegelZuordnungen(standard).keys()) regeln.delete(regelId);
+
+    return regeln;
+  }
+
+  /**
    * Zuordnung Regel-ID → Kriterien fuer eine Engine (ARCHITEKTUR 5.1).
    * Eine Regel kann mehreren Kriterien zugeordnet sein; ein Befund erzeugt dann
    * einen Eintrag je Kriterium.

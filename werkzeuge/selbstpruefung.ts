@@ -122,7 +122,61 @@ const ANSICHTEN: Ansicht[] = [
       await klappeAllesAuf(seite);
     },
   },
+  {
+    name: 'Bericht — Vorschau und Ausgabewege',
+    vorbereiten: async (seite) => {
+      await seite.getByLabel('Zu prüfende Adressen').fill(referenzseite('mangelhaft.html'));
+      await seite.getByRole('button', { name: 'Prüfung starten' }).click();
+      await seite.getByRole('heading', { name: /^Ergebnis/ }).waitFor({ timeout: 120_000 });
+
+      await seite.getByLabel('Bericht', { exact: true }).check();
+      await seite.getByRole('heading', { name: 'Bericht', level: 3 }).waitFor();
+      await seite.getByRole('heading', { name: 'Ausgabe' }).waitFor();
+    },
+  },
+  /*
+    Der erzeugte Bericht selbst.
+
+    Er ist ein Erzeugnis dieses Werkzeugs und muss dieselben Anforderungen
+    erfuellen wie die Oberflaeche (NF-01) — ein Bericht ueber Barrierefreiheit,
+    den ein Teil seiner Leser nicht lesen kann, widerlegt sich selbst. Geprueft
+    wird die HTML-Fassung; das PDF entsteht aus demselben Baum.
+  */
+  {
+    name: 'Erzeugter Bericht (HTML)',
+    vorbereiten: async (seite) => {
+      const scanId = await erzeugeBericht(seite);
+      await seite.goto(`http://127.0.0.1:${PORT}/api/scan/${scanId}/bericht?format=html`);
+      await seite.getByRole('heading', { level: 2, name: /Konformitätstabelle/ }).waitFor();
+    },
+  },
+  {
+    name: 'Entwurf der Erklärung zur Barrierefreiheit',
+    vorbereiten: async (seite) => {
+      const scanId = await erzeugeBericht(seite);
+      await seite.goto(`http://127.0.0.1:${PORT}/api/scan/${scanId}/bericht?format=erklaerung`);
+      await seite.getByRole('heading', { level: 1, name: 'Erklärung zur Barrierefreiheit' }).waitFor();
+    },
+  },
 ];
+
+function referenzseite(datei: string): string {
+  return pathToFileURL(path.join(projektWurzel(), 'test', 'referenzseiten', datei)).href;
+}
+
+/** Fuehrt einen Scan durch die Oberflaeche und liefert dessen Kennung. */
+async function erzeugeBericht(seite: Page): Promise<number> {
+  await seite.getByLabel('Zu prüfende Adressen').fill(referenzseite('mangelhaft.html'));
+  await seite.getByRole('button', { name: 'Prüfung starten' }).click();
+  await seite.getByRole('heading', { name: /^Ergebnis/ }).waitFor({ timeout: 120_000 });
+
+  const scans = (await (await fetch(`http://127.0.0.1:${PORT}/api/scans`)).json()) as {
+    scans: { scanId: number }[];
+  };
+  const neuester = scans.scans[0]?.scanId;
+  if (neuester === undefined) throw new Error('Kein Scan vorhanden — der Bericht liesse sich nicht erzeugen.');
+  return neuester;
+}
 
 /**
  * Klappt jedes `details` in einem Zug auf.

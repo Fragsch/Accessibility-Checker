@@ -18,6 +18,7 @@ const ERWARTETE_TABELLEN = [
   'manuelle_antwort',
   'profil',
   'profil_seite',
+  'qualitaetshinweis',
   'scan',
   'scan_seite',
 ];

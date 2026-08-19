@@ -124,6 +124,26 @@ export interface Hinweis {
   herkunft: string;
 }
 
+/**
+ * Ein Mangel, der im gewaehlten Standard kein Erfolgskriterium mehr hat (X-21).
+ *
+ * Der Fall entsteht mit WCAG 2.2: Dort entfaellt 4.1.1, und die Regeln zur
+ * HTML-Gueltigkeit haben damit kein Kriterium mehr, dem sie zugeordnet werden
+ * koennten. Sie stillschweigend fallen zu lassen waere ein Verlust — ein
+ * unbalancierter Tag bleibt ein Mangel, auch wenn er nicht mehr gegen ein
+ * Erfolgskriterium verstoesst.
+ *
+ * Deshalb: erhoben, aber ausserhalb der Konformitaetstabelle gefuehrt und
+ * **ohne Einfluss auf die Bewertung**.
+ */
+export interface Qualitaetshinweis {
+  regelId: string;
+  engine: Engine;
+  selektor: string | null;
+  beschreibung: string;
+  schwere: Schwere;
+}
+
 /** Woher eine offene Frage stammt. */
 export type FrageHerkunft = 'katalog' | 'llm';
 
@@ -199,6 +219,8 @@ export interface SeitenErgebnis {
   /** Grund, falls `zustand === 'fehler'`. */
   fehler: string | null;
   bewertungen: Bewertung[];
+  /** Maengel ohne Kriterium im gewaehlten Standard (X-21). Unter 2.1 stets leer. */
+  qualitaetshinweise?: Qualitaetshinweis[];
 }
 
 /** Ergebnis eines vollstaendigen Scans ueber eine oder mehrere Seiten. */

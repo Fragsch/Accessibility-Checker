@@ -19,6 +19,15 @@ export interface NormalisierungErgebnis {
   hinweise: Hinweis[];
   /** Regel-IDs, die kein Kriterium im Katalog kennt. */
   verworfeneRegeln: string[];
+  /**
+   * Die verworfenen Rohbefunde selbst.
+   *
+   * Sie fliessen in kein Ergebnis ein — Regel 8 bleibt unangetastet. Der
+   * Aufrufer kann sie aber gezielt weiterverwenden, wo er weiss, was er da
+   * hat: die Berichtsstufe fuehrt daraus die Qualitaetshinweise zur
+   * HTML-Gueltigkeit (X-21).
+   */
+  verworfeneBefunde: RohBefund[];
 }
 
 export interface NormalisierungOptionen {
@@ -41,10 +50,13 @@ export function normalisiere(
 ): NormalisierungErgebnis {
   const protokoll = optionen.protokoll ?? stillesProtokoll;
   const verworfene = new Set<string>();
+  const verworfeneBefunde: RohBefund[] = [];
   const befunde: Befund[] = [];
   const hinweise: Hinweis[] = [];
 
   for (const roh of rohBefunde) {
+    if (!optionen.zuordnung.has(roh.regelId)) verworfeneBefunde.push(roh);
+
     for (const kriterium of zuordne(roh.regelId, roh.engine, optionen, protokoll, verworfene, 'Verstoss')) {
       befunde.push({
         kriterium,
@@ -69,6 +81,7 @@ export function normalisiere(
     befunde: entdopple(befunde, (b) => `${b.kriterium}|${b.selektor ?? ''}|${b.beschreibung}`),
     hinweise: entdopple(hinweise, (h) => `${h.kriterium}|${h.herkunft}|${h.text}`),
     verworfeneRegeln: [...verworfene],
+    verworfeneBefunde: entdopple(verworfeneBefunde, (b) => `${b.regelId}|${b.selektor ?? ''}|${b.beschreibung}`),
   };
 }
 

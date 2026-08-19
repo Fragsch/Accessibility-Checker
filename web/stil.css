@@ -786,3 +786,44 @@ select {
     animation: none !important;
   }
 }
+
+/* ------------------------------------------------------- Bericht (Phase 7) */
+
+/*
+  Vermerke und Ausgabewege. Bewusst zwei eigene Klassen statt einer
+  Wiederverwendung von .musterliste: Deren roter Balken steht fuer einen
+  belegten Verstoss. Ein Vermerk ist keiner — und ein Ausgabeformat erst recht
+  nicht.
+*/
+.vermerkliste,
+.formatliste {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+}
+
+.vermerkliste > li {
+  border: 1px solid var(--linie);
+  border-left: 6px solid var(--pruefung-erforderlich);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.vermerkliste h5 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.formatliste > li {
+  border-top: 1px solid var(--linie);
+  padding: 0.75rem 0;
+}
+
+.formatliste > li:first-child {
+  border-top: 0;
+}
+
+.formatliste a {
+  font-weight: 600;
+}

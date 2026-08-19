@@ -6,7 +6,7 @@ Prüft Webseiten und Webanwendungen gegen alle Erfolgskriterien, zeigt je Kriter
 
 ## Stand
 
-**Phase 5 abgeschlossen — die Bewertung ist vollständig.** Was die Automatik und das Sprachmodell nicht entscheiden können, landet jetzt in einer geführten Prüfliste: eine Frage nach der anderen, mit dem Kontext daneben, beantwortbar mit *erfüllt* / *nicht erfüllt* / *nicht anwendbar* samt Notiz.
+**Phase 7 abgeschlossen — das Ergebnis ist vorzeigbar.** Aus jeder Prüfung entsteht ein Bericht nach WCAG-EM mit der Bewertungssprache des ACR: als eigenständige HTML-Datei, als PDF, als EARL-Rohdaten für die maschinelle Weiterverarbeitung und als Entwurf der Erklärung zur Barrierefreiheit nach § 12b BGG.
 
 ```bash
 npm run einrichten       # einmalig
@@ -14,13 +14,15 @@ npm run build
 npm start                # http://127.0.0.1:3000
 ```
 
-Antworten bleiben je Adresse gespeichert. Ein späterer Scan derselben Seite übernimmt sie — solange sich der Inhalt der betroffenen Stellen nicht geändert hat. Gleichlautende Fragen mehrerer Seiten werden zu einer zusammengefasst.
+Der Prüfumfang ist wahlweise eine Einzelseite, ein gespeichertes Prüfprofil oder eine Gesamtprüfung per Crawl. Geschützte Bereiche sind prüfbar: Das Werkzeug öffnet ein sichtbares Browserfenster und wartet, bis Sie sich selbst angemeldet haben — Zugangsdaten sieht es dabei nie.
+
+Was die Automatik und das Sprachmodell nicht entscheiden können, landet in einer geführten Prüfliste. Antworten bleiben je Adresse gespeichert; ein späterer Scan derselben Seite übernimmt sie, solange sich der Inhalt der betroffenen Stellen nicht geändert hat.
 
 Die Sprachmodell-Stufe ist **abschaltbar und standardmäßig aus**; jedes ihrer unsicheren Urteile wandert samt Begründung in die Prüfliste. Einrichtung: `ANLEITUNG-OLLAMA.md`.
 
 Gemessen an den Referenzseiten: **74 % der eingebauten Verstöße belegt erkannt, kein einziger Fehlalarm, kein einziges übersehenes Kriterium.** Nachzuvollziehen mit `npm run verifikation`.
 
-Noch nicht gebaut: Prüfprofile und Crawl (Phase 6), Bericht nach WCAG-EM (Phase 7).
+Als Nächstes: Verifikation ausbauen und Abnahme auf allen drei Betriebssystemen (Phase 8).
 
 ## Was das Werkzeug können soll
 
@@ -30,7 +32,7 @@ Noch nicht gebaut: Prüfprofile und Crawl (Phase 6), Bericht nach WCAG-EM (Phase
 | **Geschützte Bereiche** | ja — Anmeldung erfolgt durch den Menschen im sichtbaren Browserfenster |
 | **Prüfstufen** | automatisch · lokales Sprachmodell · geführt manuell |
 | **Abdeckung** | rund 85 % der Kriterien belastbar bewertet, ohne Sprachmodell rund 60 % |
-| **Bericht** | Aufbau nach WCAG-EM, Bewertungssprache nach VPAT 2.5 / ACR, auf Deutsch |
+| **Bericht** | Aufbau nach WCAG-EM, Bewertungssprache nach VPAT 2.5 / ACR, auf Deutsch — als HTML, PDF, EARL und Entwurf der Erklärung zur Barrierefreiheit |
 | **Betriebssysteme** | Windows, macOS, Linux |
 
 ## Die vier Status
@@ -82,3 +84,5 @@ Die Bauabfolge steht in `ARCHITEKTUR.md` Abschnitt 9.
 Das Werkzeug ersetzt **keine** zertifizierte Prüfung. Für rechtsverbindliche Aussagen nach BFSG, BITV oder EN 301 549 ist weiterhin eine Prüfung durch qualifizierte Personen nötig. Es bereitet eine solche Prüfung vor, verkürzt sie erheblich und deckt den Großteil der Mängel vorab auf.
 
 Solange Kriterien den Status ⚠️ tragen, ist der Bericht ausdrücklich ein Entwurf. Ungeprüfte Kriterien werden nie als konform ausgegeben.
+
+Der erzeugte Entwurf der **Erklärung zur Barrierefreiheit** ist ein Entwurf und nichts weiter. Sie ist eine rechtsverbindliche Aussage der veröffentlichenden Stelle; alles, was das Werkzeug nicht wissen kann, steht darin in eckigen Klammern und ist von einer verantwortlichen Person zu ergänzen.

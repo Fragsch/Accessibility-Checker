@@ -22,16 +22,21 @@ import type {
 import type { Profil, ProfilSeite, Viewport } from '../src/profil/index';
 import type { GefundeneSeite } from '../src/scan/crawl';
 import type { Baustein, Muster, SeitenRang } from '../src/bericht/muster';
+import type { Berichtsdaten, Kennzahlen, Konformitaetszeile, Massnahme, Vermerk } from '../src/bericht/daten';
 import type { ScanUebersicht } from '../src/db/scan-speichern';
 
 export type {
   Antwortwert,
   Baustein,
   BeantworteteFrage,
+  Berichtsdaten,
   Betriebsart,
   Bewertung,
   GefundeneSeite,
+  Kennzahlen,
+  Konformitaetszeile,
   Kriterium,
+  Massnahme,
   Muster,
   OffeneFrage,
   Profil,
@@ -43,8 +48,15 @@ export type {
   SeitenRang,
   Standard,
   Status,
+  Vermerk,
   Viewport,
 };
+
+/** Ausgabewege des Berichts (X-02 bis X-06). */
+export type Berichtsformat = 'html' | 'pdf' | 'earl' | 'erklaerung' | 'daten';
+
+/** Projektbericht oder Bericht über eine einzelne Seite (X-05). */
+export type Berichtsumfang = { art: 'projekt' } | { art: 'seite'; url: string };
 
 /** Eine Frage, die auf mehreren Seiten gleich lautet (M-07). */
 export interface GebuendelteFrage {

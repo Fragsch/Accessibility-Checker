@@ -195,7 +195,13 @@ accessibility-checker/
 │   │   ├── fragen.ts       ✓ Erzeugung, Kennung, Zusammenfassung (M-01, M-07)
 │   │   ├── antworten.ts    ✓ Ablage je Adresse (M-03)
 │   │   └── uebernahme.ts   ✓ Status nach einer Antwort neu ableiten
-│   ├── bericht/                ← WCAG-EM/ACR-Erzeugung, HTML, PDF, EARL
+│   ├── bericht/            ✓ WCAG-EM/ACR-Erzeugung
+│   │   ├── daten.ts        ✓ die sieben Abschnitte als Datenmodell
+│   │   ├── html.ts         ✓ eigenständige HTML-Datei, zugleich Druckstil
+│   │   ├── pdf.ts          ✓ derselbe Baum, gedruckt von Chromium
+│   │   ├── earl.ts         ✓ Rohdaten im EARL-Vokabular (X-04)
+│   │   ├── erklaerung.ts   ✓ Entwurf der Erklärung nach § 12b BGG (X-06)
+│   │   └── muster.ts       ✓ Musterkennung und Seitenrangliste (E-24 bis E-26)
 │   ├── db/
 │   │   ├── index.ts        ✓ Öffnen, Migrationen
 │   │   ├── scan-speichern.ts ✓
@@ -324,6 +330,11 @@ CREATE TABLE llm_cache (
   erzeugt_am    TEXT NOT NULL
 );
 ```
+
+Zwei Tabellen sind seither dazugekommen, beide über `src/db/migrationen/`:
+
+- `hinweis` (siehe 5.6): „konnte nicht geprüft werden" gehört zur Bewertung, ist aber kein Befund.
+- `qualitaetshinweis` (X-21, Fassung 2): ein Mangel, für den es im gewählten Standard **kein Erfolgskriterium mehr gibt**. Er hängt an der Seite und nicht an einer Bewertung — genau das ist seine Eigenschaft, und ein Fremdschlüssel auf `bewertung` würde sie verwischen.
 
 ## 5. Verbindliche Ablaufregeln
 
@@ -535,7 +546,7 @@ Fastify, JSON, kein Authentifizierungsverfahren — das Werkzeug lauscht nur auf
 | `GET` | `/api/scan/:id/anmeldung` | Wartet dieser Scan auf eine Anmeldung? (S-01) |
 | `POST` | `/api/scan/:id/anmeldung-fertig` | Bestätigung nach der Anmeldung (S-02) |
 | `GET` | `/api/adresse/bereinigt?url=…` | Adresse ohne Sitzungskennungen (S-07, S-33) |
-| `GET` | `/api/scan/:id/bericht?format=html\|pdf\|earl` | Bericht erzeugen |
+| `GET` | `/api/scan/:id/bericht?format=html\|pdf\|earl\|erklaerung\|daten&umfang=projekt\|seite&url=…` | Bericht erzeugen |
 | `GET` | `/api/system/hardware` | Erkannte Ausstattung, Modellvorschlag (L-42) |
 | `GET` | `/api/system/ollama` | Zustand der Ollama-Installation (L-40) |
 | `POST` | `/api/system/ollama/einrichten` | Geführte Einrichtung (L-41) |
@@ -552,7 +563,7 @@ Gebaut sind alle Profil-Routen, `POST /api/profile/vorschlag`, `POST /api/scan/:
 
 `POST /api/scan` nimmt seither drei Formen von Auftrag an: freie Adressen, `profilId` oder `crawl`. Beim Profil stammt der **Prüfstandard aus dem Profil** und überschreibt die Angabe im Auftrag (K-13). Mit `anmeldung: { url }` öffnet der Lauf zuerst ein sichtbares Browserfenster, meldet `anmeldung-noetig` und wartet auf `POST /api/scan/:id/anmeldung-fertig` (S-01, S-02).
 
-Damit bleibt als spätere Route nur noch `GET /api/scan/:id/bericht`. Sie ist angelegt und antwortet mit **501** samt Angabe der Phase, die sie bringt. Das hält die Schnittstelle sichtbar, ohne etwas vorzutäuschen — und die Oberfläche kann die Meldung unverändert anzeigen.
+Damit blieb als spätere Route nur noch `GET /api/scan/:id/bericht`; sie kam mit Phase 7. **Seither antwortet keine Route mehr mit 501.**
 
 **Ein Umweg, der sich nicht gelohnt hätte:** Die Anmeldung zunächst als eigene Betriebsmittel-Route (`POST /api/anmeldung`, dann Übergabe der Kennung an den Scan) zu führen, erzeugte einen Zustand ohne Besitzer — ein offenes Browserfenster, zu dem kein Scan gehört. Am Scan aufgehängt stirbt die Sitzung mit ihm, und genau das verlangt S-04.
 
@@ -564,6 +575,28 @@ Damit bleibt als spätere Route nur noch `GET /api/scan/:id/bericht`. Sie ist an
 **Server-Sent Events statt Abfrage im Takt.** Ein Scan läuft minutenlang, auf schwacher Hardware länger. Die Oberfläche muss Ergebnisse der Stufe 1 sofort zeigen und die der Stufe 2 nachreichen (NF-10) — das ist mit einem Ereignisstrom sauber lösbar und mit wiederholten Abfragen nicht.
 
 Ereignistypen: `seite-begonnen`, `seite-fertig`, `befund`, `stufe-fertig`, `fortschritt`, `anmeldung-noetig`, `sitzung-verloren`, `fehler`, `fertig`.
+
+### Stand nach Phase 7
+
+`GET /api/scan/:id/bericht` ist gebaut. Sie nimmt drei Angaben: `format` (`html`, `pdf`, `earl`, `erklaerung`, `daten`), `umfang` (`projekt` oder `seite` samt `url`, X-05) und `person` für das Deckblatt.
+
+**Ein Modell, vier Ausgaben.** `src/bericht/daten.ts` baut die sieben Abschnitte als Daten; HTML, PDF, EARL und der Entwurf der Erklärung greifen alle darauf zu. Vier Ausgabewege, die jeder für sich aus dem Scanergebnis rechnen, laufen unweigerlich auseinander — dann steht im PDF eine andere Zahl als in der HTML-Fassung, und der Bericht ist als Aussage gegenüber Dritten wertlos.
+
+**Das PDF entsteht aus demselben HTML.** Chromium ist ohnehin installiert und druckt selbst; eine PDF-Bibliothek hieße eine zweite Schriftbehandlung und ein zweites Ergebnis bei gleichem Zweck. Der einzige Unterschied ist `alleAufgeklappt`: Gedruckt gibt es kein Aufklappen, und ein zugeklappter Abschnitt wäre im Druck verloren.
+
+**Die Konformitätstabelle entsteht aus dem Katalog, nicht aus der gespeicherten Verdichtung.** Unter WCAG 2.2 müssen genau 55 Zeilen erscheinen — auch dort, wo keine Bewertung vorliegt, dann eben als „nicht abschließend bewertet" (X-19). Ein stillschweigend fehlendes Kriterium wäre im fertigen Bericht nicht zu bemerken.
+
+**`format=daten` ist die Zugabe:** dasselbe Modell als JSON, damit die Oberfläche Kennzahlen und Vermerke anzeigen kann, ohne den ganzen Bericht zu erzeugen und wieder zu zerlegen.
+
+**Ein laufender Scan liefert keinen Bericht** (409). Ein Zwischenstand sähe aus wie ein Ergebnis, und ein noch nicht geprüftes Kriterium wie ein erfülltes.
+
+**Qualitätshinweise (X-21).** Unter WCAG 2.2 entfällt 4.1.1, und die Regeln zur HTML-Gültigkeit verlieren ihre Zuordnung. Sie werden trotzdem ausgeführt: `Katalog.qualitaetsRegeln(standard)` nennt die Regeln ohne Kriterium im gewählten Standard, der Runner hängt sie an die Anfrage an die Engine, und `normalisiere` gibt die verworfenen Rohbefunde heraus. Regel 8 bleibt unangetastet — zugeordnet wird nichts, die Befunde stehen außerhalb der Konformitätstabelle und ohne Einfluss auf die Bewertung. Unter 2.1 ist die Menge leer und am Ablauf ändert sich nichts.
+
+**Drei Mängel im eigenen Erzeugnis, gefunden von der eigenen Prüfung:**
+
+- Quelltextblöcke scrollen waagerecht und brauchen deshalb `tabindex="0"` (2.1.1). Ein `role="region"` dazu wäre falsch: Der Bericht enthält Dutzende davon, und jeder erschiene als eigene Landmarke mit gleichlautendem Namen (2.4.1).
+- **Chromium meldet für Elemente in einem zugeklappten `details` weiterhin Maße.** Ein Verweis oder ein fokussierbarer Block darin sieht für jede Prüfung wie ein Sprung in der Lesereihenfolge aus (1.3.2). Das trifft nicht nur diesen Bericht: Aufklappbare Navigationen und FAQ-Listen sind Alltag. Der Sichtbarkeitstest in `src/stufe1/eigen/dom.ts` schließt diesen Fall jetzt aus — ein Fehlalarm, der auf jeder zweiten Seite gefeuert hätte.
+- Adressen und Selektoren sind lange Zeichenfolgen ohne Leerzeichen. Ohne `overflow-wrap: break-word` sprengen sie bei 320 Pixeln die Seite (1.4.10).
 
 ## 7. Barrierefreiheit der eigenen Oberfläche (NF-01)
 

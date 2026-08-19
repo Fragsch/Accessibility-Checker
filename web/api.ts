@@ -8,6 +8,9 @@
 import type {
   Antwortwert,
   Auftrag,
+  Berichtsdaten,
+  Berichtsformat,
+  Berichtsumfang,
   Crawlergebnis,
   Crawlvorgabe,
   Fragenliste,
@@ -151,6 +154,39 @@ export async function ladeProjekt(scanId: number): Promise<Projektansicht> {
 }
 
 /** Zustand der Sprachmodell-Stufe: Hardware, Ollama, Modellvorschlag (L-40, L-42). */
+/**
+ * Adresse eines Berichts (X-02 bis X-06).
+ *
+ * Bewusst eine Adresse und kein Abruf: Die Oberflaeche verweist darauf, statt
+ * das Dokument selbst zu holen und weiterzureichen. So laedt der Browser die
+ * Datei mit dem Namen herunter, den der Server im Kopf mitgibt, und das PDF
+ * entsteht erst, wenn es jemand tatsaechlich anfordert — es dauert ein paar
+ * Sekunden.
+ */
+export function berichtAdresse(
+  scanId: number,
+  format: Berichtsformat,
+  umfang: Berichtsumfang = { art: 'projekt' },
+  person?: string,
+): string {
+  const felder = new URLSearchParams({ format });
+  if (umfang.art === 'seite') {
+    felder.set('umfang', 'seite');
+    felder.set('url', umfang.url);
+  }
+  if (person) felder.set('person', person);
+
+  return `/api/scan/${scanId}/bericht?${felder.toString()}`;
+}
+
+/** Die Berichtsdaten als JSON — fuer die Vorschau in der Oberflaeche. */
+export async function ladeBerichtsdaten(
+  scanId: number,
+  umfang: Berichtsumfang = { art: 'projekt' },
+): Promise<Berichtsdaten> {
+  return hole<Berichtsdaten>(berichtAdresse(scanId, 'daten', umfang));
+}
+
 export async function ladeStufe2Zustand(standard: Standard): Promise<Stufe2Zustand> {
   return hole<Stufe2Zustand>(`/api/system/ollama?standard=${standard}`);
 }

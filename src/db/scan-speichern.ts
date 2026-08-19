@@ -15,9 +15,11 @@ import type {
   Befund,
   Betriebsart,
   Bewertung,
+  Engine,
   Hinweis,
   Kriterium,
   OffeneFrage,
+  Qualitaetshinweis,
   ScanErgebnis,
   Schwere,
   SeitenErgebnis,
@@ -151,6 +153,23 @@ export function speichereSeitenErgebnis(
         hinweisEinfuegen.run(bewertungsId, hinweis.text, hinweis.herkunft);
       }
     }
+
+    // Haengt an der Seite, nicht an einer Bewertung (X-21): Zu diesen Maengeln
+    // gibt es im gewaehlten Standard kein Kriterium.
+    const qualitaetEinfuegen = db.prepare(
+      `INSERT INTO qualitaetshinweis (scan_seite_id, regel_id, engine, selektor, beschreibung, schwere)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    );
+    for (const hinweis of ergebnis.qualitaetshinweise ?? []) {
+      qualitaetEinfuegen.run(
+        seitenId,
+        hinweis.regelId,
+        hinweis.engine,
+        hinweis.selektor,
+        hinweis.beschreibung,
+        hinweis.schwere,
+      );
+    }
   });
 
   schreiben();
@@ -239,14 +258,18 @@ export function ladeScan(db: Database, scanId: number, kriterien: readonly Krite
     .prepare(`SELECT * FROM scan_seite WHERE scan_id = ? ORDER BY id`)
     .all(scanId) as { id: number; url: string; bezeichnung: string | null; titel: string | null; status: string }[];
 
-  const seiten: SeitenErgebnis[] = seitenZeilen.map((zeile) => ({
-    url: zeile.url,
-    bezeichnung: zeile.bezeichnung,
-    titel: zeile.titel,
-    zustand: zeile.status as SeitenZustand,
-    fehler: null,
-    bewertungen: leseBewertungen(db, zeile.id),
-  }));
+  const seiten: SeitenErgebnis[] = seitenZeilen.map((zeile) => {
+    const qualitaetshinweise = leseQualitaetshinweise(db, zeile.id);
+    return {
+      url: zeile.url,
+      bezeichnung: zeile.bezeichnung,
+      titel: zeile.titel,
+      zustand: zeile.status as SeitenZustand,
+      fehler: null,
+      bewertungen: leseBewertungen(db, zeile.id),
+      ...(qualitaetshinweise.length > 0 ? { qualitaetshinweise } : {}),
+    };
+  });
 
   return {
     scanId: scan.id,
@@ -261,6 +284,20 @@ export function ladeScan(db: Database, scanId: number, kriterien: readonly Krite
     seiten,
     projektebene: verdichte(seiten, kriterien),
   };
+}
+
+function leseQualitaetshinweise(db: Database, seitenId: number): Qualitaetshinweis[] {
+  const zeilen = db
+    .prepare(`SELECT * FROM qualitaetshinweis WHERE scan_seite_id = ? ORDER BY id`)
+    .all(seitenId) as { regel_id: string; engine: string; selektor: string | null; beschreibung: string; schwere: string }[];
+
+  return zeilen.map((z) => ({
+    regelId: z.regel_id,
+    engine: z.engine as Engine,
+    selektor: z.selektor,
+    beschreibung: z.beschreibung,
+    schwere: z.schwere as Schwere,
+  }));
 }
 
 function leseBewertungen(db: Database, seitenId: number): Bewertung[] {
