@@ -119,169 +119,176 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
 
   return (
     <form onSubmit={abschicken} noValidate>
-      <fieldset className="feldgruppe">
-        <legend>Was soll geprüft werden? (K-02)</legend>
-        <div className="auswahl">
-          <label>
-            <input
-              type="radio"
-              name="betriebsart"
-              checked={betriebsart === 'einzelseite'}
-              onChange={() => setzeBetriebsart('einzelseite')}
-            />
-            Einzelne Adressen
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="betriebsart"
-              checked={betriebsart === 'profil'}
-              onChange={() => setzeBetriebsart('profil')}
-            />
-            Gespeichertes Prüfprofil
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="betriebsart"
-              checked={betriebsart === 'gesamt'}
-              onChange={() => setzeBetriebsart('gesamt')}
-            />
-            Gesamtprüfung über die Domain
-          </label>
-        </div>
-      </fieldset>
-
-      {betriebsart === 'einzelseite' && (
-        <div className="feldgruppe">
-          <label htmlFor="adressen">Zu prüfende Adressen</label>
-          <textarea
-            id="adressen"
-            value={adressen}
-            onChange={(e) => setzeAdressen(e.target.value)}
-            aria-describedby="adressen-hilfe"
-            {...(fehler ? { 'aria-invalid': true, 'aria-errormessage': 'auftrag-fehler' } : {})}
-            placeholder="beispiel.de"
-            autoComplete="url"
-            spellCheck={false}
-          />
-          <p className="hilfetext" id="adressen-hilfe">
-            Eine Adresse je Zeile. Fehlt <code>https://</code>, wird es ergänzt.
-          </p>
-        </div>
-      )}
-
-      {betriebsart === 'profil' && (
-        <div className="feldgruppe">
-          <label htmlFor="profil">Prüfprofil</label>
-          <select
-            id="profil"
-            value={profilId ?? ''}
-            onChange={(e) => setzeProfilId(e.target.value ? Number(e.target.value) : null)}
-            aria-describedby="profil-hilfe"
-          >
-            <option value="">Bitte wählen</option>
-            {profile.map((profil) => (
-              <option key={profil.id} value={profil.id}>
-                {profil.name} ({profil.seiten.length} Seiten, WCAG {profil.standard})
-              </option>
-            ))}
-          </select>
-          <p className="hilfetext" id="profil-hilfe">
-            {gewaehltesProfil
-              ? `Geprüft wird gegen WCAG ${gewaehltesProfil.standard} — so, wie im Profil hinterlegt. Das hält Wiederholungsläufe vergleichbar.`
-              : 'Ein Profil ist eine benannte Liste repräsentativer Seiten. Der Prüfstandard gehört dazu.'}
-          </p>
-          {profile.length === 0 && <p className="hilfetext">Es ist noch kein Profil angelegt.</p>}
-          <div className="knopfreihe">
-            <button type="button" className="zweitrangig" onClick={beiProfilverwaltung}>
-              Profile verwalten
-            </button>
-          </div>
-        </div>
-      )}
-
-      {betriebsart === 'gesamt' && (
+      {/*
+        Die Betriebsart und ihre Eingaben stehen in einer Karte: Was hier
+        einzutragen ist, haengt an der Wahl darueber und wechselt mit ihr. Zwei
+        Karten machten daraus zwei Themen.
+      */}
+      <div className="feldgruppen">
         <fieldset className="feldgruppe">
-          <legend>Crawl-Grenzen</legend>
-
-          <label htmlFor="startadresse">Startadresse</label>
-          <input
-            id="startadresse"
-            type="text"
-            value={startadresse}
-            onChange={(e) => setzeStartadresse(e.target.value)}
-            placeholder="beispiel.de"
-            autoComplete="url"
-            spellCheck={false}
-          />
-
-          <label htmlFor="hoechsttiefe">Maximale Tiefe</label>
-          <input
-            id="hoechsttiefe"
-            type="number"
-            min={0}
-            max={6}
-            value={hoechsttiefe}
-            onChange={(e) => setzeHoechsttiefe(Number(e.target.value))}
-          />
-
-          <label htmlFor="hoechstzahl">Maximale Seitenzahl</label>
-          <input
-            id="hoechstzahl"
-            type="number"
-            min={1}
-            max={200}
-            value={hoechstzahl}
-            onChange={(e) => setzeHoechstzahl(Number(e.target.value))}
-          />
-
-          <label htmlFor="einschluss">Nur diese Pfade (optional)</label>
-          <input
-            id="einschluss"
-            type="text"
-            value={einschluss}
-            onChange={(e) => setzeEinschluss(e.target.value)}
-            placeholder="/produkte/*, /hilfe/*"
-            spellCheck={false}
-            aria-describedby="muster-hilfe"
-          />
-
-          <label htmlFor="ausschluss">Diese Pfade auslassen (optional)</label>
-          <input
-            id="ausschluss"
-            type="text"
-            value={ausschluss}
-            onChange={(e) => setzeAusschluss(e.target.value)}
-            placeholder="/archiv/*"
-            spellCheck={false}
-            aria-describedby="muster-hilfe"
-          />
-          <p className="hilfetext" id="muster-hilfe">
-            Mehrere Muster mit Komma trennen. <code>*</code> steht für beliebig viele Zeichen.
-          </p>
-
-          <label htmlFor="verzoegerung">Wartezeit zwischen zwei Aufrufen (Millisekunden)</label>
-          <input
-            id="verzoegerung"
-            type="number"
-            min={0}
-            max={10000}
-            step={100}
-            value={verzoegerung}
-            onChange={(e) => setzeVerzoegerung(Number(e.target.value))}
-            aria-describedby="verzoegerung-hilfe"
-          />
-          <p className="hilfetext" id="verzoegerung-hilfe">
-            Ein Crawl ohne Pause ist aus Sicht des Zielservers von einem Angriff kaum zu unterscheiden.
-          </p>
-
-          <label className="ankreuzfeld">
-            <input type="checkbox" checked={robots} onChange={(e) => setzeRobots(e.target.checked)} />
-            <code>robots.txt</code> beachten
-          </label>
+          <legend>Was soll geprüft werden? (K-02)</legend>
+          <div className="auswahl">
+            <label>
+              <input
+                type="radio"
+                name="betriebsart"
+                checked={betriebsart === 'einzelseite'}
+                onChange={() => setzeBetriebsart('einzelseite')}
+              />
+              Einzelne Adressen
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="betriebsart"
+                checked={betriebsart === 'profil'}
+                onChange={() => setzeBetriebsart('profil')}
+              />
+              Gespeichertes Prüfprofil
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="betriebsart"
+                checked={betriebsart === 'gesamt'}
+                onChange={() => setzeBetriebsart('gesamt')}
+              />
+              Gesamtprüfung über die Domain
+            </label>
+          </div>
         </fieldset>
-      )}
+
+        {betriebsart === 'einzelseite' && (
+          <div className="feldgruppe">
+            <label htmlFor="adressen">Zu prüfende Adressen</label>
+            <textarea
+              id="adressen"
+              value={adressen}
+              onChange={(e) => setzeAdressen(e.target.value)}
+              aria-describedby="adressen-hilfe"
+              {...(fehler ? { 'aria-invalid': true, 'aria-errormessage': 'auftrag-fehler' } : {})}
+              placeholder="beispiel.de"
+              autoComplete="url"
+              spellCheck={false}
+            />
+            <p className="hilfetext" id="adressen-hilfe">
+              Eine Adresse je Zeile. Fehlt <code>https://</code>, wird es ergänzt.
+            </p>
+          </div>
+        )}
+
+        {betriebsart === 'profil' && (
+          <div className="feldgruppe">
+            <label htmlFor="profil">Prüfprofil</label>
+            <select
+              id="profil"
+              value={profilId ?? ''}
+              onChange={(e) => setzeProfilId(e.target.value ? Number(e.target.value) : null)}
+              aria-describedby="profil-hilfe"
+            >
+              <option value="">Bitte wählen</option>
+              {profile.map((profil) => (
+                <option key={profil.id} value={profil.id}>
+                  {profil.name} ({profil.seiten.length} Seiten, WCAG {profil.standard})
+                </option>
+              ))}
+            </select>
+            <p className="hilfetext" id="profil-hilfe">
+              {gewaehltesProfil
+                ? `Geprüft wird gegen WCAG ${gewaehltesProfil.standard} — so, wie im Profil hinterlegt. Das hält Wiederholungsläufe vergleichbar.`
+                : 'Ein Profil ist eine benannte Liste repräsentativer Seiten. Der Prüfstandard gehört dazu.'}
+            </p>
+            {profile.length === 0 && <p className="hilfetext">Es ist noch kein Profil angelegt.</p>}
+            <div className="knopfreihe">
+              <button type="button" className="zweitrangig" onClick={beiProfilverwaltung}>
+                Profile verwalten
+              </button>
+            </div>
+          </div>
+        )}
+
+        {betriebsart === 'gesamt' && (
+          <fieldset className="feldgruppe">
+            <legend>Crawl-Grenzen</legend>
+
+            <label htmlFor="startadresse">Startadresse</label>
+            <input
+              id="startadresse"
+              type="text"
+              value={startadresse}
+              onChange={(e) => setzeStartadresse(e.target.value)}
+              placeholder="beispiel.de"
+              autoComplete="url"
+              spellCheck={false}
+            />
+
+            <label htmlFor="hoechsttiefe">Maximale Tiefe</label>
+            <input
+              id="hoechsttiefe"
+              type="number"
+              min={0}
+              max={6}
+              value={hoechsttiefe}
+              onChange={(e) => setzeHoechsttiefe(Number(e.target.value))}
+            />
+
+            <label htmlFor="hoechstzahl">Maximale Seitenzahl</label>
+            <input
+              id="hoechstzahl"
+              type="number"
+              min={1}
+              max={200}
+              value={hoechstzahl}
+              onChange={(e) => setzeHoechstzahl(Number(e.target.value))}
+            />
+
+            <label htmlFor="einschluss">Nur diese Pfade (optional)</label>
+            <input
+              id="einschluss"
+              type="text"
+              value={einschluss}
+              onChange={(e) => setzeEinschluss(e.target.value)}
+              placeholder="/produkte/*, /hilfe/*"
+              spellCheck={false}
+              aria-describedby="muster-hilfe"
+            />
+
+            <label htmlFor="ausschluss">Diese Pfade auslassen (optional)</label>
+            <input
+              id="ausschluss"
+              type="text"
+              value={ausschluss}
+              onChange={(e) => setzeAusschluss(e.target.value)}
+              placeholder="/archiv/*"
+              spellCheck={false}
+              aria-describedby="muster-hilfe"
+            />
+            <p className="hilfetext" id="muster-hilfe">
+              Mehrere Muster mit Komma trennen. <code>*</code> steht für beliebig viele Zeichen.
+            </p>
+
+            <label htmlFor="verzoegerung">Wartezeit zwischen zwei Aufrufen (Millisekunden)</label>
+            <input
+              id="verzoegerung"
+              type="number"
+              min={0}
+              max={10000}
+              step={100}
+              value={verzoegerung}
+              onChange={(e) => setzeVerzoegerung(Number(e.target.value))}
+              aria-describedby="verzoegerung-hilfe"
+            />
+            <p className="hilfetext" id="verzoegerung-hilfe">
+              Ein Crawl ohne Pause ist aus Sicht des Zielservers von einem Angriff kaum zu unterscheiden.
+            </p>
+
+            <label className="ankreuzfeld">
+              <input type="checkbox" checked={robots} onChange={(e) => setzeRobots(e.target.checked)} />
+              <code>robots.txt</code> beachten
+            </label>
+          </fieldset>
+        )}
+      </div>
 
       {/*
         Anmeldung als Uebergabe an den Menschen (S-01 bis S-03). Der Hinweis

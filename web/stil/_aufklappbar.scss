@@ -1,0 +1,57 @@
+@use 'variablen' as v;
+@use 'werkzeug' as w;
+
+// ---------------------------------------------------------------------------
+// Der Aufklapper.
+//
+// Ein `details` ist eine Gruppe: Beschriftung und Inhalt gehoeren zusammen.
+// Damit das auch zu sehen ist, liegt beides auf einer hellgrauen Flaeche mit
+// runden Ecken — der Inhalt sitzt sichtbar in derselben Gruppe wie die Zeile,
+// die ihn aufklappt, und nicht bloss darunter.
+// ---------------------------------------------------------------------------
+
+.aufklappbar {
+  margin: var(--abstand-mittel) 0;
+  border: var(--rahmen) solid var(--linie);
+  border-radius: var(--radius);
+  background: var(--flaeche-leise);
+
+  > summary {
+    @include w.aufklappzeile;
+
+    padding: var(--abstand-klein) var(--abstand-mittel);
+    min-height: var(--trefferflaeche-eng);
+    align-items: center;
+    font-weight: v.$staerke-halbfett;
+    // Der Radius bleibt eine Spur kleiner als der der Gruppe, damit die
+    // Schwebefarbe die Ecke nicht ueberlaeuft.
+    border-radius: calc(var(--radius) - var(--rahmen));
+
+    &:hover {
+      background: var(--flaeche-schwebe);
+    }
+  }
+
+  &[open] > summary {
+    @include w.aufklappzeile-offen;
+
+    border-bottom: var(--rahmen) solid var(--linie);
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+  }
+
+  // Alles ausser der Zeile ist Inhalt und bekommt denselben Innenabstand.
+  > :not(summary) {
+    margin: var(--abstand-mittel) var(--abstand-mittel) 0;
+
+    &:last-child {
+      margin-bottom: var(--abstand-mittel);
+    }
+  }
+
+  // Listen bringen ihren eigenen oberen Abstand schon mit.
+  .probenliste,
+  .seitenliste {
+    margin-top: var(--abstand-klein);
+  }
+}

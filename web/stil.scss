@@ -1,0 +1,35 @@
+/*
+  Eigenes Stylesheet, kein Rahmenwerk (NF-01, Regel 6).
+
+  Die Oberflaeche wird am Ende mit dem eigenen Werkzeug geprueft. Was hier
+  steht, muss WCAG 2.1 AA halten:
+
+  - Kontraste durchgehend ueber 4,5:1 gegen den Hintergrund, auf dem sie stehen
+  - Fokus immer sichtbar, mit eigenem Rahmen statt "outline: none"
+  - Status tragen Zeichen und Text, nie nur Farbe
+  - Schriftgroessen in rem, damit die Einstellung des Browsers wirkt
+  - Bedienelemente mindestens 24 mal 24 Pixel (2.5.8)
+
+  Aufbau: `stil/_variablen.scss` traegt alle Stellschrauben, `stil/_wurzel.scss`
+  gibt sie als CSS-Eigenschaften aus, `stil/_werkzeug.scss` haelt die drei
+  wiederkehrenden Formen (Karte, Kasten, Pille). Die uebrigen Dateien sind nach
+  Bausteinen geschnitten und enthalten selbst keine Farbwerte.
+
+  Sass uebersetzt das beim Bauen; im Browser laeuft reines CSS.
+*/
+
+@use 'stil/wurzel';
+@use 'stil/aufbau';
+@use 'stil/kopfzeile';
+@use 'stil/knoepfe';
+@use 'stil/formulare';
+@use 'stil/meldungen';
+@use 'stil/aufklappbar';
+@use 'stil/status';
+@use 'stil/kriterien';
+@use 'stil/fortschritt';
+@use 'stil/pruefliste';
+@use 'stil/tabellen';
+@use 'stil/listen';
+@use 'stil/kachel';
+@use 'stil/erklaerung';

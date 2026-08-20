@@ -168,7 +168,7 @@ function Frage({ eintrag, kriterium, beiAntwort }: FrageEigenschaften): React.Re
       )}
 
       {frage.kontext && frage.kontext.length > 0 && (
-        <details>
+        <details className="aufklappbar">
           <summary>Kontext ansehen ({frage.kontext.length} Probe(n))</summary>
           <ul className="probenliste">
             {frage.kontext.map((probe, nummer) => (

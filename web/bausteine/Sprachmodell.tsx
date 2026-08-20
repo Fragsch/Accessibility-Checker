@@ -149,7 +149,7 @@ function OhneStufe2({ kriterien }: { kriterien: string[] }): React.ReactElement 
   if (kriterien.length === 0) return null;
 
   return (
-    <details>
+    <details className="aufklappbar">
       <summary>Was ohne Sprachmodell offen bleibt ({kriterien.length} Kriterien)</summary>
       <p>
         Diese Kriterien werden nicht automatisch inhaltlich bewertet. Sie verschwinden nicht — sie tragen den Status

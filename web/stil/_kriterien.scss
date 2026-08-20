@@ -1,0 +1,176 @@
+@use 'variablen' as v;
+@use 'werkzeug' as w;
+
+// ---------------------------------------------------------------------------
+// Die Kriterienliste: je Erfolgskriterium eine aufklappbare Karte.
+// ---------------------------------------------------------------------------
+
+/*
+  Die vier Prinzipien der WCAG als Gruppen.
+
+  Die Ueberschrift braucht Luft nach oben, sonst klebt sie an der Karte der
+  letzten Zeile davor und sieht aus, als gehoerte sie noch dazu. Der Abstand
+  steht am Gruppenkasten und nicht an der Ueberschrift: So faellt er mit dem
+  unteren Abstand des Vorgaengers zusammen, statt sich darauf zu addieren.
+*/
+.prinzip {
+  margin-top: v.$abstand-riesig;
+
+  > h3 {
+    margin-bottom: var(--abstand-mittel);
+  }
+}
+
+.kriterienliste {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--abstand-klein);
+}
+
+.kriterium {
+  @include w.karte;
+
+  // Bewusst kein `overflow: hidden`, obwohl es die Ecken sauber beschnitte:
+  // der Fokusrahmen der Zusammenfassung liegt zwei Pixel ausserhalb und wuerde
+  // damit abgeschnitten (2.4.7). Stattdessen tragen Zusammenfassung und Karte
+  // denselben Radius.
+  > summary {
+    @include w.aufklappzeile;
+
+    padding: v.$abstand-mittel v.$abstand;
+    border-radius: calc(var(--radius-gross) - var(--rahmen));
+
+    &:hover {
+      background: var(--flaeche-leise);
+    }
+  }
+
+  &[open] > summary {
+    @include w.aufklappzeile-offen;
+
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+  }
+}
+
+/// Die Kennung als feste Marke — sie steht in jeder Zeile an derselben Stelle.
+.kriterium__kennung {
+  font-family: v.$schrift-familie-fest;
+  font-weight: v.$staerke-halbfett;
+  font-size: v.$groesse-klein;
+  min-width: 3.5rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--radius-klein);
+  background: var(--flaeche-leise);
+  text-align: center;
+}
+
+.kriterium__titel {
+  flex: 1 1 14rem;
+  font-weight: v.$staerke-halbfett;
+}
+
+.kriterium__level {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hoehe-marke);
+  padding: 0 0.55rem;
+  border: var(--rahmen) solid var(--linie);
+  border-radius: var(--radius-pille);
+  background: var(--flaeche-leise);
+  font-size: v.$groesse-winzig;
+  color: var(--schrift-leise);
+  white-space: nowrap;
+}
+
+.kriterium__inhalt {
+  border-top: var(--rahmen) solid var(--linie);
+  padding: v.$abstand;
+
+  > * + * {
+    margin-top: v.$abstand;
+  }
+
+  h3 {
+    font-size: v.$groesse-h4;
+  }
+}
+
+// -------------------------------------------------------- Befunde, Hinweise
+
+.befundliste,
+.hinweisliste {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--abstand-klein);
+}
+
+.befund {
+  @include w.kasten(var(--nicht-erfuellt), var(--nicht-erfuellt-leise));
+}
+
+.hinweis {
+  @include w.kasten(var(--pruefung-erforderlich), var(--pruefung-erforderlich-leise));
+}
+
+.befund__stelle {
+  display: block;
+  margin-top: var(--abstand-winzig);
+  word-break: break-all;
+  color: var(--schrift-leise);
+}
+
+.schwere {
+  font-weight: v.$staerke-halbfett;
+}
+
+// ------------------------------------------------------------- Empfehlungen
+
+.empfehlung {
+  h3,
+  h4 {
+    margin: 0 0 var(--abstand-klein);
+    font-size: v.$groesse-h4;
+  }
+
+  h4 {
+    margin-top: v.$abstand;
+  }
+}
+
+.codevergleich {
+  display: grid;
+  gap: var(--abstand-mittel);
+  /*
+    min() in der Spaltenbreite ist hier wesentlich: minmax(16rem, 1fr) erzwingt
+    zwei Spalten zu je 256 Pixeln und damit 512 Pixel Mindestbreite. Bei 320
+    Pixeln Fensterbreite muesste dann seitlich gescrollt werden (1.4.10). Die
+    eigene Selbstpruefung hat genau das gemeldet.
+  */
+  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+  margin: 0;
+
+  dt {
+    @include w.marke;
+
+    color: var(--schrift-leise);
+    margin-bottom: var(--abstand-winzig);
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+.referenzen {
+  padding-left: 1.2rem;
+  margin: 0;
+
+  li + li {
+    margin-top: var(--abstand-winzig);
+  }
+}

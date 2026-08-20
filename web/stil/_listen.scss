@@ -1,0 +1,116 @@
+@use 'variablen' as v;
+@use 'werkzeug' as w;
+
+// ---------------------------------------------------------------------------
+// Listen der Projekt-, Profil- und Berichtsansicht.
+//
+// Bewusst getrennte Klassen statt einer gemeinsamen: Die rote Kante der
+// Musterliste steht fuer einen belegten Verstoss. Ein Vermerk ist keiner — und
+// ein Ausgabeformat erst recht nicht.
+// ---------------------------------------------------------------------------
+
+.musterliste,
+.vermerkliste,
+.formatliste,
+.kandidaten,
+.profilzeilen {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 v.$abstand-gross;
+}
+
+/// Ein Mangel, der auf mehreren Seiten gleich auftritt.
+.musterliste > li {
+  @include w.karte;
+
+  border-left: 4px solid var(--nicht-erfuellt);
+  padding: v.$abstand v.$abstand-gross;
+  margin-bottom: var(--abstand-mittel);
+
+  h4 {
+    margin: 0 0 var(--abstand-winzig);
+  }
+}
+
+/// Ein Vermerk zum Bericht — offen, aber kein Verstoss.
+.vermerkliste > li {
+  @include w.karte;
+
+  border-left: 4px solid var(--pruefung-erforderlich);
+  padding: v.$abstand v.$abstand-gross;
+  margin-bottom: var(--abstand-mittel);
+
+  h5 {
+    margin: 0 0 var(--abstand-winzig);
+  }
+}
+
+/// Die Ausgabewege des Berichts, als ruhige Zeilen in einer Karte.
+.formatliste {
+  @include w.karte;
+
+  padding: 0 v.$abstand-gross;
+
+  > li {
+    border-top: var(--rahmen) solid var(--linie);
+    padding: v.$abstand 0;
+
+    &:first-child {
+      border-top: 0;
+    }
+  }
+
+  a {
+    font-weight: v.$staerke-halbfett;
+  }
+}
+
+/// Gefundene Seiten, die in ein Profil uebernommen werden koennen.
+.kandidaten {
+  margin: var(--abstand-mittel) 0 v.$abstand-gross;
+
+  > li {
+    border-bottom: var(--rahmen) solid var(--linie);
+    padding: var(--abstand-klein) 0;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  .hilfetext {
+    display: block;
+    margin: 0;
+  }
+}
+
+.profilzeilen > li {
+  margin-bottom: var(--abstand-mittel);
+}
+
+/*
+  Die Referenzseiten, an denen gemessen wurde — eine je Zeile.
+
+  Ohne Aufzaehlungszeichen und ohne Einzug: Die Liste steht in einer Kachel und
+  soll an derselben Kante beginnen wie die Tabellen darueber. Die Zeilen trennt
+  eine Linie, wie in der Formatliste.
+*/
+.probenliste {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  > li {
+    border-top: var(--rahmen) solid var(--linie);
+    padding: var(--abstand-klein) 0;
+
+    &:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    &:last-child {
+      padding-bottom: 0;
+    }
+  }
+}

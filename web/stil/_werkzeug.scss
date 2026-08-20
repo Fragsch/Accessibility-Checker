@@ -1,0 +1,167 @@
+@use 'variablen' as v;
+
+// ---------------------------------------------------------------------------
+// Wiederkehrende Formen. Drei Bausteine tragen das ganze Aussehen:
+// die Karte, der getoente Kasten und die Pille.
+// ---------------------------------------------------------------------------
+
+/*
+  Der Innenabstand gehoert dem Kasten, nicht seinem Inhalt.
+
+  Eine Ueberschrift und ein Absatz bringen von Haus aus eigene Aussenabstaende
+  mit. Am oberen und unteren Rand addieren die sich auf den Innenabstand: Oben
+  stand deshalb eine ganze Zeile mehr Luft als unten, und der Text sass sichtbar
+  zu tief. Innen zwischen den Kindern sind dieselben Abstaende richtig — nur die
+  beiden Aussenkanten werden abgeraeumt.
+*/
+@mixin innen-buendig {
+  > :first-child {
+    margin-top: 0;
+  }
+
+  > :last-child {
+    margin-bottom: 0;
+  }
+}
+
+/// Die Karte: weisse Flaeche, grosser Radius, sehr flacher Schatten.
+/// Sie ist das einzige erhabene Element — alles andere liegt darin.
+@mixin karte($radius: var(--radius-gross)) {
+  @include innen-buendig;
+
+  background: var(--flaeche);
+  border: var(--rahmen) solid var(--linie);
+  border-radius: $radius;
+  box-shadow: var(--schatten-karte);
+}
+
+/// Eine Karte in der Karte: gleiche Form, kein Schatten. Zwei Schatten
+/// uebereinander sehen schmutzig aus.
+@mixin karte-flach($radius: var(--radius)) {
+  @include innen-buendig;
+
+  background: var(--flaeche);
+  border: var(--rahmen) solid var(--linie);
+  border-radius: $radius;
+}
+
+/// Ein getoenter Kasten mit farbigem Balken an der linken Kante.
+/// Der Balken traegt die Bedeutung mit — Farbe allein taete es nicht (1.4.1),
+/// deshalb steht in jedem dieser Kaesten zusaetzlich ein benennender Text.
+@mixin kasten($farbe, $flaeche) {
+  @include innen-buendig;
+
+  border: var(--rahmen) solid var(--linie);
+  border-left: 4px solid $farbe;
+  border-radius: var(--radius-klein) var(--radius) var(--radius) var(--radius-klein);
+  background: $flaeche;
+  padding: var(--abstand-mittel) var(--abstand);
+}
+
+/// Die Pillenform fuer Knoepfe und Chips.
+/// `min-height` haelt die Trefferflaeche ueber den geforderten 24 Pixeln (2.5.8).
+@mixin pille($hoehe: var(--trefferflaeche)) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--abstand-klein);
+  min-height: $hoehe;
+  padding: 0 1.1rem;
+  border-radius: var(--radius-pille);
+  font-weight: v.$staerke-halbfett;
+  line-height: v.$zeilenhoehe-eng;
+  text-decoration: none;
+  transition:
+    background-color var(--uebergang),
+    border-color var(--uebergang),
+    color var(--uebergang),
+    box-shadow var(--uebergang);
+}
+
+/*
+  Die Zeile, die ein `details` auf- und zuklappt: Beschriftung links, Winkel
+  ganz rechts.
+
+  Das eigene Dreieck des Browsers wird abgeschaltet. Es steht links, weicht je
+  nach System im Aussehen ab und laesst sich nicht bewegen. An seine Stelle
+  tritt ein Winkel als Maske — reine Form, kein Zeichen, das eine Sprachausgabe
+  mitlesen koennte. Den Zustand sagt weiterhin `details` selbst an; der Winkel
+  ist Beiwerk.
+
+  Als Maske und nicht als gedrehtes Quadrat mit zwei Rahmenlinien: Bei dieser
+  sonst ueblichen Konstruktion liegt die sichtbare Form nach der Drehung
+  vollstaendig in der unteren Haelfte ihrer Box. Die Box steht dann zwar
+  mittig, der Winkel aber rund drei Pixel zu tief — und beim Aufklappen
+  ebenso weit zu hoch. Die Maske traegt ihre Form mittig im Kasten; sie bleibt
+  deshalb in beiden Zustaenden zentriert. Die Farbe kommt als
+  `background-color` und damit weiterhin aus einer Variablen.
+*/
+@mixin aufklappzeile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--abstand-winzig) var(--abstand);
+  cursor: pointer;
+  list-style: none;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  &::after {
+    content: '';
+    flex: none;
+    align-self: center;
+    margin-left: auto;
+    width: 0.75rem;
+    height: 0.5rem;
+    background-color: var(--schrift-leise);
+    -webkit-mask-image: v.$winkel-maske;
+    mask-image: v.$winkel-maske;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    transition: transform var(--uebergang);
+  }
+}
+
+/// Der Winkel im aufgeklappten Zustand: aus „nach unten" wird „nach oben".
+/// Die Form ist punktsymmetrisch zur Kastenmitte, die halbe Drehung
+/// verschiebt sie deshalb nicht.
+@mixin aufklappzeile-offen {
+  &::after {
+    transform: rotate(180deg);
+  }
+}
+
+/// Kleine Grossbuchstaben mit weiter Laufweite — fuer Tabellenkoepfe und
+/// Marken. Bewusst ohne `text-transform: uppercase` auf Fliesstext: eine
+/// Sprachausgabe liest sonst je nach Einstellung Buchstaben einzeln vor.
+@mixin marke {
+  font-size: v.$groesse-winzig;
+  font-weight: v.$staerke-halbfett;
+  letter-spacing: v.$laufweite-weit;
+  text-transform: uppercase;
+}
+
+/// Ein Eingabefeld: Rahmen mit mindestens 3:1 (1.4.11), weicher Radius.
+@mixin feld {
+  padding: 0.65rem 0.85rem;
+  font: inherit;
+  color: var(--schrift);
+  background: var(--flaeche);
+  border: var(--rahmen) solid var(--linie-kraeftig);
+  border-radius: var(--radius);
+  min-height: var(--trefferflaeche);
+  max-width: 100%;
+  transition:
+    border-color var(--uebergang),
+    box-shadow var(--uebergang);
+
+  &:hover:not(:disabled) {
+    border-color: var(--schrift);
+  }
+}

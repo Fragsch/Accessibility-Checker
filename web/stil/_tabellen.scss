@@ -1,0 +1,82 @@
+@use 'variablen' as v;
+@use 'werkzeug' as w;
+
+// ---------------------------------------------------------------------------
+// Tabellen.
+//
+// Ohne Gitternetz: Der Kopf setzt sich durch Flaeche ab, die Zeilen durch eine
+// zarte Linie. Weniger Linien lesen sich ruhiger — die Zuordnung traegt ohnehin
+// das Markup, nicht der Strich.
+// ---------------------------------------------------------------------------
+
+/*
+  Der scrollbare Rahmen um eine Tabelle (1.4.10).
+
+  `overflow-x` auf der Tabelle selbst genuegt nicht: Ein `table` mit
+  `display: block` bildet innen weiterhin eine anonyme Tabellenbox, und die
+  laeuft am Rahmen vorbei — bei 320 Pixeln verschob sich dadurch die ganze
+  Seite um 242 Pixel. Gefunden hat das die Selbstpruefung.
+
+  Der Rahmen ist mit `tabindex="0"` erreichbar, weil ein Bereich, den man nur
+  mit der Maus schieben kann, mit der Tastatur unbedienbar waere (2.1.1). Als
+  `region` mit Namen, damit die Sprachausgabe sagen kann, worin man da steht.
+*/
+.tabellenrahmen {
+  @include w.karte;
+
+  overflow-x: auto;
+  margin: 0 0 v.$abstand-gross;
+  /*
+    `position: relative` ist hier keine Kosmetik, sondern der eigentliche Grund,
+    warum der Rahmen haelt: `.nur-fuer-screenreader` ist absolut positioniert.
+    Ohne positionierten Vorfahren bezieht sich das auf die Seite selbst — die
+    versteckten Texte in den Knoepfen der letzten Spalte lagen dann bei 500
+    Pixeln und zogen die ganze Seite auf 562 Pixel, obwohl die Tabelle laengst
+    in ihrem Rahmen scrollte.
+  */
+  position: relative;
+}
+
+/*
+  Eine Tabelle mit sichtbaren Zeilentrennern.
+
+  Zeilenkoepfe stehen als `th scope="row"` im Markup — ohne sie liest eine
+  Sprachausgabe in der vierten Spalte eine Zahl ohne Bezug vor (1.3.1).
+*/
+.tabelle {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+
+  th,
+  td {
+    padding: v.$abstand-mittel v.$abstand;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: var(--rahmen) solid var(--linie);
+  }
+
+  thead th {
+    @include w.marke;
+
+    background: var(--flaeche-leise);
+    color: var(--schrift-leise);
+    white-space: nowrap;
+  }
+
+  tbody th {
+    font-weight: v.$staerke-halbfett;
+    overflow-wrap: anywhere;
+  }
+
+  tbody tr:last-child {
+    th,
+    td {
+      border-bottom: none;
+    }
+  }
+
+  tbody tr:hover {
+    background: var(--flaeche-leise);
+  }
+}

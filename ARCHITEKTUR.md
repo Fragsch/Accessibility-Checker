@@ -35,7 +35,7 @@ Wo das PRD eine Anforderung stellt, steht hier die technische Entscheidung dazu 
 | Backend | `fastify` | |
 | Datenbank | `better-sqlite3` | Synchron, einfach, vorgefertigte Binärdateien |
 | Oberfläche | `react` + `vite` | |
-| Gestaltung | Eigenes CSS, **kein** UI-Framework | Barrierefreiheit muss kontrolliert werden (NF-01); fremde Komponenten bringen oft Verstöße mit |
+| Gestaltung | Eigenes SCSS (`sass`), **kein** UI-Framework | Barrierefreiheit muss kontrolliert werden (NF-01); fremde Komponenten bringen oft Verstöße mit. `sass` ist reines JavaScript und läuft nur beim Bauen — im Browser landet gewöhnliches CSS |
 | Sprachmodell | `ollama` (JS-Client) | |
 | Validierung | `zod` | Schema für Modellantworten und Konfiguration |
 | Tests | `node:test` + `playwright/test` | Eingebaut, keine zusätzliche Abhängigkeit |
@@ -52,7 +52,7 @@ npm install -D typescript @types/node
 
 # Oberfläche
 npm install react react-dom
-npm install -D vite @vitejs/plugin-react @types/react @types/react-dom
+npm install -D vite @vitejs/plugin-react @types/react @types/react-dom sass
 
 # Phase 3 — weitere Prüfungen
 npm install html-validate franc-min tesseract.js sharp @tesseract.js-data/deu
@@ -220,7 +220,12 @@ accessibility-checker/
 ├── web/                    ✓ React-Oberfläche
 │   ├── App.tsx             ✓ Auftrag → Fortschritt → Ergebnis
 │   ├── api.ts              ✓ Zugriff auf die Schnittstelle, SSE
-│   ├── stil.css            ✓ eigenes CSS, kein Rahmenwerk
+│   ├── stil.scss           ✓ Einstieg, bindet die Teildateien ein
+│   ├── stil/               ✓ eigenes SCSS, kein Rahmenwerk
+│   │   ├── _variablen.scss ✓ alle Stellschrauben: Farben, Formen, Abstände
+│   │   ├── _wurzel.scss    ✓ gibt sie als CSS-Eigenschaften aus, Grundtypografie
+│   │   ├── _werkzeug.scss  ✓ Mixins: Karte, Kasten, Pille, Feld
+│   │   └── _*.scss         ✓ je Baustein eine Datei, ohne eigene Farbwerte
 │   └── bausteine/          ✓
 │
 ├── test/
@@ -650,6 +655,25 @@ Der Lauf hat sich sofort bezahlt gemacht. Gefunden wurden:
 - eine große, fette Zahl in einem Absatz, die axe als verkleidete Überschrift wertet (1.3.1). Behoben durch eine Definitionsliste — die richtige Auszeichnung für Begriff und Wert
 
 Alle drei waren echte Mängel, keine Fehlalarme.
+
+### 7.1 Gestaltung: SCSS mit einer Stelle zum Ändern
+
+Die Oberfläche liegt als SCSS in `web/stil/`. Der Aufbau ist bewusst flach:
+
+| Datei | Inhalt |
+|---|---|
+| `_variablen.scss` | **Alle** Stellschrauben: Farben, Typografie, Abstände, Radien, Schatten, Trefferflächen, Fokus. Jede mit `!default`, also von außen überschreibbar |
+| `_wurzel.scss` | Gibt die Variablen einmal als CSS-Eigenschaften aus (`--akzent`, `--radius-gross`, …) und setzt die Grundtypografie |
+| `_werkzeug.scss` | Die vier wiederkehrenden Formen als Mixins: `karte`, `kasten`, `pille`, `feld` |
+| die übrigen | Je Baustein eine Datei. Sie enthalten **keine** eigenen Farbwerte, sondern greifen über `var(--…)` zu |
+
+Drei Regeln halten das zusammen:
+
+1. **Kein Farbwert außerhalb von `_variablen.scss`.** Wer eine Farbe direkt in einen Baustein schreibt, entzieht sie der Prüfung — und der Kontrastnachweis in den Kommentaren stimmt dann nicht mehr.
+2. **Hinter jeder Schriftfarbe steht ihr gemessenes Kontrastverhältnis** gegen die Fläche, auf der sie liegt. Fließtext mindestens 4,5:1 (1.4.3), Rahmen von Bedienelementen mindestens 3:1 (1.4.11).
+3. **Nach jeder Änderung am Stil läuft `npm run pruefe:selbst`.** Der Stil ist Teil der Oberfläche; eine Farbe oder eine Trefferfläche kann ein Kriterium ebenso reißen wie fehlendes Markup.
+
+Die doppelte Führung — SCSS-Variable *und* CSS-Eigenschaft — ist Absicht: SCSS-Variablen verschwinden beim Übersetzen, CSS-Eigenschaften bleiben im Browser änderbar. Die eine Stelle zum Ändern bleibt trotzdem `_variablen.scss`.
 
 Mit Phase 8 kam die elfte Ansicht dazu: **„Was dieses Werkzeug findet"** — die Abdeckungsmatrix. Sie ist von der Auftragsansicht und vom Ergebnis aus erreichbar, weil sie beides betrifft: Wer eine Prüfung beauftragt, soll wissen, was sie leisten kann; wer ein Ergebnis liest, soll wissen, wie weit es trägt. Der dort gefundene Mangel — ein Erläuterungskasten ohne Live-Bereich — war ein Fehlalarm und hat die Regel zu 4.1.3 geschärft.
 

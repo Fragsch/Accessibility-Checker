@@ -1,0 +1,80 @@
+@use 'variablen' as v;
+@use 'werkzeug' as w;
+
+// ---------------------------------------------------------------------------
+// Der laufende Scan.
+// ---------------------------------------------------------------------------
+
+.fortschritt {
+  @include w.karte;
+
+  padding: v.$abstand-gross;
+  margin-bottom: v.$abstand-gross;
+
+  > h2 {
+    margin-top: 0;
+  }
+
+  // Innerhalb der Karte kein zweiter Schatten — sonst stapeln sich die Ebenen.
+  .meldung {
+    box-shadow: none;
+  }
+}
+
+/*
+  Der Balken.
+
+  Die Fuellung muss sich von der Schiene um mindestens 3:1 abheben (1.4.11);
+  die Akzentfarbe auf der leisen Flaeche kommt auf 6,1:1. Der Text daneben
+  bleibt trotzdem stehen — der Balken allein sagt nicht, wie weit es ist.
+*/
+progress {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 0.75rem;
+  margin: var(--abstand-klein) 0 var(--abstand-mittel);
+  border: none;
+  border-radius: var(--radius-pille);
+  background: var(--flaeche-leise);
+  color: var(--akzent);
+
+  &::-webkit-progress-bar {
+    background: var(--flaeche-leise);
+    border-radius: var(--radius-pille);
+  }
+
+  &::-webkit-progress-value {
+    background: var(--akzent);
+    border-radius: var(--radius-pille);
+    transition: inline-size var(--uebergang);
+  }
+
+  &::-moz-progress-bar {
+    background: var(--akzent);
+    border-radius: var(--radius-pille);
+  }
+}
+
+/// Aufzaehlung von Adressen — eine je Zeile, mit zarter Trennlinie.
+.seitenliste,
+.probenliste {
+  list-style: none;
+  padding: 0;
+  margin: var(--abstand-mittel) 0 0;
+  font-size: v.$groesse-klein;
+
+  li {
+    padding: var(--abstand-winzig) 0;
+    border-bottom: var(--rahmen) solid var(--linie);
+    overflow-wrap: anywhere;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+}
+
+.seitenliste li {
+  word-break: break-all;
+}

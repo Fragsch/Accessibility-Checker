@@ -1,0 +1,105 @@
+@use 'variablen' as v;
+@use 'werkzeug' as w;
+
+// ---------------------------------------------------------------------------
+// Knoepfe.
+//
+// Erstrangig ist fast schwarz auf hell, zweitrangig hell mit Rahmen. Beide
+// tragen Text, nie nur ein Zeichen; die Trefferflaeche bleibt ueber 24 mal 24
+// Pixeln (2.5.8).
+// ---------------------------------------------------------------------------
+
+button {
+  @include w.pille;
+
+  font: inherit;
+  font-weight: v.$staerke-halbfett;
+  min-width: var(--trefferflaeche);
+  border: var(--rahmen) solid var(--knopf);
+  background: var(--knopf);
+  color: var(--knopf-schrift);
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--knopf-schwebe);
+    border-color: var(--knopf-schwebe);
+  }
+
+  // Ein kaum sichtbares Eindruecken statt einer Animation — genug Rueckmeldung,
+  // ohne dass etwas huepft.
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    border-color: var(--linie);
+    background: var(--flaeche-leise);
+    color: var(--schrift-leise);
+    box-shadow: none;
+  }
+}
+
+button.zweitrangig {
+  background: var(--flaeche);
+  border-color: var(--linie-kraeftig);
+  color: var(--schrift);
+
+  &:hover:not(:disabled) {
+    background: var(--flaeche-leise);
+    border-color: var(--schrift);
+    color: var(--schrift);
+  }
+}
+
+.knopfreihe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--abstand-mittel);
+  align-items: center;
+  margin-top: v.$abstand-gross;
+}
+
+.knopfreihe--eng {
+  gap: var(--abstand-klein);
+  font-size: 0.95rem;
+  margin-top: var(--abstand-mittel);
+
+  button {
+    min-height: var(--trefferflaeche-eng);
+    padding: 0 0.85rem;
+  }
+}
+
+/*
+  Ein Knopf, der wie ein Verweis aussieht.
+
+  Er springt innerhalb der Seite zu einer anderen Ansicht — das ist eine
+  Handlung, kein Ziel, also bleibt es ein `button`. Die Unterstreichung ist
+  Pflicht: Farbe allein darf den Unterschied nicht tragen (1.4.1).
+*/
+.alsverweis {
+  display: inline;
+  min-height: 0;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: var(--akzent);
+  font-weight: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-align: left;
+  overflow-wrap: anywhere;
+
+  &:hover:not(:disabled) {
+    background: none;
+    color: var(--akzent-dunkel);
+    text-decoration-thickness: 2px;
+  }
+
+  &:active:not(:disabled) {
+    transform: none;
+  }
+}

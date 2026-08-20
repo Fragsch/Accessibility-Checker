@@ -503,7 +503,32 @@ function sammleImBrowser(gewuenscht: string[]): RohTreffer[] {
     // Verglichen wird die Reihenfolge der Bedienelemente im DOM mit ihrer Lage
     // auf dem Bildschirm. Ein Sprung nach oben ist ein Anzeichen dafuer, dass
     // CSS die Reihenfolge umstellt — etwa ueber "order" oder "row-reverse".
-    const elemente = Array.from(document.querySelectorAll(FOKUSSIERBAR)).filter(sichtbar);
+
+    /*
+      Nicht mitgezaehlt wird, was in einer stehenden oder mitfahrenden Leiste
+      sitzt (`position: fixed` oder `sticky`).
+
+      Deren Lage im Dokument laesst sich nicht messen: Eine stehende Kopfzeile
+      steht immer am oberen Rand, ihre gerechnete Dokumentposition wandert
+      deshalb mit dem Scrollstand mit. Auf einer gescrollten Seite liegt sie
+      damit rechnerisch unterhalb von allem, was nach oben aus dem Bild
+      gelaufen ist — und jedes dieser Elemente saehe wie ein Ruecksprung aus.
+      Das trifft jede Seite mit stehender Kopfzeile und damit sehr viele; als
+      Befund waere es ein Fehlalarm. Was eine solche Leiste wirklich umstellt,
+      faellt ohnehin innerhalb der Leiste an und nicht zwischen ihr und dem
+      Rest der Seite.
+    */
+    function inFesterLeiste(element: Element): boolean {
+      for (let lauf: Element | null = element; lauf; lauf = lauf.parentElement) {
+        const position = getComputedStyle(lauf).position;
+        if (position === 'fixed' || position === 'sticky') return true;
+      }
+      return false;
+    }
+
+    const elemente = Array.from(document.querySelectorAll(FOKUSSIERBAR))
+      .filter(sichtbar)
+      .filter((element) => !inFesterLeiste(element));
     let vorherigeZeile = -Infinity;
     let spruenge = 0;
     let ersterSprung: Element | null = null;

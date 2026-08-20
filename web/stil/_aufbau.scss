@@ -1,0 +1,68 @@
+@use 'variablen' as v;
+@use 'werkzeug' as w;
+
+// ---------------------------------------------------------------------------
+// Der Rahmen der Seite: Spalte, Kopf, Fuss.
+// ---------------------------------------------------------------------------
+
+.seite {
+  max-width: v.$seitenbreite;
+  margin: 0 auto;
+  padding: v.$abstand-riesig v.$seitenrand v.$abstand-riesig;
+}
+
+/*
+  Die Ueberschrift einer Ansicht, wahlweise mit einem Erklaerknopf daneben.
+
+  Beide Formen stehen in denselben Regeln: Die Ueberschriftszeile ist nichts
+  anderes als eine `h2` mit Beiwerk und muss sich im Seitenaufbau genauso
+  verhalten. Zwei getrennte Regelsaetze liefen beim naechsten Griff an den
+  Abstand auseinander.
+
+  Die Zeile ist positioniert, weil die Erklaerblase sich daran ausrichtet: Sie
+  beginnt an der linken Kante der Spalte statt am Knopf. Der steht je nach
+  Fensterbreite mal hier, mal dort — eine Blase, die an ihm klebt, liefe rechts
+  aus dem Fenster (1.4.10).
+*/
+main > h2,
+main > .ueberschriftszeile {
+  margin-top: 0;
+}
+
+main > * + h2,
+main > * + .ueberschriftszeile {
+  margin-top: v.$abstand-riesig;
+}
+
+.ueberschriftszeile {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--abstand-klein);
+  // Derselbe Abstand nach unten, den eine `h2` selbst mitbraechte.
+  margin-bottom: 0.5em;
+
+  > h2 {
+    margin: 0;
+  }
+}
+
+// `tabIndex={-1}` setzt den Fokus nach einem Ansichtswechsel auf diese
+// Ueberschrift. Der Fokusrahmen soll dabei nicht am Text kleben.
+main > h2:focus-visible {
+  outline-offset: 6px;
+}
+
+.fusszeile {
+  border-top: var(--rahmen) solid var(--linie);
+  margin-top: v.$abstand-riesig;
+  padding-top: v.$abstand-gross;
+  color: var(--schrift-leise);
+  font-size: v.$groesse-klein;
+
+  p {
+    margin: 0;
+    max-width: 52rem;
+  }
+}

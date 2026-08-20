@@ -1,0 +1,247 @@
+@use 'variablen' as v;
+
+// ---------------------------------------------------------------------------
+// Die Variablen aus `_variablen.scss` werden hier einmal als CSS-Eigenschaften
+// ausgegeben. Alle Bausteine greifen ueber `var(--…)` darauf zu.
+//
+// Das ist Absicht und keine Doppelung: SCSS-Variablen verschwinden beim
+// Uebersetzen, CSS-Eigenschaften bleiben im Browser aenderbar. So laesst sich
+// eine Toenung zur Laufzeit umstellen — etwa fuer eine Vorschau — ohne neu zu
+// bauen, waehrend die eine Stelle zum Aendern die SCSS-Datei bleibt.
+// ---------------------------------------------------------------------------
+
+:root {
+  // Flaechen
+  --grund: #{v.$farbe-grund};
+  --flaeche: #{v.$farbe-flaeche};
+  --flaeche-leise: #{v.$farbe-flaeche-leise};
+  --flaeche-schwebe: #{v.$farbe-flaeche-schwebe};
+
+  // Schrift
+  --schrift: #{v.$farbe-schrift};
+  --schrift-leise: #{v.$farbe-schrift-leise};
+
+  // Linien
+  --linie: #{v.$farbe-linie};
+  --linie-kraeftig: #{v.$farbe-linie-kraeftig};
+
+  // Akzent
+  --akzent: #{v.$farbe-akzent};
+  --akzent-dunkel: #{v.$farbe-akzent-dunkel};
+  --akzent-leise: #{v.$farbe-akzent-leise};
+
+  // Knoepfe
+  --knopf: #{v.$farbe-knopf};
+  --knopf-schwebe: #{v.$farbe-knopf-schwebe};
+  --knopf-schrift: #{v.$farbe-knopf-schrift};
+
+  // Status
+  --nicht-erfuellt: #{v.$farbe-nicht-erfuellt};
+  --nicht-erfuellt-leise: #{v.$farbe-nicht-erfuellt-leise};
+  --nicht-erfuellt-mittel: #{v.$farbe-nicht-erfuellt-mittel};
+  --pruefung-erforderlich: #{v.$farbe-pruefung-erforderlich};
+  --pruefung-erforderlich-leise: #{v.$farbe-pruefung-erforderlich-leise};
+  --pruefung-erforderlich-mittel: #{v.$farbe-pruefung-erforderlich-mittel};
+  --erfuellt: #{v.$farbe-erfuellt};
+  --erfuellt-leise: #{v.$farbe-erfuellt-leise};
+  --erfuellt-mittel: #{v.$farbe-erfuellt-mittel};
+  --nicht-anwendbar: #{v.$farbe-nicht-anwendbar};
+  --nicht-anwendbar-mittel: #{v.$farbe-nicht-anwendbar-mittel};
+
+  // Abstaende
+  --abstand-winzig: #{v.$abstand-winzig};
+  --abstand-klein: #{v.$abstand-klein};
+  --abstand-mittel: #{v.$abstand-mittel};
+  --abstand: #{v.$abstand};
+  --abstand-gross: #{v.$abstand-gross};
+  --abstand-riesig: #{v.$abstand-riesig};
+
+  // Formen
+  --radius-klein: #{v.$radius-klein};
+  --radius: #{v.$radius};
+  --radius-gross: #{v.$radius-gross};
+  --radius-pille: #{v.$radius-pille};
+  --rahmen: #{v.$rahmenstaerke};
+  --schatten-karte: #{v.$schatten-karte};
+  --schatten-blase: #{v.$schatten-blase};
+  --schatten-kopfzeile: #{v.$schatten-kopfzeile};
+
+  // Trefferflaechen und Bewegung
+  --trefferflaeche: #{v.$trefferflaeche};
+  --trefferflaeche-eng: #{v.$trefferflaeche-eng};
+  --hoehe-marke: #{v.$hoehe-marke};
+  --uebergang: #{v.$uebergang};
+  --fokus-staerke: #{v.$fokus-staerke};
+  --fokus-abstand: #{v.$fokus-abstand};
+}
+
+// ------------------------------------------------------------------ Grundlage
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  // Keine feste Pixelgroesse: die Einstellung des Browsers muss wirken (1.4.4).
+  font-size: v.$schrift-grundgroesse;
+  -webkit-text-size-adjust: 100%;
+  /*
+    Die stehende Kopfzeile darf nicht verdecken, wohin gesprungen wird — weder
+    beim Sprunglink noch beim Weiterwandern des Fokus (2.4.11). Der Browser
+    haelt diesen Streifen am oberen Rand frei, wenn er etwas ins Bild holt.
+  */
+  scroll-padding-top: calc(#{v.$kopf-hoehe} + #{v.$abstand});
+
+  /*
+    Der Platz fuer die senkrechte Bildlaufleiste steht immer bereit.
+
+    Die Ansichten dieses Werkzeugs sind verschieden lang — das Formular passt
+    ins Fenster, das Ergebnis nicht. Ohne diese Zeile erscheint die Leiste beim
+    Wechsel und verschmaelert den Inhalt um ihre Breite: Die ganze Seite
+    springt seitlich, obwohl sich inhaltlich nur die Ansicht geaendert hat. Das
+    trifft auch innerhalb einer Ansicht zu, sobald ein `details` aufklappt.
+
+    `overflow-y: scroll` statt `scrollbar-gutter: stable`, weil es die Leiste
+    ueberall haelt, nicht nur dort, wo der Browser die neuere Eigenschaft
+    kennt. Wo das System Bildlaufleisten ueberlagernd zeichnet — macOS in der
+    Voreinstellung —, nimmt sie ohnehin keine Breite ein; dann aendert die
+    Zeile nichts und schadet nichts.
+
+    Auf `html`, nicht auf `body`: Von hier reicht der Browser die Angabe an das
+    Ansichtsfenster weiter, und die stehende Kopfzeile bleibt stehen. Auf
+    `body` entstuende ein eigener Scrollbereich, und `position: sticky` bezoege
+    sich auf diesen statt auf das Fenster — die Leiste wuerde weggescrollt.
+  */
+  overflow-y: scroll;
+}
+
+body {
+  margin: 0;
+  background: var(--grund);
+  color: var(--schrift);
+  font-family: v.$schrift-familie;
+  font-size: 1rem;
+  line-height: v.$zeilenhoehe;
+  // Gleichmaessige Ziffernbreite in Zaehlungen und Tabellen; die Zahlen
+  // springen sonst beim Neuladen sichtbar hin und her.
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--akzent-leise);
+  color: var(--schrift);
+}
+
+// Der Fokus ist nie unsichtbar (2.4.7). Kein `outline: none`, nirgends.
+:focus-visible {
+  outline: var(--fokus-staerke) solid var(--akzent);
+  outline-offset: var(--fokus-abstand);
+  border-radius: var(--radius-klein);
+}
+
+a {
+  color: var(--akzent);
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+
+  &:hover {
+    color: var(--akzent-dunkel);
+    text-decoration-thickness: 2px;
+  }
+}
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+  line-height: v.$zeilenhoehe-eng;
+  margin: 0 0 0.5em;
+  letter-spacing: v.$laufweite-eng;
+}
+
+h1 {
+  font-size: v.$groesse-h1;
+  font-weight: v.$staerke-fett;
+}
+
+h2 {
+  font-size: v.$groesse-h2;
+  font-weight: v.$staerke-halbfett;
+}
+
+h3 {
+  font-size: v.$groesse-h3;
+  font-weight: v.$staerke-halbfett;
+}
+
+h4,
+h5 {
+  font-size: v.$groesse-h4;
+  font-weight: v.$staerke-halbfett;
+}
+
+code,
+pre {
+  font-family: v.$schrift-familie-fest;
+  font-size: 0.9em;
+}
+
+// Jede Zusammenfassung ist anklickbar — auch die ohne eigene Klasse.
+summary {
+  cursor: pointer;
+}
+
+pre {
+  background: var(--flaeche-leise);
+  border: var(--rahmen) solid var(--linie);
+  border-radius: var(--radius);
+  padding: var(--abstand-mittel);
+  margin: 0;
+  /*
+    Umbrechen statt seitlich scrollen. Ein waagerecht scrollbarer Bereich
+    muesste mit der Tastatur erreichbar sein (2.1.1) und erzeugte damit lauter
+    zusaetzliche Halte beim Durchtabben. Umbruch loest beides — und erspart
+    zugleich das seitliche Scrollen bei 320 Pixeln Breite (1.4.10).
+  */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+// Sichtbar erst bei Tastaturfokus — der Sprunglink nach 2.4.1.
+.sprunglink {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--knopf);
+  color: var(--knopf-schrift);
+  padding: var(--abstand-mittel) var(--abstand);
+  border-radius: 0 0 var(--radius) 0;
+  font-weight: v.$staerke-halbfett;
+  text-decoration: none;
+  // Ueber der stehenden Kopfzeile (z-index 20) — sonst laege der Sprunglink
+  // ausgerechnet dann darunter, wenn er gebraucht wird.
+  z-index: 30;
+
+  &:focus {
+    left: 0;
+  }
+}
+
+.nur-fuer-screenreader {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}

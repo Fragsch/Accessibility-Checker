@@ -14,15 +14,25 @@
 import { useEffect, useState } from 'react';
 
 import { ApiFehler, ladeScans, loescheScan } from '../api';
-import type { ScanUebersicht } from '../typen';
-import { BETRIEBSART_TEXT } from '../typen';
+import type { Rueckziel, ScanUebersicht } from '../typen';
+import { BETRIEBSART_TEXT, RUECKZIEL_TEXT } from '../typen';
 
 interface Eigenschaften {
   beiOeffnen: (scanId: number) => void;
-  beiFertig: () => void;
+  /**
+   * Zurueck dorthin, wo man herkam — nicht pauschal an den Auftrag.
+   *
+   * Wer ein Ergebnis offen hat und nur nachsehen wollte, was sonst noch
+   * gespeichert ist, will danach wieder an sein Ergebnis. Ein „Zurueck", das
+   * ihn stattdessen auf dem leeren Formular absetzt, sieht aus, als waere das
+   * Ergebnis fort.
+   */
+  beiZurueck: () => void;
+  /** Wohin `beiZurueck` fuehrt. Steuert allein die Beschriftung. */
+  ziel: Rueckziel;
 }
 
-export function Scanliste({ beiOeffnen, beiFertig }: Eigenschaften): React.ReactElement {
+export function Scanliste({ beiOeffnen, beiZurueck, ziel }: Eigenschaften): React.ReactElement {
   const [scans, setzeScans] = useState<ScanUebersicht[]>([]);
   const [nachfrage, setzeNachfrage] = useState<number | null>(null);
   const [meldung, setzeMeldung] = useState<string | null>(null);
@@ -128,8 +138,8 @@ export function Scanliste({ beiOeffnen, beiFertig }: Eigenschaften): React.React
       )}
 
       <div className="knopfreihe">
-        <button type="button" className="zweitrangig" onClick={beiFertig}>
-          Zurück zum Prüfauftrag
+        <button type="button" className="zweitrangig" onClick={beiZurueck}>
+          {RUECKZIEL_TEXT[ziel]}
         </button>
       </div>
     </section>

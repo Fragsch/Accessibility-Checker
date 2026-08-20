@@ -113,6 +113,8 @@ Die Phasen aus `PRD.md` Abschnitt 9 sind bindend. Aktueller Stand: **Phase 1 bis
 
 **Alle Engines der Stufe 1 sind seit Phase 3 gebaut:** `axe`, `html`, `sprache`, `pixel`, `ocr`, `eigen`. Die im Schema noch zulässige Engine `ibm` wird nicht verwendet — die Begründung steht in `ARCHITEKTUR.md` 2. Prüfungen mit `typ: "llm"` laufen seit Phase 4 über die Sprachmodell-Stufe; ist sie abgeschaltet oder Ollama nicht erreichbar, erzeugen sie einen Hinweis und damit `pruefung_erforderlich`. Das ist richtig so und darf nicht durch ein vorschnelles `erfuellt` ersetzt werden.
 
+**Die Gestaltung liegt als SCSS in `web/stil/`.** Alle Stellschrauben — Farben, Typografie, Abstände, Radien, Schatten, Trefferflächen — stehen in `web/stil/_variablen.scss` und werden in `_wurzel.scss` als CSS-Eigenschaften ausgegeben. Die Bausteindateien enthalten **keine** eigenen Farbwerte. Hinter jeder Schriftfarbe steht ihr gemessenes Kontrastverhältnis; wer eine ändert, rechnet nach und lässt anschließend `npm run pruefe:selbst` laufen. Näheres in `ARCHITEKTUR.md` 7.1.
+
 ## Sprache im Code
 
 Bezeichner auf Deutsch, ohne Umlaute in Bezeichnern:

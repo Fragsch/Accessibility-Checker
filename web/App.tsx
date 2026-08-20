@@ -23,14 +23,23 @@ import {
   meldeAnmeldungFertig,
   starteScan,
 } from './api';
-import type { Auftrag, Fragenliste, Kriterium, Projektansicht as Projektdaten, ScanZustand } from './typen';
+import type {
+  Auftrag,
+  Fragenliste,
+  Kriterium,
+  Projektansicht as Projektdaten,
+  Rueckziel,
+  ScanZustand,
+} from './typen';
 import { Abdeckungsansicht } from './bausteine/Abdeckungsansicht';
 import { Berichtsansicht } from './bausteine/Berichtsansicht';
+import { Erklaerknopf } from './bausteine/Erklaerknopf';
 import { Ergebnisansicht } from './bausteine/Ergebnisansicht';
 import { Fortschritt } from './bausteine/Fortschritt';
 import { Profilverwaltung } from './bausteine/Profilverwaltung';
 import { Projektansicht } from './bausteine/Projektansicht';
 import { Pruefauftrag } from './bausteine/Pruefauftrag';
+import { Kopfnavigation } from './bausteine/Kopfnavigation';
 import { Pruefliste } from './bausteine/Pruefliste';
 import { Scanliste } from './bausteine/Scanliste';
 
@@ -224,6 +233,43 @@ export function App(): React.ReactElement {
     setzeSicht('befunde');
   }
 
+  /*
+    Der Entwurfsvermerk (Regel 4) gehoert zum ganzen Ergebnis und nicht zu
+    einer seiner Sichten — deshalb steht er hier und nicht in der
+    Ergebnisansicht. Er sitzt im Kasten der Ansichtswahl: Wer die Sicht
+    wechselt, liest ihn dort erneut.
+
+    Nicht in der Berichtssicht: Der Bericht traegt seinen eigenen, genaueren
+    Vermerk mit der Zahl der offenen Kriterien. Zweimal dasselbe untereinander
+    liest niemand.
+  */
+  const entwurfshinweis =
+    zustand?.entwurf && sicht !== 'bericht' ? (
+      <div className="meldung meldung--entwurf" role="status">
+        <h3>Dieses Ergebnis ist ein Entwurf</h3>
+        <p>
+          Solange Kriterien den Status „Prüfung erforderlich“ tragen, ist die Prüfung nicht abgeschlossen. Offene
+          Kriterien werden nie als konform ausgegeben.
+        </p>
+      </div>
+    ) : null;
+
+  /*
+    Wohin ein „Zurueck" aus einer Nebenansicht fuehrt.
+
+    An das offene Ergebnis, solange eines vorliegt — sonst an den Auftrag. Die
+    Kopfzeile traegt mit „Neue Pruefung" bereits einen Weg zum leeren Formular,
+    und der raeumt dabei das Ergebnis weg (`vonVorn`). Ein zweiter Knopf, der
+    dasselbe Ziel verspricht, aber etwas anderes tut, waere die schlechtere Art
+    der Dopplung: nicht ueberfluessig, sondern irrefuehrend.
+
+    Einmal abgeleitet und an alle Nebenansichten gereicht, damit sich die beiden
+    nicht auseinanderentwickeln — genau das war der Fall, als die Scanliste noch
+    pauschal an den Auftrag zurueckfuehrte und die Abdeckungsansicht nicht.
+  */
+  const rueckziel: Rueckziel = zustand?.ergebnis ? 'ergebnis' : 'auftrag';
+  const zurueck = (): void => setzeAnsicht(rueckziel);
+
   const sichten: { wert: Sicht; text: string }[] = [
     { wert: 'befunde', text: 'Befunde je Seite' },
     ...(projekt ? [{ wert: 'projekt' as Sicht, text: 'Projektebene' }] : []),
@@ -242,12 +288,25 @@ export function App(): React.ReactElement {
         Zum Inhalt springen
       </a>
 
-      <div className="seite">
-        <header className="kopfzeile">
-          <h1>Barrierefreiheit prüfen</h1>
-          <p>Nach WCAG 2.1 und 2.2, Level AA. Läuft vollständig auf diesem Rechner.</p>
-        </header>
+      {/*
+        Die Kopfzeile bleibt beim Scrollen stehen und traegt die drei Wege, die
+        von ueberall erreichbar sein muessen. Sie steht ausserhalb von `.seite`,
+        weil sie die volle Fensterbreite einnimmt — die Spalte darin bringt ihr
+        Inhalt selbst mit.
+      */}
+      <header className="kopfzeile">
+        <div className="kopfzeile__inhalt">
+          <h1 className="marke">Accessibility-Checker</h1>
+          <Kopfnavigation
+            beiNeuePruefung={vonVorn}
+            beiScans={() => setzeAnsicht('scans')}
+            beiAbdeckung={() => void zeigeAbdeckung()}
+            laeuft={zustand?.laeuft ?? false}
+          />
+        </div>
+      </header>
 
+      <div className="seite">
         <main id="inhalt">
           {fehler && (
             <div className="meldung meldung--fehler" role="alert">
@@ -258,22 +317,41 @@ export function App(): React.ReactElement {
 
           {ansicht === 'auftrag' && (
             <>
-              <h2 tabIndex={-1} ref={ueberschrift}>
-                Was soll geprüft werden?
-              </h2>
+              {/*
+                Der Satz stand erst in der Kopfzeile, dann als Einleitung ueber
+                dem Auftrag. Beides las ihn jedem vor, der das Werkzeug taeglich
+                benutzt — und der weiss laengst, wonach geprueft wird und dass
+                nichts abfliesst. Er steht deshalb hinter dem Zeichen: einmal
+                nachzulesen fuer den, der ihn braucht, und aus dem Weg fuer den,
+                der ihn kennt. Aus dem Weg heisst nicht versteckt — die
+                Schaltflaeche steht in der Ueberschriftszeile und ist mit
+                Tastatur, Zeiger und Finger gleichermassen zu erreichen.
+
+                Der Knopf steht neben der Ueberschrift, nicht in ihr: Sein Name
+                zaehlte sonst zum Namen der Ueberschrift, und eine Sprachausgabe
+                laese „Was soll geprueft werden? Was dieses Werkzeug prueft".
+              */}
+              <div className="ueberschriftszeile">
+                <h2 tabIndex={-1} ref={ueberschrift}>
+                  Was soll geprüft werden?
+                </h2>
+                <Erklaerknopf beschriftung="Wonach geprüft wird und wo die Daten bleiben">
+                  <strong>Geprüft wird nach WCAG, Konformitätsstufe AA.</strong> Die Fassung — 2.1 oder 2.2 —
+                  stellen Sie weiter unten ein; 2.2 bringt neun zusätzliche Erfolgskriterien mit und lässt eines
+                  entfallen.
+                  <br />
+                  <br />
+                  Alles läuft auf diesem Rechner. Die geprüften Seiten werden lokal geladen, und weder ihre
+                  Adressen noch ihre Inhalte oder die Ergebnisse verlassen ihn. Das gilt auch für die
+                  Sprachmodell-Stufe: Sie spricht mit einem lokal installierten Modell, nicht mit einem Dienst im
+                  Netz.
+                </Erklaerknopf>
+              </div>
               <Pruefauftrag
                 beschaeftigt={false}
                 beiStart={(auftrag) => void beginne(auftrag)}
                 beiProfilverwaltung={() => setzeAnsicht('profile')}
               />
-              <div className="knopfreihe">
-                <button type="button" className="zweitrangig" onClick={() => setzeAnsicht('scans')}>
-                  Bisherige Prüfungen
-                </button>
-                <button type="button" className="zweitrangig" onClick={() => void zeigeAbdeckung()}>
-                  Was dieses Werkzeug findet
-                </button>
-              </div>
             </>
           )}
 
@@ -291,7 +369,11 @@ export function App(): React.ReactElement {
               <h2 tabIndex={-1} ref={ueberschrift}>
                 Bisherige Prüfungen
               </h2>
-              <Scanliste beiOeffnen={(scanId) => void oeffneScan(scanId)} beiFertig={() => setzeAnsicht('auftrag')} />
+              <Scanliste
+                beiOeffnen={(scanId) => void oeffneScan(scanId)}
+                beiZurueck={zurueck}
+                ziel={rueckziel}
+              />
             </>
           )}
 
@@ -300,10 +382,7 @@ export function App(): React.ReactElement {
               <h2 tabIndex={-1} ref={ueberschrift}>
                 Was dieses Werkzeug findet
               </h2>
-              <Abdeckungsansicht
-                kriterien={kriterien}
-                beiZurueck={() => setzeAnsicht(zustand?.ergebnis ? 'ergebnis' : 'auftrag')}
-              />
+              <Abdeckungsansicht kriterien={kriterien} beiZurueck={zurueck} ziel={rueckziel} />
             </>
           )}
 
@@ -366,7 +445,7 @@ export function App(): React.ReactElement {
                 ARIA, und mit der Tastatur bedienbar, ohne dass jemand ein
                 Tastenverhalten nachbauen muss.
               */}
-              {sichten.length > 1 && (
+              {sichten.length > 1 ? (
                 <fieldset className="feldgruppe">
                   <legend>Ansicht</legend>
                   <div className="auswahl">
@@ -382,7 +461,12 @@ export function App(): React.ReactElement {
                       </label>
                     ))}
                   </div>
+                  {entwurfshinweis}
                 </fieldset>
+              ) : (
+                // Ohne Ansichtswahl gibt es keinen Kasten, in dem der Hinweis
+                // stehen koennte — dann steht er fuer sich.
+                entwurfshinweis
               )}
 
               {sicht === 'bericht' && zustand?.ergebnis ? (
@@ -400,24 +484,12 @@ export function App(): React.ReactElement {
                 <Ergebnisansicht
                   ergebnis={zustand.ergebnis}
                   kriterien={kriterien}
-                  entwurf={zustand.entwurf}
                   angeforderteSeite={angeforderteSeite}
                 />
               ) : (
                 <p>Kein Ergebnis vorhanden.</p>
               )}
 
-              <div className="knopfreihe">
-                <button type="button" onClick={vonVorn}>
-                  Neue Prüfung
-                </button>
-                <button type="button" className="zweitrangig" onClick={() => setzeAnsicht('scans')}>
-                  Bisherige Prüfungen
-                </button>
-                <button type="button" className="zweitrangig" onClick={() => void zeigeAbdeckung()}>
-                  Was dieses Werkzeug findet
-                </button>
-              </div>
             </>
           )}
         </main>

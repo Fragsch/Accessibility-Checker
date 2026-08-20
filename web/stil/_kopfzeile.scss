@@ -1,0 +1,119 @@
+@use 'variablen' as v;
+@use 'werkzeug' as w;
+
+// ---------------------------------------------------------------------------
+// Die stehende Kopfzeile.
+//
+// Sie bleibt beim Scrollen oben, ist weiss und laesst durchscheinen, was
+// darunter hindurchlaeuft.
+// ---------------------------------------------------------------------------
+
+.kopfzeile {
+  position: sticky;
+  top: 0;
+  // Ueber allem, was die Seite selbst aufbaut — auch ueber dem Hinweis am
+  // Statuspunkt (z-index 5).
+  z-index: 20;
+  background: v.$farbe-kopfzeile;
+  border-bottom: var(--rahmen) solid var(--linie);
+  box-shadow: var(--schatten-kopfzeile);
+  backdrop-filter: saturate(180%) blur(14px);
+
+  /*
+    Ohne `backdrop-filter` waere die Leiste halb durchsichtig und der Text
+    liefe ueber alles hinweg, was darunter steht. Dann lieber ganz deckend.
+  */
+  @supports not (backdrop-filter: blur(1px)) {
+    background: var(--flaeche);
+  }
+
+  /*
+    Auf sehr flachen Fenstern faehrt die Leiste mit.
+
+    Bei 400 % Vergroesserung bleiben von einem gewoehnlichen Bildschirm keine
+    300 Pixel Hoehe uebrig. Eine stehende Leiste frisst davon ein Fuenftel und
+    laesst fuer den Inhalt zu wenig (1.4.10). Sie steht dann oben und scrollt
+    mit.
+  */
+  @media (max-height: 26rem) {
+    position: static;
+  }
+}
+
+.kopfzeile__inhalt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: v.$abstand;
+  max-width: v.$seitenbreite;
+  min-height: v.$kopf-hoehe;
+  margin: 0 auto;
+  padding: v.$kopf-polsterung v.$seitenrand;
+}
+
+/// Der Name des Werkzeugs. Zugleich die Ueberschrift erster Ordnung.
+.marke {
+  margin: 0;
+  font-size: v.$groesse-marke;
+  font-weight: v.$staerke-fett;
+  letter-spacing: v.$laufweite-eng;
+  white-space: nowrap;
+}
+
+// -------------------------------------------------------------- Navigation
+
+.kopfnav {
+  position: relative;
+}
+
+.kopfnav__liste {
+  display: flex;
+  align-items: center;
+  gap: var(--abstand-klein);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/*
+  Der Schalter des Aufklappmenues. Auf breiten Fenstern gibt es ihn nicht — die
+  Punkte stehen dort nebeneinander.
+*/
+.kopfnav__schalter {
+  display: none;
+}
+
+@media (max-width: v.$bruch-kopf) {
+  .kopfnav__schalter {
+    display: inline-flex;
+  }
+
+  .kopfnav__liste {
+    display: none;
+    position: absolute;
+    top: calc(100% + var(--abstand-klein));
+    right: 0;
+    z-index: 1;
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 16rem;
+    padding: var(--abstand-klein);
+    background: var(--flaeche);
+    border: var(--rahmen) solid var(--linie);
+    border-radius: var(--radius);
+    box-shadow: var(--schatten-blase);
+  }
+
+  .kopfnav--offen .kopfnav__liste {
+    display: flex;
+  }
+
+  // Im Menue steht jeder Punkt auf voller Breite und linksbuendig — eine Liste
+  // liest sich an einer Kante entlang, nicht ueber vier Mitten hinweg.
+  .kopfnav__liste button {
+    width: 100%;
+    justify-content: flex-start;
+    // Auch die zweite Zeile eines umgebrochenen Punktes beginnt an der Kante.
+    text-align: left;
+  }
+}

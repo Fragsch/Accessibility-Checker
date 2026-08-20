@@ -1,0 +1,287 @@
+@use 'variablen' as v;
+@use 'werkzeug' as w;
+
+// ---------------------------------------------------------------------------
+// Die vier Status und ihre Zaehlung.
+//
+// Jeder Status traegt ein eigenes Zeichen und einen ausgeschriebenen Text.
+// Farbe kommt hinzu, ist aber nie der einzige Traeger (1.4.1).
+// ---------------------------------------------------------------------------
+
+.status {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--abstand-winzig);
+  font-weight: v.$staerke-halbfett;
+  white-space: nowrap;
+}
+
+.status__zeichen {
+  font-family: v.$schrift-familie-fest;
+  font-weight: v.$staerke-fett;
+}
+
+/*
+  Der Statuspunkt an einer Kriterienzeile.
+
+  Fuellung im Mittelton, Kante ein Pixel in der kraeftigen Statusfarbe — die
+  kommt ueber `currentColor` aus `.status--…` und muss deshalb nirgends
+  wiederholt werden. Die Kante ist es, die den Punkt auf Weiss sichtbar macht:
+  ueber 6:1, damit ueber der Schwelle von 1.4.11.
+
+  Kein Zeichen im Punkt — so entschieden, damit die lange Liste ruhig bleibt.
+  Fuer Sehende traegt damit die Farbe die Aussage allein (1.4.1). Abgefedert
+  ist das durch den `title`, der den Status im Klartext einblendet, und durch
+  den ausgeschriebenen Status fuer die Sprachausgabe; beides steht in
+  `Statuszeichen.tsx`.
+*/
+.statuspunkt {
+  position: relative;
+  display: inline-block;
+  // In der Kriterienzeile richten sich die Geschwister an der Schriftlinie aus;
+  // ein Punkt hat keine, er gehoert in die Mitte.
+  align-self: center;
+  flex: none;
+  // Der Zeiger wird zum Fragezeichen, wo eine Erklaerung darauf wartet.
+  cursor: help;
+}
+
+/*
+  Flaeche in der leisen Toenung der Statuskachel, Kante einen Pixel im
+  Mittelton. So hoch wie die Level-Marke daneben — beide holen ihre Groesse aus
+  derselben Variablen.
+*/
+.statuspunkt__punkt {
+  display: block;
+  width: var(--hoehe-marke);
+  height: var(--hoehe-marke);
+  border: var(--rahmen) solid;
+  border-radius: 50%;
+
+  .status--nicht_erfuellt > & {
+    background: var(--nicht-erfuellt-leise);
+    border-color: var(--nicht-erfuellt-mittel);
+  }
+
+  .status--pruefung_erforderlich > & {
+    background: var(--pruefung-erforderlich-leise);
+    border-color: var(--pruefung-erforderlich-mittel);
+  }
+
+  .status--erfuellt > & {
+    background: var(--erfuellt-leise);
+    border-color: var(--erfuellt-mittel);
+  }
+
+  .status--nicht_anwendbar > & {
+    background: var(--flaeche-leise);
+    border-color: var(--nicht-anwendbar-mittel);
+  }
+}
+
+/*
+  Der Hinweis am Punkt.
+
+  Er oeffnet nach oben und ist rechtsbuendig — der Punkt steht am rechten Rand
+  der Zeile, nach links ist Platz. Er beruehrt den Punkt: Der sichtbare Abstand
+  entsteht durch einen durchsichtigen unteren Rahmen, nicht durch eine Luecke.
+  Eine echte Luecke waere ein Loch, in dem der Zeiger den Hinweis verliert,
+  bevor er ihn erreicht — genau das verlangt 1.4.13 nicht zu tun.
+*/
+.statuspunkt__hinweis {
+  position: absolute;
+  z-index: 5;
+  inset-block-end: 100%;
+  inset-inline-end: -0.35rem;
+  display: none;
+  width: max-content;
+  max-width: 18rem;
+  padding: var(--abstand-klein) var(--abstand-mittel);
+  border-bottom: 0.4rem solid transparent;
+  background: var(--knopf);
+  background-clip: padding-box;
+  border-radius: var(--radius-klein);
+  /*
+    `filter` statt `box-shadow`: Ein Schatten umschliesst den Rahmenkasten und
+    zeichnete damit auch den durchsichtigen unteren Rahmen nach — als heller
+    Streifen unter der Blase, der aussah, als gehoerte er dazu. Der Filter folgt
+    den tatsaechlich gemalten Flaechen und laesst den Streifen aus.
+  */
+  filter: drop-shadow(v.$schatten-blase);
+  color: var(--knopf-schrift);
+  font-size: v.$groesse-klein;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: left;
+  white-space: normal;
+
+  /*
+    Gezeigt wird nur, solange nicht mit Escape ausgeblendet wurde (1.4.13).
+
+    Die Bedingung steht in den Anzeigeregeln und nicht als eigene Ausblendregel
+    dahinter: Eine solche Regel haette weniger Spezifitaet als die Schweberegel
+    und bliebe wirkungslos. Mit `!important` waere sie zu retten — aber ein
+    `:not()` an der richtigen Stelle sagt dasselbe, ohne die Kaskade zu
+    ueberstimmen.
+  */
+  body:not(.hinweise-aus) .statuspunkt:hover > &,
+  // Bei Tastaturbedienung haengt der Hinweis an der Zeile: Der Punkt selbst
+  // bekommt keinen eigenen Halt beim Durchtabben — bei fuenfzig Kriterien
+  // waeren das fuenfzig zusaetzliche Halte (2.4.3).
+  body:not(.hinweise-aus) summary:focus-visible & {
+    display: block;
+  }
+}
+
+.status--nicht_erfuellt {
+  color: var(--nicht-erfuellt);
+}
+
+.status--pruefung_erforderlich {
+  color: var(--pruefung-erforderlich);
+}
+
+.status--erfuellt {
+  color: var(--erfuellt);
+}
+
+.status--nicht_anwendbar {
+  color: var(--nicht-anwendbar);
+}
+
+// ------------------------------------------------------------------ Zaehlung
+
+/*
+  Die Uebersichtskarte im Ergebnis: worauf sich die Zahlen beziehen und wie sie
+  ausfallen — beides in einer Karte, weil das eine ohne das andere nichts
+  aussagt.
+*/
+.uebersicht {
+  @include w.karte;
+
+  padding: v.$abstand-gross;
+  margin: 0 0 v.$abstand-gross;
+}
+
+.uebersicht__seite {
+  margin: 0 0 v.$abstand-gross;
+}
+
+.uebersicht__marke {
+  @include w.marke;
+
+  display: block;
+  color: var(--schrift-leise);
+  margin-bottom: var(--abstand-winzig);
+}
+
+.uebersicht__titel {
+  display: block;
+  font-size: v.$groesse-h3;
+  font-weight: v.$staerke-halbfett;
+  letter-spacing: v.$laufweite-eng;
+}
+
+.uebersicht__adresse {
+  display: block;
+  color: var(--schrift-leise);
+  font-size: v.$groesse-klein;
+  // Eine Adresse enthaelt keine Leerzeichen und bricht sonst nicht um (1.4.10).
+  overflow-wrap: anywhere;
+}
+
+/*
+  Kennzahlen als Kachelreihe — einmal die vier Status im Ergebnis, einmal die
+  Messwerte der Abdeckungsmatrix. Beide sind Definitionslisten: Begriff und
+  Wert, kein Kachelraster aus Absaetzen.
+*/
+.zaehlung {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
+  gap: var(--abstand-mittel);
+  margin: 0 0 v.$abstand-gross;
+
+  /*
+    Eine Kachel je Begriff-Wert-Paar.
+
+    Ihr Radius ist der der Hinweiskaesten und nicht der grosse der Karte: Die
+    Kacheln liegen in einer Karte, und zwei verschieden runde Ecken kurz
+    hintereinander sieht man sofort. Innen ist immer die kleinere Rundung
+    richtig.
+  */
+  > div {
+    @include w.karte(var(--radius));
+
+    padding: v.$abstand v.$abstand-gross v.$abstand-gross;
+    border-color: transparent;
+  }
+
+  dt {
+    font-size: v.$groesse-klein;
+    font-weight: v.$staerke-halbfett;
+  }
+
+  // Die Statuskachel faerbt ihre Beschriftung ueber `.status--…`; alle uebrigen
+  // Begriffe bleiben gedaempft.
+  dt:not(.status) {
+    color: var(--schrift-leise);
+  }
+
+  .status {
+    margin: 0;
+    white-space: normal;
+  }
+
+  .zahl {
+    font-size: v.$groesse-zahl;
+    font-weight: v.$staerke-fett;
+    line-height: 1.1;
+    letter-spacing: v.$laufweite-eng;
+    margin: var(--abstand-winzig) 0 0;
+  }
+
+  .hilfetext {
+    margin: var(--abstand-klein) 0 0;
+  }
+}
+
+/*
+  Die Statuskachel traegt die Statusfarbe; Beschriftung und Zahl erben sie, der
+  Hilfetext nicht — er bleibt in der gedaempften Schriftfarbe, die auf jeder der
+  vier Toenungen ueber 5:1 liegt.
+
+  „Nicht anwendbar" bekommt keine eigene Farbe, sondern die leise Flaeche: Der
+  Status sagt, dass hier nichts zu tun ist. Sie steht nur, weil die Kachel in
+  der weissen Uebersichtskarte liegt — auf dem grauen Seitengrund waere sie
+  nicht zu unterscheiden, dort bleibt die Kachel weiss.
+*/
+.zaehlung__feld {
+  &.status--nicht_erfuellt {
+    background: var(--nicht-erfuellt-leise);
+  }
+
+  &.status--pruefung_erforderlich {
+    background: var(--pruefung-erforderlich-leise);
+  }
+
+  &.status--erfuellt {
+    background: var(--erfuellt-leise);
+  }
+}
+
+/*
+  Die Kacheln in der Uebersichtskarte: Sie liegen in einer Karte und tragen
+  deshalb keinen eigenen Schatten — zwei Ebenen uebereinander sehen schmutzig
+  aus. Ihre Toenung genuegt als Abgrenzung.
+*/
+.uebersicht .zaehlung {
+  margin: 0;
+
+  > div {
+    box-shadow: none;
+  }
+
+  .status--nicht_anwendbar {
+    background: var(--flaeche-leise);
+  }
+}

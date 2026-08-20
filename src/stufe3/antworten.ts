@@ -73,6 +73,18 @@ export function loescheAntwort(db: Database, url: string, frageHash: string): bo
   return ergebnis.changes > 0;
 }
 
+/**
+ * Alle Antworten zu einer Adresse verwerfen; liefert deren Zahl.
+ *
+ * Gedacht für den Fall, dass eine Seite wieder wie unbeantwortet dastehen
+ * soll — etwa in der Selbstprüfung, die einen unbeantworteten **und** einen
+ * beantworteten Zweig im Markup braucht und sich ihre Ausgangslage deshalb
+ * selbst herstellen muss.
+ */
+export function loescheAntwortenZu(db: Database, url: string): number {
+  return db.prepare(`DELETE FROM manuelle_antwort WHERE url = ?`).run(url).changes;
+}
+
 /** Wie viele Fragen zu einer Adresse bereits beantwortet sind. */
 export function zaehleAntworten(db: Database, url: string): number {
   const zeile = db.prepare(`SELECT COUNT(*) AS n FROM manuelle_antwort WHERE url = ?`).get(url) as { n: number };

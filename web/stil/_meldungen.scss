@@ -1,0 +1,55 @@
+@use 'variablen' as v;
+@use 'werkzeug' as w;
+
+// ---------------------------------------------------------------------------
+// Meldungen, Empfehlungen, Vermerke.
+//
+// Alle drei tragen eine farbige Kante. Was die Kante bedeutet, steht daneben
+// immer auch als Text — die Farbe ist Beiwerk (1.4.1).
+// ---------------------------------------------------------------------------
+
+.meldung {
+  @include w.kasten(var(--akzent), var(--akzent-leise));
+
+  padding: v.$abstand var(--abstand-gross);
+  margin: 0 0 v.$abstand-gross;
+  box-shadow: var(--schatten-karte);
+
+  h2 {
+    font-size: v.$groesse-h3;
+  }
+}
+
+.meldung--fehler {
+  border-left-color: var(--nicht-erfuellt);
+  background: var(--nicht-erfuellt-leise);
+}
+
+.meldung--entwurf {
+  border-left-color: var(--pruefung-erforderlich);
+  background: var(--pruefung-erforderlich-leise);
+}
+
+.empfehlung {
+  @include w.kasten(var(--akzent), var(--akzent-leise));
+
+  padding: v.$abstand;
+
+  h4 {
+    margin: 0 0 var(--abstand-klein);
+  }
+}
+
+/// Kleine Marke hinter einer Zeile — etwa „Entwurf“.
+.vermerk {
+  display: inline-block;
+  margin-left: var(--abstand-klein);
+  padding: 0.1rem 0.55rem;
+  border: var(--rahmen) solid var(--pruefung-erforderlich);
+  border-radius: var(--radius-pille);
+  background: var(--pruefung-erforderlich-leise);
+  color: var(--pruefung-erforderlich);
+  font-size: v.$groesse-winzig;
+  font-weight: v.$staerke-halbfett;
+  white-space: nowrap;
+}

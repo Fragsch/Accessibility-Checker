@@ -26,6 +26,8 @@ import type { EngineErgebnis, EngineKontext } from '../src/stufe1/engine.js';
 import { normalisiere } from '../src/stufe1/normalisierung.js';
 import { VIEWPORT_SCHREIBTISCH } from '../src/scan/browser.js';
 import { projektWurzel } from '../src/plattform/pfade.js';
+import { oeffneDatenbank } from '../src/db/index.js';
+import { loescheAntwortenZu } from '../src/stufe3/antworten.js';
 import { baueServer } from '../src/server/index.js';
 import type { Befund, Standard } from '../src/typen/index.js';
 import type { Page } from 'playwright';
@@ -42,7 +44,16 @@ interface Ansicht {
 const ANSICHTEN: Ansicht[] = [
   {
     name: 'Auftrag — Formular',
-    vorbereiten: async () => undefined,
+    /*
+      Mit aufgeklappter Erklaerung: Die Blase steht nur im Baum, solange sie
+      offen ist. Zugeklappt gaebe es hier nichts zu messen — und ein Stueck
+      Markup, das die eigene Pruefung nie zu sehen bekommt, ist ungeprueft,
+      gleich wie oft der Lauf gruen ausgeht.
+    */
+    vorbereiten: async (seite) => {
+      await seite.getByRole('button', { name: 'Wonach geprüft wird und wo die Daten bleiben' }).click();
+      await seite.getByRole('note').waitFor();
+    },
   },
   {
     name: 'Auftrag — mit Fehlermeldung',
@@ -61,8 +72,15 @@ const ANSICHTEN: Ansicht[] = [
 
       await seite.getByRole('heading', { name: /^Ergebnis/ }).waitFor({ timeout: 120_000 });
 
-      // Auch die nicht anwendbaren einblenden, damit jede Zeile im DOM steht.
-      await seite.getByLabel(/^nicht anwendbar/).check();
+      /*
+        Auch die nicht anwendbaren einblenden, damit jede Zeile im DOM steht.
+
+        Ohne Anker am Zeilenanfang: Die Beschriftung traegt vorweg den
+        Statuspunkt, und dessen Zeichen steht im Textinhalt — auch wenn es
+        `aria-hidden` ist und eine Sprachausgabe es ueberspringt. Playwright
+        vergleicht hier den Textinhalt, nicht den barrierefreien Namen.
+      */
+      await seite.getByLabel(/Nicht anwendbar/).check();
 
       await klappeAllesAuf(seite);
     },
@@ -206,6 +224,23 @@ async function klappeAllesAuf(seite: Page): Promise<void> {
 async function hauptlauf(): Promise<void> {
   const katalog = Katalog.laden();
   const protokoll = new Protokoll({ datei: null, konsoleAb: 'fehler' });
+
+  /*
+    Die Ausgangslage herstellen, statt sie vorauszusetzen.
+
+    Manuelle Antworten liegen je Adresse und Frage, nicht je Scan (M-04) — ein
+    neuer Scan derselben Seite erbt sie also. Jeder Lauf beantwortete bisher
+    eine weitere Frage der Referenzseite, und nach der neunzehnten war keine
+    mehr offen: Die Pruefliste zeigte nur noch beantwortete Fragen, der Lauf
+    fand seinen Knopf nicht und brach ab. Ein Pruefwerkzeug, das nach genuegend
+    eigenen Laeufen an sich selbst scheitert, misst die falsche Sache.
+  */
+  const db = oeffneDatenbank();
+  const verworfen = loescheAntwortenZu(db, referenzseite('mangelhaft.html'));
+  db.close();
+  if (verworfen > 0) {
+    console.log(`Frueher gegebene Antworten zur Referenzseite verworfen: ${verworfen}\n`);
+  }
   const zuordnung = katalog.alleRegelZuordnungen(STANDARD);
   const geprueft = new Set(katalog.fuerStandard(STANDARD).map((k) => k.id));
 

@@ -9,13 +9,12 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import type { Kriterium, ScanErgebnis, SeitenErgebnis, Status } from '../typen';
-import { PRINZIP_TEXT, STATUS_ERLAEUTERUNG, STATUS_REIHENFOLGE, STATUS_TEXT, STATUS_ZEICHEN } from '../typen';
+import { PRINZIP_TEXT, STATUS_ERLAEUTERUNG, STATUS_REIHENFOLGE, STATUS_TEXT } from '../typen';
 import { Kriteriumszeile } from './Kriteriumszeile';
 
 interface Eigenschaften {
   ergebnis: ScanErgebnis;
   kriterien: Kriterium[];
-  entwurf: boolean;
   /** Seite, zu der aus der Projektebene gesprungen wurde (E-22, E-23). */
   angeforderteSeite?: string | null;
 }
@@ -23,7 +22,6 @@ interface Eigenschaften {
 export function Ergebnisansicht({
   ergebnis,
   kriterien,
-  entwurf,
   angeforderteSeite = null,
 }: Eigenschaften): React.ReactElement {
   const [seitenNummer, setzeSeitenNummer] = useState(0);
@@ -70,16 +68,6 @@ export function Ergebnisansicht({
 
   return (
     <>
-      {entwurf && (
-        <div className="meldung meldung--entwurf" role="status">
-          <h2>Dieses Ergebnis ist ein Entwurf</h2>
-          <p>
-            Solange Kriterien den Status „Prüfung erforderlich“ tragen, ist die Prüfung nicht abgeschlossen. Offene
-            Kriterien werden nie als konform ausgegeben.
-          </p>
-        </div>
-      )}
-
       {ergebnis.seiten.length > 1 && (
         <fieldset className="feldgruppe">
           <legend>Geprüfte Seite</legend>
@@ -106,32 +94,55 @@ export function Ergebnisansicht({
         Übersicht
         <span className="nur-fuer-screenreader"> für {seite.url}</span>
       </h2>
-      <p className="hilfetext">
-        {seite.titel ? `„${seite.titel}“ — ` : ''}
-        {seite.url}
-      </p>
 
       {/*
-        Eine Definitionsliste, kein Kachelraster aus Absaetzen: Status und
-        Anzahl sind Begriff und Wert. Eine grosse fette Zahl in einem Absatz
-        waere ausserdem eine Ueberschrift, die keine ist (1.3.1) — das hat die
-        Selbstpruefung prompt gemeldet.
+        Eine Karte, zwei Angaben: worauf sich das Ergebnis bezieht und wie es
+        ausfaellt. Die Adresse stand vorher als Hilfetext daneben und ging
+        unter — sie ist aber die Voraussetzung dafuer, dass die Zahlen
+        darunter ueberhaupt etwas bedeuten.
       */}
-      <dl className="zaehlung">
-        {STATUS_REIHENFOLGE.map((status) => (
-          <div key={status} className={`zaehlung__feld status--${status}`}>
-            <dt className="status">
-              <span className="status__zeichen" aria-hidden="true">
-                {STATUS_ZEICHEN[status]}
-              </span>
-              {STATUS_TEXT[status]}
-            </dt>
-            <dd className="zahl">{zaehlung[status]}</dd>
-            <dd className="hilfetext">{STATUS_ERLAEUTERUNG[status]}</dd>
-          </div>
-        ))}
-      </dl>
+      <div className="uebersicht">
+        <p className="uebersicht__seite">
+          <span className="uebersicht__marke">Geprüfte Seite</span>
+          {seite.titel && <span className="uebersicht__titel">„{seite.titel}“</span>}
+          <span className="uebersicht__adresse">{seite.url}</span>
+        </p>
 
+        {/*
+          Eine Definitionsliste, kein Kachelraster aus Absaetzen: Status und
+          Anzahl sind Begriff und Wert. Eine grosse fette Zahl in einem Absatz
+          waere ausserdem eine Ueberschrift, die keine ist (1.3.1) — das hat die
+          Selbstpruefung prompt gemeldet.
+
+          Ohne Zeichen: Auf der Kachel steht der Status ausgeschrieben, damit
+          traegt der Text die Aussage und nicht die Farbe (1.4.1). Wo der Status
+          knapp neben anderem steht — an einer Kriterienzeile, in der
+          Projektebene — bleibt das Zeichen erhalten.
+        */}
+        <dl className="zaehlung">
+          {STATUS_REIHENFOLGE.map((status) => (
+            <div key={status} className={`zaehlung__feld status--${status}`}>
+              <dt className="status">{STATUS_TEXT[status]}</dt>
+              <dd className="zahl">{zaehlung[status]}</dd>
+              <dd className="hilfetext">{STATUS_ERLAEUTERUNG[status]}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+
+      <h2>
+        Kriterien <span className="hilfetext">({sichtbar.length} von {seite.bewertungen.length} angezeigt)</span>
+      </h2>
+
+      {/*
+        Der Filter gehoert unter diese Ueberschrift und nicht ueber sie: Er
+        steuert, welche Kriterien in der Liste darunter stehen — nichts an der
+        Uebersicht.
+
+        Die Beschriftungen tragen keinen Statuspunkt: Zwei runde Zeichen neben
+        dem Ankreuzfeld machen die Zeile unruhig, und der Status steht hier
+        ohnehin ausgeschrieben.
+      */}
       <fieldset className="feldgruppe">
         <legend>Anzeigen</legend>
         <div className="auswahl">
@@ -148,10 +159,6 @@ export function Ergebnisansicht({
         </div>
       </fieldset>
 
-      <h2>
-        Kriterien <span className="hilfetext">({sichtbar.length} von {seite.bewertungen.length} angezeigt)</span>
-      </h2>
-
       {sichtbar.length === 0 ? (
         <p>Kein Kriterium in der gewählten Auswahl. Bitte oben andere Status hinzunehmen.</p>
       ) : (
@@ -160,7 +167,7 @@ export function Ergebnisansicht({
           if (desPrinzips.length === 0) return null;
 
           return (
-            <section key={prinzip}>
+            <section className="prinzip" key={prinzip}>
               <h3>{ueberschrift}</h3>
               <ul className="kriterienliste">
                 {desPrinzips.map((bewertung) => {

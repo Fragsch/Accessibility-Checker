@@ -1,0 +1,326 @@
+@use 'sass:string';
+@use 'variablen' as v;
+@use 'werkzeug' as w;
+
+// ---------------------------------------------------------------------------
+// Formulare.
+//
+// Jede Feldgruppe ist eine eigene Karte. Die Beschriftung steht ueber dem Feld,
+// nie daneben — bei 320 Pixeln Breite bleibt sonst keine Zeile uebrig (1.4.10).
+// ---------------------------------------------------------------------------
+
+/*
+  Die Feldgruppe als Karte.
+
+  Zwei Eigenheiten des `legend` sind hier zu umgehen:
+
+  1. Der Browser setzt es auf die obere Kante des `fieldset` und beginnt
+     Hintergrund und Rahmen erst auf halber Hoehe der Beschriftung. Die
+     Beschriftung haengt dann halb ueber der Karte statt in ihr. Abhilfe ist
+     `float`: Ein schwebendes `legend` verliert seine Sonderstellung und liegt
+     als gewoehnliche Zeile im Kasten.
+  2. Ein Flex- oder Grid-Kasten daneben — und die Auswahlpillen sind einer —
+     bildet einen eigenen Formatierungskontext und weicht dem schwebenden
+     Element seitlich aus; er klappte auf Restbreite zusammen. `clear` setzt
+     ihn darunter und gibt ihm die volle Breite zurueck.
+
+  Der Rahmen bleibt trotzdem ein innerer Schatten statt eines `border`: Ein
+  `border` traegt bei einem `fieldset` weiterhin die Kerbe fuer das `legend`
+  und risse ein Loch in Rahmen und Radius.
+*/
+.feldgruppe {
+  // `flow-root` haelt das schwebende `legend` in der Karte — sonst rechnete
+  // sie seine Hoehe nicht mit.
+  display: flow-root;
+  padding: v.$abstand-gross;
+  margin: 0 0 v.$abstand-gross;
+  border: 0;
+  border-radius: var(--radius-gross);
+  background: var(--flaeche);
+  box-shadow:
+    inset 0 0 0 var(--rahmen) var(--linie),
+    var(--schatten-karte);
+
+  legend {
+    float: left;
+    width: 100%;
+    padding: 0;
+    margin: 0 0 var(--abstand-mittel);
+    font-size: v.$groesse-h3;
+    font-weight: v.$staerke-halbfett;
+    letter-spacing: v.$laufweite-eng;
+  }
+
+  /*
+    Senkrechter Rhythmus im Kasten. Drei Abstufungen, von eng nach weit:
+
+    - Beschriftung zu ihrem Feld: eng, die beiden gehoeren zusammen
+    - Hilfetext zu dem, was er erlaeutert: eine halbe Zeile
+    - alles andere: eine ganze Zeile
+
+    Ohne diese Regel stossen Bloecke aneinander, die ihre Abstaende bisher
+    selbst mitbringen mussten — ein `.hilfetext` etwa hat gar keinen nach
+    unten, und die Meldung darunter klebte an ihm.
+  */
+  /*
+    Der Ausschluss von `legend` steht hier der Spezifitaet wegen: Ohne ihn
+    zaehlt die Regel gleich viel wie die Eigenabstaende der Bausteine — und
+    `.meldung` bringt `margin-top: 0` mit und stuende wieder auf Anschlag.
+    Im Kasten bestimmt der Kasten den Rhythmus, nicht der einzelne Baustein.
+  */
+  > * + *:not(legend) {
+    margin-top: var(--abstand);
+  }
+
+  > label + *:not(legend) {
+    margin-top: var(--abstand-winzig);
+  }
+
+  > .hilfetext {
+    margin-top: var(--abstand-klein);
+  }
+
+  /*
+    Eine Meldung im Kasten: Der Abstand nach unten kommt von der Regel oben oder
+    vom Innenabstand des Kastens, ein eigener addierte sich nur darauf. Und kein
+    Schatten — zwei Ebenen uebereinander sehen schmutzig aus; die Toenung
+    genuegt hier zur Abgrenzung.
+  */
+  > .meldung {
+    margin-bottom: 0;
+    box-shadow: none;
+  }
+
+  // Die Ueberschrift einer Meldung im Kasten steht eine Stufe tiefer als die
+  // Beschriftung des Kastens und darf deshalb nicht groesser sein als sie.
+  > .meldung h3 {
+    font-size: v.$groesse-h4;
+  }
+
+  // Der Abstand unter der Beschriftung steckt schon in ihr selbst.
+  legend + * {
+    clear: both;
+    margin-top: 0;
+  }
+}
+
+/*
+  Mehrere Feldgruppen in einer gemeinsamen Karte.
+
+  Die Wahl der Betriebsart und das, was zu ihr einzutragen ist, sind eine
+  Entscheidung und ihre Folge — kein zweites Thema. Als zwei Karten
+  untereinander lag dazwischen eine Fuge, die es sachlich nicht gibt: Die Wahl
+  sah aus wie fuer sich abgeschlossen und das Feld darunter wie der naechste
+  Schritt, obwohl es nur zu dieser einen Wahl gehoert und mit ihr wechselt.
+
+  Die Karte traegt hier einen gewoehnlichen `border` — anders als bei der
+  einzelnen Feldgruppe, die dafuer einen inneren Schatten braucht, weil ein
+  `fieldset` in seinen Rahmen die Kerbe fuer das `legend` schneidet. Diese
+  Huelle ist ein `div` und kennt das Problem nicht.
+*/
+.feldgruppen {
+  @include w.karte;
+
+  padding: v.$abstand-gross;
+  margin: 0 0 v.$abstand-gross;
+
+  // Innen keine zweite Karte: Die Gruppen geben Flaeche, Rahmen und Schatten
+  // ab und behalten nur ihren Inhalt.
+  > .feldgruppe {
+    padding: 0;
+    margin: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  // Getrennt wird durch Abstand, nicht durch einen Strich. Eine Linie waere
+  // genau die Fuge, die hier verschwinden soll.
+  > .feldgruppe + .feldgruppe {
+    margin-top: v.$abstand-gross;
+  }
+}
+
+label {
+  display: block;
+  font-weight: v.$staerke-halbfett;
+  margin-bottom: var(--abstand-winzig);
+}
+
+.hilfetext {
+  color: var(--schrift-leise);
+  font-size: v.$groesse-klein;
+  margin: var(--abstand-winzig) 0 0;
+  /*
+    Hier stehen Adressen. Eine lange URL enthaelt keine Leerzeichen und bricht
+    deshalb nicht um — bei 320 Pixeln Breite schob sie die ganze Seite auf 433
+    Pixel und erzwang seitliches Scrollen (1.4.10). Gefunden hat das die
+    Selbstpruefung.
+  */
+  overflow-wrap: anywhere;
+}
+
+/*
+  Der Hilfetext zu einem Bedienelement: hinterlegt, mit Info-Zeichen davor.
+
+  Nur hier, nicht bei jedem `.hilfetext` der Oberflaeche. Die Klasse traegt zwei
+  verschiedene Dinge: eine Erlaeuterung zu einem Feld — die ist gemeint — und
+  eine beilaeufige Ergaenzung mitten im Satz, etwa die Adresse hinter einem
+  Seitennamen. Die zweite in einen Kasten zu setzen, risse den Satz
+  auseinander. Der Kindselektor trennt beide zuverlaessig: In der Feldgruppe
+  steht die Erlaeuterung als eigener Absatz, die Ergaenzung immer eingebettet.
+
+  Flaeche und Haarlinie wie beim Codeblock — eine gefuellte Flaeche allein hebt
+  sich auf Weiss zu wenig ab (1,08:1), die Linie gibt ihr die Kante. Beides ist
+  Beiwerk und traegt keine Bedeutung; die Schrift darin haelt ihre 5,9:1.
+
+  Kein `role` und keine Beschriftung am Zeichen: Der Absatz haengt ueber
+  `aria-describedby` bereits am Feld und wird dort mitgelesen. Das Zeichen sagt
+  dem Auge, was der Bezug der Sprachausgabe ohnehin sagt.
+*/
+.feldgruppe > .hilfetext {
+  /*
+    Haengender Einzug, kein Flex-Kasten.
+
+    In einem Flex-Kasten wird jedes Kind zum eigenen Element — auch das `code`
+    mitten im Satz. Aus „Fehlt `https://`, wird es ergaenzt." wurden drei Kaesten
+    nebeneinander, mit Luecken davor und dahinter und ohne gemeinsamen
+    Zeilenumbruch. Der Satz muss ein Satz bleiben; das Zeichen steht deshalb
+    absolut und der Text laesst ihm links Platz.
+  */
+  position: relative;
+  padding: var(--abstand-klein) var(--abstand-mittel);
+  padding-left: calc(var(--abstand-mittel) + 1.05em + var(--abstand-klein));
+  border: var(--rahmen) solid var(--linie);
+  border-radius: var(--radius);
+  background: var(--flaeche-leise);
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: var(--abstand-mittel);
+    // Auf die Mitte der ersten Zeile, nicht auf die Kastenmitte: Bei drei
+    // Zeilen saesse das Zeichen sonst neben der zweiten.
+    top: calc(var(--abstand-klein) + (#{v.$zeilenhoehe}em - 1.05em) / 2);
+    width: 1.05em;
+    height: 1.05em;
+    background-color: var(--schrift-leise);
+    -webkit-mask-image: v.$info-maske;
+    mask-image: v.$info-maske;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+  }
+}
+
+input[type='text'],
+input[type='url'],
+input[type='number'],
+input[type='file'],
+textarea,
+select {
+  @include w.feld;
+}
+
+input[type='text'],
+input[type='url'],
+textarea,
+select {
+  width: 100%;
+}
+
+textarea {
+  min-height: 6rem;
+  line-height: v.$zeilenhoehe;
+  resize: vertical;
+}
+
+input[type='number'] {
+  width: 8rem;
+}
+
+/*
+  Der eigene Pfeil ersetzt den des Systems, damit das Feld dieselbe Form traegt
+  wie die uebrigen Eingaben. Als Grafik im Rahmen, nicht als Zeichen: ein
+  Zeichen wuerde von manchen Sprachausgaben mitgelesen.
+
+  Ein `select` hat kein Pseudoelement, das man maskieren koennte — die Farbe
+  muss also in die Grafik. Damit sie trotzdem nur an einer Stelle steht, wird
+  sie aus der Variablen hineingerechnet: `#5a5f6b` wird zu `%235a5f6b`.
+*/
+select {
+  $strich: '%23' + string.slice('#{v.$farbe-schrift-leise}', 2);
+
+  appearance: none;
+  padding-right: 2.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' fill='none' stroke='#{$strich}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  background-size: 0.75rem 0.5rem;
+}
+
+input[type='radio'],
+input[type='checkbox'] {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--akzent);
+  margin: 0;
+  flex-shrink: 0;
+}
+
+/*
+  Auswahl als Pillen.
+
+  Das Bedienelement selbst bleibt sichtbar — die eigene Form allein duerfte den
+  Zustand nicht tragen (1.4.1), und ein nachgebautes Feld verloere das Verhalten
+  der Tastatur. Die Pille umschliesst es nur.
+*/
+.auswahl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--abstand-klein);
+
+  label {
+    @include w.pille;
+
+    justify-content: flex-start;
+    font-weight: 400;
+    margin: 0;
+    padding: 0 1rem;
+    border: var(--rahmen) solid var(--linie-kraeftig);
+    background: var(--flaeche);
+    cursor: pointer;
+
+    &:hover {
+      background: var(--flaeche-leise);
+      border-color: var(--schrift);
+    }
+
+    // Gewaehlt: Toenung, kraeftigerer Rahmen und halbfetter Text. Drei Traeger,
+    // von denen nur einer die Farbe ist.
+    &:has(input:checked) {
+      background: var(--akzent-leise);
+      border-color: var(--akzent);
+      font-weight: v.$staerke-halbfett;
+    }
+  }
+}
+
+/*
+  Ankreuzfeld mit Beschriftung daneben. Die Beschriftung umschliesst das Feld,
+  damit auch ein Klick auf den Text wirkt — und die Trefferflaeche gross genug
+  bleibt (2.5.5).
+*/
+.ankreuzfeld {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--abstand-klein);
+  font-weight: 400;
+  margin: var(--abstand-klein) 0;
+  cursor: pointer;
+
+  input {
+    margin-top: 0.28rem;
+  }
+}

@@ -18,6 +18,24 @@
 
     .karte { border: 2px solid #767676; padding: 1rem; margin: 1rem 0; }
     button { min-width: 24px; min-height: 24px; padding: .5rem 1rem; }
+
+    /*
+      Eine stehende Kopfzeile — Gegenprobe zur Regel "dom-reihenfolge-vs-visuell"
+      (1.3.2). Ihre gerechnete Lage im Dokument wandert mit dem Scrollstand mit;
+      ohne Ausnahme fuer feste Leisten saehe jedes nach oben aus dem Bild
+      gelaufene Bedienelement wie ein Ruecksprung aus. Kein Verstoss: Quelltext
+      und sichtbare Anordnung stimmen hier ueberein.
+    */
+    header { position: sticky; top: 0; background: #ffffff; border-bottom: 2px solid #767676; padding: .75rem 1rem; }
+    header nav { display: flex; gap: 1rem; }
+
+    /*
+      Und die Pflicht, die zu einer stehenden Leiste gehoert: Der Browser haelt
+      diesen Streifen frei, wenn er etwas ins Bild holt. Ohne ihn liefe der
+      Fokus beim Tabben unter die Leiste (2.4.11) — die eigene Verifikation hat
+      genau das gemeldet, als die Leiste noch ohne diese Zeile hier stand.
+    */
+    html { scroll-padding-top: 5rem; }
   </style>
 </head>
 <body>
@@ -26,6 +44,8 @@
   <nav aria-label="Hauptnavigation">
     <a href="/" accesskey="s">Start</a>
     <a href="/mediathek" accesskey="m">Mediathek</a>
+    <a href="/kurse">Kurse</a>
+    <a href="/konto">Konto</a>
   </nav>
 </header>
 

@@ -1,0 +1,286 @@
+// ---------------------------------------------------------------------------
+// Alle Stellschrauben der Oberflaeche.
+//
+// Wer das Aussehen aendern will, aendert es hier — nicht in den Bausteinen.
+// Jede Variable traegt `!default`, laesst sich also vor dem `@use` dieser
+// Datei ueberschreiben.
+//
+// Die Farbwerte sind nicht frei waehlbar: Die Oberflaeche wird am Ende mit dem
+// eigenen Werkzeug geprueft (NF-01) und muss WCAG 2.1 AA halten. Hinter jeder
+// Schriftfarbe steht deshalb das gemessene Kontrastverhaeltnis gegen die
+// Flaeche, auf der sie steht. Wer eine Farbe austauscht, rechnet nach:
+// Fliesstext mindestens 4,5:1, Rahmen von Bedienelementen mindestens 3:1
+// (1.4.3, 1.4.11).
+// ---------------------------------------------------------------------------
+
+// ------------------------------------------------------------------ Flaechen
+
+/// Seitengrund — die Karten liegen darauf.
+$farbe-grund: #eef0f4 !default;
+/// Karten, Eingabefelder, alles Erhabene.
+$farbe-flaeche: #ffffff !default;
+/// Vertiefte Flaeche innerhalb einer Karte: Codeblock, Tabellenkopf, Chip.
+$farbe-flaeche-leise: #f5f6f8 !default;
+/// Dieselbe Flaeche unter dem Zeiger, eine Spur dunkler.
+$farbe-flaeche-schwebe: #eaecf1 !default;
+
+// ------------------------------------------------------------------- Schrift
+
+/// Fliesstext. 15,9:1 auf dem Seitengrund, 18,7:1 auf Weiss.
+$farbe-schrift: #14161a !default;
+/// Zweitrangiger Text, Hilfetexte. 6,4:1 auf Weiss, 5,6:1 auf dem Grund.
+$farbe-schrift-leise: #5a5f6b !default;
+
+// -------------------------------------------------------------------- Linien
+
+/// Dekorative Trennlinie. Traegt keine Bedeutung, darf deshalb zart sein.
+$farbe-linie: #e4e6ec !default;
+/*
+  Rahmen von Bedienelementen: zweitrangige Knoepfe, Eingabefelder.
+
+  3,6:1 auf Weiss, 3,4:1 auf der leisen Flaeche, 3,2:1 auf dem Seitengrund.
+  Damit haelt der Rahmen 1.4.11 auf jedem Grund, auf dem er vorkommt: Ein Knopf
+  steht in einer Karte, auf dem Grund oder in der Kopfzeile, und massgeblich ist
+  immer der schwaechste dieser Faelle, nicht der bequemste.
+
+  Bewusst nicht dunkler. Vorher stand hier #6b7280 mit 4,2:1 gegen den Grund —
+  das ist rund ein Drittel mehr, als 1.4.11 verlangt, und in einer Reihe aus
+  fuenf Knoepfen liest sich das als Gitter. Was 3:1 fordert, ist eine
+  Untergrenze fuer Erkennbarkeit, keine Empfehlung fuer die Gestaltung.
+*/
+$farbe-linie-kraeftig: #808795 !default;
+
+// -------------------------------------------------------------------- Akzent
+
+/// Verweise, Fokusrahmen, aktive Auswahl. 6,7:1 auf Weiss, 5,9:1 auf dem Grund.
+$farbe-akzent: #1d4ed8 !default;
+/// Dieselbe Farbe eine Stufe dunkler, fuer Schwebe- und Druckzustand.
+$farbe-akzent-dunkel: #163fae !default;
+/// Getoente Flaeche in der Akzentfarbe. Traegt dunkle Schrift.
+$farbe-akzent-leise: #e8eefc !default;
+
+// ------------------------------------------------------------------ Knoepfe
+
+/// Erstrangiger Knopf: fast schwarz, wie im Vorbild. 17,4:1 gegen Weiss.
+$farbe-knopf: #14161a !default;
+$farbe-knopf-schwebe: #343841 !default;
+$farbe-knopf-schrift: #ffffff !default;
+
+// -------------------------------------------------------------------- Status
+//
+// Die vier Status aus CLAUDE.md. Jeder traegt zusaetzlich ein Zeichen und
+// einen ausgeschriebenen Text — Farbe ist nie der einzige Traeger (1.4.1).
+
+/*
+  Je Status drei Werte:
+
+  - die kraeftige Farbe fuer Schrift, Kanten und Balken (ueber 6:1 auf Weiss)
+  - die leise Toenung als Flaeche einer Kachel (traegt dunkle Schrift)
+  - ein Mittelton als Fuellung des Statuspunktes
+
+  Der Mittelton allein truege zu wenig Kontrast (rund 2:1 auf Weiss). Sichtbar
+  wird der Punkt durch seine Kante in der kraeftigen Farbe — die liegt bei ueber
+  6:1 und haelt damit 1.4.11. Deshalb gehoeren Mittelton und Kante zusammen;
+  ein Punkt ohne Kante waere auf Weiss kaum auszumachen.
+*/
+
+/// 7,3:1 auf Weiss, 6,3:1 auf der zugehoerigen Toenung.
+$farbe-nicht-erfuellt: #a4262c !default;
+$farbe-nicht-erfuellt-leise: #fbebeb !default;
+/// 2,0:1 auf Weiss — nur als Fuellung hinter der kraeftigen Kante.
+$farbe-nicht-erfuellt-mittel: #eca4a4 !default;
+
+/// 6,3:1 auf Weiss, 6,3:1 auf der zugehoerigen Toenung.
+$farbe-pruefung-erforderlich: #7a5200 !default;
+$farbe-pruefung-erforderlich-leise: #fdf2e0 !default;
+/// 1,9:1 auf Weiss — nur als Fuellung hinter der kraeftigen Kante.
+$farbe-pruefung-erforderlich-mittel: #e6b45f !default;
+
+/// 6,1:1 auf Weiss, 5,8:1 auf der zugehoerigen Toenung.
+$farbe-erfuellt: #1a6b3c !default;
+$farbe-erfuellt-leise: #e6f4ec !default;
+/// 2,0:1 auf Weiss — nur als Fuellung hinter der kraeftigen Kante.
+$farbe-erfuellt-mittel: #7fc79c !default;
+
+/*
+  6,3:1 auf Weiss.
+
+  Als einziger der vier Status ohne eigene Toenung: „nicht anwendbar" heisst,
+  dass hier nichts zu tun ist. Eine graue Flaeche saehe dem Seitengrund zum
+  Verwechseln aehnlich und liesse die Kachel wie ausgegraut wirken — sie steht
+  deshalb auf Weiss wie jede andere Karte.
+*/
+$farbe-nicht-anwendbar: #5b6068 !default;
+/// 1,9:1 auf Weiss — nur als Fuellung hinter der kraeftigen Kante.
+$farbe-nicht-anwendbar-mittel: #b9bfc9 !default;
+
+// ------------------------------------------------------------------ Typografie
+
+$schrift-familie:
+  -apple-system,
+  BlinkMacSystemFont,
+  'Segoe UI',
+  system-ui,
+  Roboto,
+  'Helvetica Neue',
+  Arial,
+  sans-serif !default;
+$schrift-familie-fest: ui-monospace, 'SF Mono', Menlo, Consolas, monospace !default;
+
+/// Keine feste Pixelgroesse: die Einstellung des Browsers muss wirken (1.4.4).
+$schrift-grundgroesse: 100% !default;
+$zeilenhoehe: 1.6 !default;
+$zeilenhoehe-eng: 1.25 !default;
+
+// Ueberschriften wachsen mit dem Fenster, bleiben aber in rem verankert.
+$groesse-h1: clamp(1.75rem, 1.35rem + 1.6vw, 2.3rem) !default;
+$groesse-h2: clamp(1.3rem, 1.15rem + 0.6vw, 1.6rem) !default;
+$groesse-h3: 1.1rem !default;
+$groesse-h4: 1rem !default;
+/*
+  Der Name des Werkzeugs in der Kopfzeile.
+
+  Waechst mit dem Fenster wie die uebrigen Ueberschriften — und aus demselben
+  Grund wie sie nicht darueber hinaus: Der Name steht in einer Zeile neben den
+  drei Wegen und darf nicht umbrechen. Bei 320 Pixeln Breite passte er als
+  fester Wert nicht mehr daneben, die Leiste wurde 325 Pixel breit und die
+  ganze Seite musste seitlich gescrollt werden (1.4.10). Der untere Wert ist
+  deshalb kein Geschmacksurteil, sondern gemessen.
+*/
+$groesse-marke: clamp(1.15rem, 1.05rem + 0.5vw, 1.35rem) !default;
+/// Die Ueberschrift einer Kachel steht eine Stufe ueber der gewoehnlichen
+/// Zwischenueberschrift: Sie traegt einen ganzen Abschnitt und muss sich vom
+/// Text darunter absetzen, ohne einer `h2` in die Quere zu kommen.
+$groesse-kachel-titel: 1.35rem !default;
+$groesse-klein: 0.9rem !default;
+$groesse-winzig: 0.8rem !default;
+$groesse-zahl: 2.25rem !default;
+
+/// Enger Satz macht grosse Ueberschriften ruhiger.
+$laufweite-eng: -0.02em !default;
+/// Weiter Satz fuer Kleinversalien in Tabellenkoepfen.
+$laufweite-weit: 0.06em !default;
+
+$staerke-halbfett: 600 !default;
+$staerke-fett: 700 !default;
+
+// ------------------------------------------------------------------- Abstaende
+
+$abstand-winzig: 0.25rem !default;
+$abstand-klein: 0.5rem !default;
+$abstand-mittel: 0.75rem !default;
+$abstand: 1rem !default;
+$abstand-gross: 1.5rem !default;
+$abstand-riesig: 2.5rem !default;
+
+// --------------------------------------------------------------------- Formen
+
+$radius-klein: 0.5rem !default;
+$radius: 0.75rem !default;
+$radius-gross: 1.25rem !default;
+/// Pillenform fuer Knoepfe und Chips.
+$radius-pille: 999px !default;
+
+$rahmenstaerke: 1px !default;
+
+/*
+  Der Winkel („Chevron") als Maske — er zeigt an, dass sich etwas aufklappt.
+
+  Die Form liegt mittig im Kasten: Der Strich ist zwei Einheiten stark, laeuft
+  von y = 1,5 nach y = 6,5 und reicht mit den runden Enden von 0,5 bis 7,5 —
+  genau mittig in einem Kasten der Hoehe 8. Deshalb bleibt der Winkel zentriert,
+  gleich wie herum er gedreht ist. Als Maske eingebunden, damit die Farbe aus
+  einer Variablen kommt und nicht in der Grafik steckt.
+*/
+$winkel-maske: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !default;
+
+/*
+  Das Info-Zeichen vor einem Hilfetext — Kreis, Punkt, Strich.
+
+  Als Maske und nicht als Textzeichen: Ein „i" oder ein Emoji im Inhalt stuende
+  im Zugaenglichkeitsbaum und wuerde vorgelesen — vor jedem Hilfetext einmal
+  „Information", ohne dass das jemandem etwas sagt. Eine Maske ist reine Form;
+  die Sprachausgabe liest den Text, wie er dasteht. Die Farbe kommt als
+  `background-color` und damit weiterhin aus einer Variablen.
+*/
+$info-maske: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7.1' fill='none' stroke='%23000' stroke-width='1.6'/%3E%3Ccircle cx='8' cy='4.7' r='1.05'/%3E%3Crect x='7.05' y='6.9' width='1.9' height='5.3' rx='0.95'/%3E%3C/svg%3E") !default;
+
+/*
+  Weiche, sehr flache Schatten — Tiefe entsteht durch Flaeche, nicht durch
+  Kontrast. Jeder besteht aus zwei Lagen: einer harten, fast unsichtbaren
+  direkt an der Kante, und einer weiten, die den Abstand zum Grund andeutet.
+  Beide bewusst zurueckhaltend: Eine Karte soll sich abheben, nicht schweben.
+*/
+$schatten-karte: 0 1px 2px rgb(16 22 34 / 3%), 0 8px 18px -14px rgb(16 22 34 / 14%) !default;
+
+/// Fuer das Aufklappmenue und den Hinweis am Statuspunkt — sie liegen ueber
+/// dem Inhalt und brauchen deshalb eine Spur mehr als eine Karte.
+$schatten-blase: 0 8px 16px rgb(16 22 34 / 18%) !default;
+
+/*
+  Der Schatten unter der stehenden Kopfzeile.
+
+  Er faellt nur nach unten und weiter als der einer Karte: Die Leiste ist keine
+  Flaeche auf dem Grund, sondern eine Kante, unter der der Inhalt
+  hindurchlaeuft — man soll sehen, dass etwas darunter durchgeht, ohne dass
+  eine harte Linie entsteht. Bewusst schwach: Der Rahmen an der Unterkante
+  bleibt die eigentliche Grenze, der Schatten deutet nur die Tiefe an.
+*/
+$schatten-kopfzeile: 0 1px 2px rgb(16 22 34 / 4%), 0 6px 14px -8px rgb(16 22 34 / 12%) !default;
+
+// --------------------------------------------------------------------- Aufbau
+
+$seitenbreite: 72rem !default;
+$seitenrand: clamp(1rem, 0.5rem + 2vw, 2.5rem) !default;
+
+/*
+  Die Flaeche der Kopfzeile: weiss, aber nicht ganz deckend. Was darunter
+  hindurchscrollt, scheint verschwommen durch. Der Weissanteil ist hoch genug,
+  dass die Schrift darauf ihre 15:1 behaelt, gleich was darunter liegt.
+*/
+$farbe-kopfzeile: rgb(255 255 255 / 82%) !default;
+
+/// Ab hier passen die drei Wege nebeneinander; darunter ziehen sie ins Menue.
+$bruch-kopf: 52rem !default;
+
+/// Mindestgroesse jeder Trefferflaeche (2.5.8 verlangt 24 Pixel).
+$trefferflaeche: 2.75rem !default;
+$trefferflaeche-eng: 2.25rem !default;
+
+/// Luft ober- und unterhalb der Kopfzeile.
+$kopf-polsterung: $abstand !default;
+
+/*
+  Hoehe der stehenden Kopfzeile.
+
+  Gerechnet statt gesetzt: Was die Leiste hoch macht, sind die Knoepfe darin und
+  die Polsterung darum. Ein eigener Wert daneben waere eine zweite Behauptung
+  ueber dieselbe Groesse — und ginge beim naechsten Griff an die Polsterung
+  stillschweigend daneben.
+
+  Sie bestimmt zugleich, wie weit ein Sprungziel vom oberen Rand freigehalten
+  wird (`scroll-padding-top`); liefe sie der wirklichen Hoehe hinterher, laege
+  das angesprungene Ziel unter der Leiste (2.4.11).
+*/
+$kopf-hoehe: $trefferflaeche + 2 * $kopf-polsterung !default;
+
+/*
+  Hoehe der kleinen Marken in einer Zeile.
+
+  Level-Marke und Statuspunkt tragen dieselbe, damit sie nebeneinander auf einer
+  Linie stehen. Eine gemeinsame Groesse statt zweier gleich gewaehlter Werte:
+  Sonst laeuft das eine mit der naechsten Schriftaenderung vom anderen weg.
+*/
+$hoehe-marke: 1.6rem !default;
+
+// ----------------------------------------------------------------- Bewegung
+
+/// Kurz und unauffaellig; bei `prefers-reduced-motion` wird alles abgeschaltet.
+$uebergang: 140ms ease !default;
+
+// -------------------------------------------------------------------- Fokus
+//
+// Der Fokus ist nie unsichtbar (2.4.7). Staerke und Abstand stehen hier, damit
+// sie an einer Stelle geaendert werden koennen.
+$fokus-staerke: 3px !default;
+$fokus-abstand: 2px !default;

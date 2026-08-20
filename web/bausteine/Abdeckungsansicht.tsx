@@ -15,12 +15,15 @@
 import { useEffect, useState } from 'react';
 
 import { ApiFehler, ladeAbdeckung } from '../api';
-import type { Abdeckungsmatrix, Einstufung, Kriterium } from '../typen';
+import type { Abdeckungsmatrix, Einstufung, Kriterium, Rueckziel } from '../typen';
+import { RUECKZIEL_TEXT } from '../typen';
 
 interface Eigenschaften {
   /** Der geladene Katalog liefert die Titel. Fehlt er, stehen nur die Kennungen. */
   kriterien: Kriterium[];
   beiZurueck: () => void;
+  /** Wohin `beiZurueck` fuehrt. Steuert allein die Beschriftung. */
+  ziel: Rueckziel;
 }
 
 const EINSTUFUNG_TEXT: Record<Einstufung, string> = {
@@ -63,7 +66,7 @@ const GRUPPENTEXT: Record<Einstufung, string> = {
     'eines Mangels, nie dessen Abwesenheit.',
 };
 
-export function Abdeckungsansicht({ kriterien, beiZurueck }: Eigenschaften): React.ReactElement {
+export function Abdeckungsansicht({ kriterien, beiZurueck, ziel }: Eigenschaften): React.ReactElement {
   const [matrix, setzeMatrix] = useState<Abdeckungsmatrix | null>(null);
   const [hinweis, setzeHinweis] = useState<string | null>(null);
   const [fehler, setzeFehler] = useState<string | null>(null);
@@ -115,7 +118,7 @@ export function Abdeckungsansicht({ kriterien, beiZurueck }: Eigenschaften): Rea
         </div>
         <div className="knopfreihe">
           <button type="button" onClick={beiZurueck}>
-            Zurück
+            {RUECKZIEL_TEXT[ziel]}
           </button>
         </div>
       </>
@@ -171,7 +174,7 @@ export function Abdeckungsansicht({ kriterien, beiZurueck }: Eigenschaften): Rea
         if (gruppe.length === 0) return null;
 
         return (
-          <section key={einstufung}>
+          <section key={einstufung} className="kachel">
             <h3>
               {GRUPPENTITEL[einstufung]} ({gruppe.length})
             </h3>
@@ -217,28 +220,30 @@ export function Abdeckungsansicht({ kriterien, beiZurueck }: Eigenschaften): Rea
         );
       })}
 
-      <h3>Woran gemessen wurde</h3>
-      <ul className="probenliste">
-        {matrix.referenzseiten.map((seite) => (
-          <li key={seite.datei}>
-            <strong>{seite.datei}</strong>
-            {seite.zweck ? ` — ${seite.zweck}` : ''}{' '}
-            <span className="hilfetext">
-              ({seite.sollverstoesse === 0 ? 'befundfrei erwartet' : `${seite.sollverstoesse} eingebaute Verstöße`})
-            </span>
-          </li>
-        ))}
-      </ul>
+      <section className="kachel">
+        <h3>Woran gemessen wurde</h3>
+        <p className="hilfetext">
+          Die Einstufung „{EINSTUFUNG_TEXT.belegt}" bezieht sich immer auf die eingebauten Verstöße dieser Seiten. Ein
+          Werkzeug, das nur auf eigens gebauten Testseiten funktioniert, wäre wertlos — deshalb steht neben jeder
+          mangelhaften Seite eine inhaltsgleiche saubere Fassung, an der Fehlalarme sichtbar werden.
+        </p>
 
-      <p className="hilfetext">
-        Die Einstufung „{EINSTUFUNG_TEXT.belegt}" bezieht sich immer auf die eingebauten Verstöße dieser Seiten. Ein
-        Werkzeug, das nur auf eigens gebauten Testseiten funktioniert, wäre wertlos — deshalb steht neben jeder
-        mangelhaften Seite eine inhaltsgleiche saubere Fassung, an der Fehlalarme sichtbar werden.
-      </p>
+        <ul className="probenliste">
+          {matrix.referenzseiten.map((seite) => (
+            <li key={seite.datei}>
+              <strong>{seite.datei}</strong>
+              {seite.zweck ? ` — ${seite.zweck}` : ''}{' '}
+              <span className="hilfetext">
+                ({seite.sollverstoesse === 0 ? 'befundfrei erwartet' : `${seite.sollverstoesse} eingebaute Verstöße`})
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <div className="knopfreihe">
         <button type="button" onClick={beiZurueck}>
-          Zurück
+          {RUECKZIEL_TEXT[ziel]}
         </button>
       </div>
     </>

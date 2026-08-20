@@ -1,0 +1,77 @@
+@use 'variablen' as v;
+@use 'werkzeug' as w;
+
+// ---------------------------------------------------------------------------
+// Die gefuehrte manuelle Pruefliste.
+//
+// Eine offene Frage ist eine Karte mit gelber Kante, eine beantwortete eine
+// ruhige graue. Was der Unterschied bedeutet, steht in beiden als Text.
+// ---------------------------------------------------------------------------
+
+.fragenliste {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: v.$abstand;
+}
+
+.frage {
+  @include w.karte;
+
+  border-left: 4px solid var(--pruefung-erforderlich);
+  padding: v.$abstand-gross;
+
+  h4 {
+    margin: 0 0 var(--abstand-klein);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--abstand-klein);
+  }
+
+  .frage__text {
+    margin: 0 0 var(--abstand-mittel);
+    font-size: 1.05rem;
+  }
+
+  // Die Notiz sitzt in der Karte — flach, damit nicht zwei Schatten
+  // uebereinanderliegen.
+  .feldgruppe {
+    @include w.karte-flach;
+
+    box-shadow: none;
+    background: var(--flaeche-leise);
+    padding: var(--abstand-mittel);
+    margin: v.$abstand 0;
+  }
+
+  .knopfreihe {
+    margin-top: v.$abstand;
+  }
+}
+
+.frage--beantwortet {
+  border-left-color: var(--linie-kraeftig);
+  background: var(--flaeche-leise);
+  box-shadow: none;
+}
+
+/// Die Legende der drei Antwortmoeglichkeiten ueber der Liste.
+.antwortlegende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--abstand-klein) v.$abstand-gross;
+  margin: 0 0 v.$abstand;
+  font-size: v.$groesse-klein;
+  color: var(--schrift-leise);
+
+  dt {
+    font-weight: v.$staerke-halbfett;
+    color: var(--schrift);
+  }
+
+  dd {
+    margin: 0;
+  }
+}

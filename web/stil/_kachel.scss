@@ -1,0 +1,55 @@
+@use 'variablen' as v;
+@use 'werkzeug' as w;
+
+// ---------------------------------------------------------------------------
+// Die Kachel: ein ganzer Abschnitt auf einer weissen Flaeche.
+//
+// Ueberschrift, Einleitungssatz und Inhalt gehoeren zusammen und sollen auch so
+// aussehen. Lagen sie frei auf dem Seitengrund, trennte sie nichts vom
+// naechsten Abschnitt ausser Weissraum — bei fuenf gleich gebauten Gruppen
+// hintereinander ist dann nicht mehr zu sehen, wo eine endet und die naechste
+// beginnt. Die Flaeche uebernimmt diese Grenze; die Ueberschrift muss sie nicht
+// allein tragen.
+// ---------------------------------------------------------------------------
+
+.kachel {
+  @include w.karte;
+
+  padding: v.$abstand-gross;
+  margin: 0 0 v.$abstand-gross;
+
+  /*
+    Die Ueberschrift der Kachel steht ueber der gewoehnlichen `h3`-Groesse.
+    Nur der Schriftgrad wechselt, nicht die Ebene: Was im Markup eine `h3` ist,
+    bleibt eine — die Reihenfolge der Ueberschriften darf sich durch Gestaltung
+    nicht verschieben (1.3.1).
+  */
+  > h3 {
+    font-size: v.$groesse-kachel-titel;
+    margin: 0 0 v.$abstand-klein;
+  }
+
+  /*
+    Zwischen Einleitungssatz und Inhalt steht mehr Luft als zwischen zwei
+    Absaetzen. Der Satz erklaert, was die Tabelle darunter zeigt — er gehoert
+    dazu, aber er ist nicht ihre erste Zeile.
+  */
+  > .hilfetext {
+    margin: 0 0 v.$abstand-gross;
+    max-width: 62rem;
+  }
+
+  > .hilfetext:last-child {
+    margin-bottom: 0;
+  }
+
+  /*
+    Karte in der Karte: gleiche Form, kein Schatten. Zwei Schatten uebereinander
+    sehen schmutzig aus — der Rahmen allein grenzt die Tabelle hier genug ab.
+  */
+  > .tabellenrahmen {
+    box-shadow: none;
+    border-radius: var(--radius);
+    margin: 0;
+  }
+}

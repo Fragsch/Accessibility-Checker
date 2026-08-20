@@ -1,0 +1,90 @@
+@use 'variablen' as v;
+@use 'werkzeug' as w;
+
+// ---------------------------------------------------------------------------
+// Das Info-Zeichen neben einer Ueberschrift und die Blase, die es aufklappt.
+// ---------------------------------------------------------------------------
+
+.erklaerung {
+  display: inline-flex;
+}
+
+/*
+  Der Schalter: ein Kreis in der Groesse der kleinen Marken.
+
+  Er setzt die Grundform des Knopfes zurueck — die ist eine fast schwarze Pille
+  und waere hier eine zweite Hauptsache neben der Ueberschrift. Bleiben muss die
+  Trefferflaeche: 1,6 rem sind 25,6 Pixel und liegen damit ueber den geforderten
+  24 (2.5.8). Wer die Groesse aendert, rechnet nach.
+*/
+.erklaerung__schalter {
+  min-width: var(--hoehe-marke);
+  min-height: var(--hoehe-marke);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+
+  &::before {
+    content: '';
+    width: var(--hoehe-marke);
+    height: var(--hoehe-marke);
+    background-color: var(--schrift-leise);
+    -webkit-mask-image: v.$info-maske;
+    mask-image: v.$info-maske;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    transition: background-color var(--uebergang);
+  }
+
+  &:hover:not(:disabled),
+  &[aria-expanded='true'] {
+    background: none;
+
+    &::before {
+      background-color: var(--akzent);
+    }
+  }
+
+  // Der Knopf hat keinen Text; das Eindruecken der Grundform wuerde nur das
+  // Zeichen verschieben und saehe nach einem Wackler aus.
+  &:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/*
+  Die Blase.
+
+  Sie haengt unter der Ueberschriftszeile und beginnt an deren linker Kante.
+  `width: min(...)` haelt sie auf schmalen Fenstern in der Spalte — eine feste
+  Breite schoebe dort die ganze Seite auf und erzwaenge seitliches Scrollen
+  (1.4.10).
+
+  `z-index: 5` reicht ueber den Inhalt, aber nicht ueber die stehende Kopfzeile
+  (20): Wer bei offener Blase scrollt, soll die Leiste behalten.
+*/
+.erklaerung__blase {
+  @include w.karte-flach;
+
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 5;
+  width: min(34rem, 100%);
+  margin-top: var(--abstand-klein);
+  padding: v.$abstand-mittel v.$abstand;
+  box-shadow: var(--schatten-blase);
+
+  // Die Blase steht unter einer Ueberschrift und erbt sonst deren Schriftgrad,
+  // Laufweite und Fettung — sie ist aber Fliesstext.
+  font-size: v.$groesse-klein;
+  font-weight: 400;
+  letter-spacing: normal;
+  line-height: v.$zeilenhoehe;
+  color: var(--schrift);
+}

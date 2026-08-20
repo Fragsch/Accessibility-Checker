@@ -156,6 +156,29 @@ export interface Auftrag {
   anmeldung?: { url: string };
 }
 
+/**
+ * Wohin ein „Zurueck" aus einer Nebenansicht fuehrt.
+ *
+ * Nebenansichten sind die, die man von ueberall erreicht — die bisherigen
+ * Pruefungen und die Abdeckungsmatrix. Sie sind Abstecher: Wer sie verlaesst,
+ * will an sein Ergebnis zurueck, solange eines offen ist.
+ */
+export type Rueckziel = 'ergebnis' | 'auftrag';
+
+/*
+  Die Beschriftung des Rueckwegs steht an einer Stelle, damit zwei Ansichten
+  nicht verschiedene Worte fuer denselben Weg finden (3.2.4).
+
+  Ein Knopf muss sagen, wohin er fuehrt (2.4.6) — und hier auch, wohin er
+  *nicht* fuehrt: Die Kopfzeile traegt mit „Neue Pruefung" einen eigenen Weg
+  zum leeren Formular, und der raeumt das Ergebnis weg. Solange eines offen
+  ist, darf kein zweiter Knopf dasselbe Ziel versprechen.
+*/
+export const RUECKZIEL_TEXT: Record<Rueckziel, string> = {
+  ergebnis: 'Zurück zum Ergebnis',
+  auftrag: 'Zurück zum Prüfauftrag',
+};
+
 export const BETRIEBSART_TEXT: Record<Betriebsart, string> = {
   einzelseite: 'Einzelseite',
   profil: 'Prüfprofil',
@@ -179,11 +202,18 @@ export const STATUS_REIHENFOLGE: Status[] = [
   'nicht_anwendbar',
 ];
 
+/**
+ * Die vier Status als Anzeigetext.
+ *
+ * Gross geschrieben, weil sie ueberall als Beschriftung stehen — auf einer
+ * Kachel, an einer Kriterienzeile, an einem Ankreuzfeld — und nirgends mitten
+ * im Satz.
+ */
 export const STATUS_TEXT: Record<Status, string> = {
-  nicht_erfuellt: 'nicht erfüllt',
+  nicht_erfuellt: 'Nicht erfüllt',
   pruefung_erforderlich: 'Prüfung erforderlich',
-  erfuellt: 'erfüllt',
-  nicht_anwendbar: 'nicht anwendbar',
+  erfuellt: 'Erfüllt',
+  nicht_anwendbar: 'Nicht anwendbar',
 };
 
 /**
