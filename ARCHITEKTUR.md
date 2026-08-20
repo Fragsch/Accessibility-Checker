@@ -449,7 +449,7 @@ Alle Engines erfüllen denselben Vertrag (`src/stufe1/engine.ts`): Sie melden **
 | `ocr` | tesseract.js | 1 | 1.4.5 — **nur als Hinweis**, nie als belegter Verstoß |
 | `eigen` | — | 25 | Verhalten: Tastatur, Viewports, Formulare, Vergleiche |
 
-**`ocr` belegt nichts.** 1.4.5 nimmt Bilder aus, bei denen die bildliche Darstellung *wesentlich* ist — Logos, Wortmarken, Bildschirmfotos. Ob ein Bild darunter fällt, entscheidet sich an seinem Zweck, und den sieht eine Texterkennung nicht; sie sieht Buchstaben. Ein erkanntes Bild eines Textes erzeugt deshalb einen Hinweis und damit `pruefung_erforderlich`, nie `nicht_erfuellt`. Dieselbe Regel wie bei der Sprachmodell-Stufe: Was das Werkzeug nicht belegen kann, legt es vor.
+**`ocr` belegt nichts.** 1.4.5 nimmt Bilder aus, bei denen die bildliche Darstellung *wesentlich* ist — Logos, Wortmarken, Bildschirmfotos. Ob ein Bild darunter fällt, entscheidet sich an seinem Zweck, und den sieht eine Texterkennung nicht; sie sieht Buchstaben. Ein erkanntes Bild eines Textes erzeugt deshalb einen Hinweis und damit `pruefung_erforderlich`, nie `nicht_erfuellt`. Dieselbe Regel wie bei der Sprachmodell-Stufe: Was das Werkzeug nicht belegen kann, legt es vor. Und ein gutes `alt`-Attribut entbindet nicht: Ob der Text der Sprachausgabe zur Verfügung steht, ist 1.1.1 — 1.4.5 verlangt, dass Text *Text ist*.
 
 **Die Reihenfolge ist bindend.** Zuerst laufen die Engines, die nur lesen; `eigen` kommt zuletzt. Der Tastatur-Durchlauf verschiebt den Fokus, die Formularprüfung löst Zustandsänderungen aus, die Darstellungsprüfung verändert den Viewport. Wer danach misst, prüft eine Seite, die das Werkzeug selbst umgebaut hat.
 

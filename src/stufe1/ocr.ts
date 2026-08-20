@@ -14,6 +14,18 @@
  * Die Pruefung ist die langsamste der Stufe 1. Sie ueberspringt deshalb alles,
  * was von vornherein nicht in Frage kommt: Symbole, Miniaturbilder, Grafiken
  * mit leerem alt-Attribut.
+ *
+ * **Ein gutes alt-Attribut entbindet nicht.** Bis zuletzt schwieg die Engine,
+ * wenn der erkannte Text schon im alt stand — mit der Begruendung, er sei dann
+ * ja zugaenglich. Das fuehrt das falsche Kriterium an: Ob der Text der
+ * Sprachausgabe zur Verfuegung steht, ist 1.1.1. 1.4.5 verlangt, dass Text
+ * *Text ist* — vergroesserbar, umfaerbbar, durchsuchbar. Ein perfektes alt
+ * erfuellt das gerade nicht.
+ *
+ * Solange ein erkanntes Bild eines Textes ein belegter Verstoss war, hatte die
+ * Zurueckhaltung ihren Sinn. Seit sie einen Hinweis erzeugt, kostet sie einen
+ * Blick eines Menschen — und der soll ueber Logos, Wortmarken und
+ * Bildschirmfotos ohnehin entscheiden.
  */
 
 import fs from 'node:fs';
@@ -137,11 +149,6 @@ export const ocrEngine: PruefEngine = {
 
         if (data.confidence < MINDESTSICHERHEIT) continue;
         if (erkannt.replace(/[^\p{L}\p{N}]/gu, '').length < MINDESTZEICHEN) continue;
-
-        // Steht derselbe Text schon im alt-Attribut, ist er zugaenglich — das
-        // Kriterium verlangt trotzdem echten Text, aber der Fall ist milder und
-        // haeufig zulaessig (Logos, Wortmarken). Deshalb kein Befund.
-        if (kandidat.alt && aehnlich(kandidat.alt, erkannt)) continue;
 
         /*
           Ein Hinweis, kein Befund — und das ist keine Nachlaessigkeit.
@@ -272,13 +279,4 @@ async function findeBilder(kontext: EngineKontext): Promise<Bildkandidat[]> {
       { mindestbreite: MINDESTBREITE, mindesthoehe: MINDESTHOEHE },
     )
     .catch(() => []);
-}
-
-/** Grober Vergleich zweier Texte — genuegt, um „steht schon im alt" zu erkennen. */
-function aehnlich(a: string, b: string): boolean {
-  const saeubere = (t: string): string => t.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
-  const x = saeubere(a);
-  const y = saeubere(b);
-  if (!x || !y) return false;
-  return x.includes(y) || y.includes(x);
 }

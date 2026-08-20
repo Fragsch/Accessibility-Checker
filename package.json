@@ -22,6 +22,7 @@
     "pretest": "node --run build:node",
     "test": "node --run katalog:pruefen && node --run axe:abgleich && node --run typen:pruefen && node --test \"dist/test/*.test.js\"",
     "katalog:pruefen": "node werkzeuge/katalog-pruefen.mjs",
+    "referenzbilder": "node werkzeuge/referenzbilder.mjs",
     "axe:abgleich": "node werkzeuge/axe-abgleich.mjs",
     "prepruefe:selbst": "node --run build",
     "pruefe:selbst": "node dist/werkzeuge/selbstpruefung.js",

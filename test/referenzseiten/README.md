@@ -18,6 +18,20 @@ Jede mangelhafte Seite hat eine inhaltsgleiche saubere Fassung daneben. Das mach
 
 `soll.json` hält fest, was das Werkzeug je Seite finden muss.
 
+## Die Bilddateien
+
+`team.jpg`, `trennlinie.png`, `aktion.png` und `captcha.png` sind erzeugt, nicht gezeichnet:
+
+```bash
+npm run referenzbilder
+```
+
+Was auf ihnen steht, steht als Text in `werkzeuge/referenzbilder.mjs` — nachlesbar, statt in einer Binärdatei zu verschwinden.
+
+**Sie fehlten lange, und das ist teuer geworden.** Die Seiten verwiesen von Anfang an auf sie, vorhanden war keine. Für die beiden Testfälle zu 1.1.1 fiel das nicht auf: Ob ein `alt` fehlt oder den Dateinamen wiederholt, entscheidet sich am Markup. Für 1.4.5 schon — die Texterkennung lief nie. Sie meldete stattdessen „Bild konnte nicht geladen werden", und weil auch dieser Hinweis auf 1.4.5 zeigt, stand das Kriterium als „zur Prüfung vorgelegt" da und der Testfall galt als bestanden. Er hätte ebenso bestanden, wäre die Texterkennung vollständig ausgefallen.
+
+Der Text auf `aktion.png` lautet deshalb bewusst **nicht** wie sein `alt`-Attribut in `mangelhaft.html`: Das Bild zeigt „20 %", das `alt` schreibt „20 Prozent". Wären beide wortgleich, prüfte der Testfall den Vergleich zweier Zeichenketten und nicht die Erkennung.
+
 **Warum vier Seiten für sich stehen.** Die Tastaturfalle bricht den Tab-Durchlauf ab; was dahinter liegt, erreicht keine Prüfung mehr. Der Fokuswechsel wechselt beim bloßen Durchtabben den Zusammenhang; jede weitere Prüfung fände einen Zustand vor, den niemand absichtlich herbeigeführt hat. Die beiden Formularseiten hängen daran, dass genau ein Formular leer abgeschickt wird — geprüft wird immer das erste. Diese Verstöße auf der breiten Seite unterzubringen hieße, deren Messung zu verfälschen.
 
 **Warum es eine Gruppe gibt.** Drei Kriterien tragen im Katalog `nurMehrseitig: true`. An einer Einzelseite sind sie zu Recht `nicht_anwendbar`; ihr Befund entsteht erst aus dem Vergleich mehrerer Seiten. Eine Gruppe wird deshalb als **ein** Scan über alle ihre Seiten geprüft, und gemessen wird die Projektebene.
