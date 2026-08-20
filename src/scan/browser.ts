@@ -203,3 +203,21 @@ export class Browser {
 export async function screenshot(seite: Page): Promise<Buffer> {
   return seite.screenshot({ fullPage: true, type: 'png' });
 }
+
+/**
+ * Abbild der Seite so, wie die Engines sie vorfinden.
+ *
+ * **Nur der sichtbare Ausschnitt, nicht die ganze Seite.** Wonach hier gesucht
+ * wird, liegt oben: der Cookie-Hinweis, die Altersabfrage, die Anmeldemaske,
+ * die Fehlerseite. Ein Bild der ganzen Seite waere um ein Vielfaches groesser
+ * und zeigte die entscheidende Stelle kleiner. Dazu kommt, dass ein
+ * uebergelegter Hinweis das Blaettern haeufig sperrt — ein `fullPage`-Bild
+ * enthaelt dann ohnehin nur den ersten Ausschnitt, aber mit Bruchstellen.
+ *
+ * Als PNG und nicht als JPEG: Auf dem Bild soll man den Text des Hinweises
+ * lesen koennen. JPEG macht aus kleiner Schrift genau dort Matsch, wo es
+ * darauf ankommt.
+ */
+export async function seitenabbild(seite: Page): Promise<Buffer> {
+  return seite.screenshot({ fullPage: false, type: 'png' });
+}

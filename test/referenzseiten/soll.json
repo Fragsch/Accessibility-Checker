@@ -19,7 +19,7 @@
         { "kriterium": "1.4.2", "stufe": "auto", "stelle": "video[autoplay]", "was": "Ton startet selbsttätig" },
         { "kriterium": "1.4.3", "stufe": "auto", "stelle": ".schwach", "was": "Kontrast 2,85:1 statt 4,5:1" },
         { "kriterium": "1.4.4", "stufe": "auto", "stelle": "meta[name='viewport']", "was": "user-scalable=no" },
-        { "kriterium": "1.4.5", "stufe": "auto", "stelle": "img[src='aktion.png']", "was": "Text als Bild" },
+        { "kriterium": "1.4.5", "stufe": "manuell", "stelle": "img[src='aktion.png']", "was": "Text als Bild — ob die bildliche Darstellung wesentlich ist, entscheidet der Mensch; die Automatik legt vor" },
         { "kriterium": "1.4.10", "stufe": "auto", "stelle": ".breit", "was": "feste Breite 1200px erzwingt seitliches Scrollen bei 320px" },
         { "kriterium": "1.4.11", "stufe": "auto", "stelle": "input", "was": "Feldrahmen 1,3:1 statt 3:1" },
         { "kriterium": "1.4.12", "stufe": "auto", "stelle": ".eng", "was": "feste Höhe schneidet bei erhöhtem Zeilenabstand ab" },

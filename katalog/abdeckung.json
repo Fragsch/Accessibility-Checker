@@ -99,8 +99,8 @@
     "uebersehen": 0,
     "fehlalarme": 0,
     "erkennungsquote": 0.809,
-    "erkennungsquoteAuto": 0.86,
-    "testfaelleAuto": 43,
+    "erkennungsquoteAuto": 0.881,
+    "testfaelleAuto": 42,
     "fehlalarmquote": 0
   },
   "kriterien": {

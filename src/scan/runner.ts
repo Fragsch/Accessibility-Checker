@@ -29,7 +29,7 @@ import type {
 } from '../typen/index.js';
 import { Katalog } from '../katalog/laden.js';
 import { Protokoll, stillesProtokoll } from '../protokoll.js';
-import { Browser, SeitenLadeFehler, VIEWPORT_SCHREIBTISCH } from './browser.js';
+import { Browser, SeitenLadeFehler, VIEWPORT_SCHREIBTISCH, seitenabbild } from './browser.js';
 import type { Viewport } from './browser.js';
 import { ermittleAnwendbarkeit } from './anwendbarkeit.js';
 import type { AnwendbarkeitErgebnis } from './anwendbarkeit.js';
@@ -120,6 +120,13 @@ export interface FortschrittMeldung {
   gesamt: number;
   text?: string;
   ergebnis?: SeitenErgebnis;
+  /**
+   * Bildschirmfoto der Seite. Wandert nur bis zur Scanverwaltung, die es in
+   * die Datenbank schreibt — ueber die Ereignisleitung geht es nie: Ein Bild
+   * in einer Meldung, die im Sekundentakt abgefragt wird, waere ein
+   * Vielfaches der uebrigen Nutzlast.
+   */
+  abbild?: Buffer;
 }
 
 /** Fuehrt einen vollstaendigen Scan aus. */
@@ -166,7 +173,7 @@ export async function fuehreScanAus(auftrag: ScanAuftrag): Promise<ScanErgebnis>
         gesamt: auftrag.seiten.length,
       });
 
-      const { ergebnis, merkmale: seitenMerkmale } = await pruefeSeite({
+      const { ergebnis, merkmale: seitenMerkmale, abbild } = await pruefeSeite({
         browser,
         seitenAuftrag,
         kriterien,
@@ -206,6 +213,7 @@ export async function fuehreScanAus(auftrag: ScanAuftrag): Promise<ScanErgebnis>
         nummer,
         gesamt: auftrag.seiten.length,
         ergebnis,
+        ...(abbild ? { abbild } : {}),
         ...(ergebnis.fehler ? { text: ergebnis.fehler } : {}),
       });
     }
@@ -291,6 +299,8 @@ interface SeitenPruefungOptionen {
 interface SeitenPruefungErgebnis {
   ergebnis: SeitenErgebnis;
   merkmale: SeitenMerkmale | null;
+  /** Bildschirmfoto der Seite, wie die Engines sie vorfanden. */
+  abbild: Buffer | null;
 }
 
 async function pruefeSeite(optionen: SeitenPruefungOptionen): Promise<SeitenPruefungErgebnis> {
@@ -316,6 +326,7 @@ async function pruefeSeite(optionen: SeitenPruefungOptionen): Promise<SeitenPrue
         bewertungen: [],
       },
       merkmale: null,
+      abbild: null,
     };
   }
 
@@ -343,8 +354,26 @@ async function pruefeSeite(optionen: SeitenPruefungOptionen): Promise<SeitenPrue
             bewertungen: [],
           },
           merkmale: null,
+          abbild: null,
         };
       }
+    }
+
+    /*
+      Das Abbild entsteht hier und nicht frueher: an genau der Stelle, an der
+      gleich die erste Engine misst. Ein Bild vom Moment des Ladens zeigte eine
+      Seite, die es so nicht mehr gibt — Hinweise dieser Art kommen mit
+      Verzoegerung.
+
+      Ein misslungenes Bild haelt den Scan nicht auf. Es ist ein Beleg, keine
+      Voraussetzung; wer wegen eines Bildschirmfotos die ganze Pruefung fallen
+      liesse, taeuschte sich ueber die Rangfolge.
+    */
+    let abbild: Buffer | null = null;
+    try {
+      abbild = await seitenabbild(geladen.seite);
+    } catch (e) {
+      protokoll.warnung('scan', `Kein Abbild von ${geladen.url}`, { grund: (e as Error).message });
     }
 
     const anwendbarkeit = await ermittleAnwendbarkeit(geladen.seite, kriterien, {
@@ -514,8 +543,10 @@ async function pruefeSeite(optionen: SeitenPruefungOptionen): Promise<SeitenPrue
         fehler: null,
         bewertungen,
         ...(qualitaetshinweise.length > 0 ? { qualitaetshinweise } : {}),
+        hatAbbild: abbild !== null,
       },
       merkmale,
+      abbild,
     };
   } finally {
     await geladen.schliessen();

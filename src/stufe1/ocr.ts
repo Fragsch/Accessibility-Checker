@@ -143,16 +143,33 @@ export const ocrEngine: PruefEngine = {
         // haeufig zulaessig (Logos, Wortmarken). Deshalb kein Befund.
         if (kandidat.alt && aehnlich(kandidat.alt, erkannt)) continue;
 
-        befunde.push({
+        /*
+          Ein Hinweis, kein Befund — und das ist keine Nachlaessigkeit.
+
+          1.4.5 nimmt Bilder aus, bei denen die bildliche Darstellung
+          *wesentlich* ist: Logos, Wortmarken, die Unterschrift eines Menschen,
+          das Bildschirmfoto einer Darstellung. Ob ein Bild darunter faellt,
+          entscheidet sich an seinem Zweck, und den sieht eine Texterkennung
+          nicht. Sie sieht Buchstaben.
+
+          Bis hierher als Verstoss zu melden hiesse, eine Ausnahme zu
+          uebergehen, die das Kriterium selbst vorsieht — und im Bericht eine
+          Feststellung zu treffen, die niemand geprueft hat. Es ist dieselbe
+          Regel, die fuer die Sprachmodell-Stufe gilt (Regel 4): Was das
+          Werkzeug nicht belegen kann, legt es vor.
+
+          Der Preis steht in der Abdeckungsmatrix: 1.4.5 gilt seither nicht
+          mehr als belegt erkannt, sondern als immer zur Pruefung vorgelegt. Das
+          ist die ehrlichere der beiden Zahlen.
+        */
+        hinweise.push({
           regelId,
           engine: 'ocr',
-          selektor: kandidat.selektor,
-          htmlAusschnitt: kandidat.html,
-          beschreibung:
-            `Dieses Bild enthaelt Text: "${erkannt.slice(0, 120)}". ` +
-            'Text gehoert als Text auf die Seite — als Bild laesst er sich nicht vergroessern, ' +
-            'nicht umfaerben und nicht durchsuchen. Ausgenommen sind Logos und Wortmarken.',
-          schwere: 'maessig',
+          text:
+            `Das Bild "${kandidat.selektor}" enthaelt Text: "${erkannt.slice(0, 120)}". ` +
+            'Text gehoert als Text auf die Seite — als Bild laesst er sich nicht vergroessern, nicht ' +
+            'umfaerben und nicht durchsuchen. Bitte nachsehen, ob die bildliche Darstellung hier ' +
+            'wesentlich ist: Logos, Wortmarken und Bildschirmfotos sind ausgenommen.',
         });
       }
     } catch (e) {

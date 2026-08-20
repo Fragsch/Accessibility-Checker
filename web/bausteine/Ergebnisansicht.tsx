@@ -8,6 +8,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { abbildAdresse } from '../api';
 import type { Kriterium, ScanErgebnis, SeitenErgebnis, Status } from '../typen';
 import { PRINZIP_TEXT, STATUS_ERLAEUTERUNG, STATUS_REIHENFOLGE, STATUS_TEXT } from '../typen';
 import { Kriteriumszeile } from './Kriteriumszeile';
@@ -107,6 +108,36 @@ export function Ergebnisansicht({
           {seite.titel && <span className="uebersicht__titel">„{seite.titel}“</span>}
           <span className="uebersicht__adresse">{seite.url}</span>
         </p>
+
+        {/*
+          Das Abbild steht vor den Zahlen, nicht dahinter.
+
+          Es beantwortet die Frage, die vor allen anderen kommt: Wurde
+          ueberhaupt das geprueft, was geprueft werden sollte? Ein Cookie-
+          Hinweis, eine Altersabfrage oder eine Fehlerseite legt sich ueber die
+          Seite, die Engines messen sie statt des Inhalts darunter, und das
+          Ergebnis sieht vollstaendig aus. Wer die Zahlen zuerst liest, hat sie
+          schon geglaubt.
+
+          Der Text daneben sagt, wonach zu schauen ist. Eine Sprachausgabe kann
+          aus dem Bild nichts entnehmen — sie bekommt an dieser Stelle also den
+          Hinweis, dass die Kontrolle offen bleibt, statt eines Alternativtexts,
+          der so tut, als haette er den Inhalt beschrieben.
+        */}
+        {ergebnis.scanId !== null && seite.hatAbbild && (
+          <figure className="abbild">
+            <img
+              src={abbildAdresse(ergebnis.scanId, ergebnis.seiten.indexOf(seite))}
+              alt={`Bildschirmfoto von ${seite.url} in dem Zustand, in dem die Prüfung lief`}
+              loading="lazy"
+            />
+            <figcaption>
+              So sah die Seite aus, als gemessen wurde. Verdeckt ein Cookie-Hinweis, eine Altersabfrage oder eine
+              Fehlerseite den Inhalt, ist hier zu sehen, dass das Ergebnis nicht der Seite gilt, sondern dem, was
+              davor lag.
+            </figcaption>
+          </figure>
+        )}
 
         {/*
           Eine Definitionsliste, kein Kachelraster aus Absaetzen: Status und

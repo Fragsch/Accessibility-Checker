@@ -221,6 +221,15 @@ export interface SeitenErgebnis {
   bewertungen: Bewertung[];
   /** Maengel ohne Kriterium im gewaehlten Standard (X-21). Unter 2.1 stets leer. */
   qualitaetshinweise?: Qualitaetshinweis[];
+  /**
+   * Zu dieser Seite liegt ein Bildschirmfoto vor.
+   *
+   * Nur der Vermerk, nicht das Bild: Der Scanzustand wird waehrend eines Laufs
+   * im Sekundentakt abgefragt, und ein eingebettetes Bild vervielfachte jede
+   * dieser Antworten. Das Bild holt die Oberflaeche einzeln ueber
+   * `/api/scan/:id/seite/:nr/abbild`, wenn sie es zeigen will.
+   */
+  hatAbbild?: boolean;
 }
 
 /** Ergebnis eines vollstaendigen Scans ueber eine oder mehrere Seiten. */

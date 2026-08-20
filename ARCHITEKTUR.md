@@ -446,8 +446,10 @@ Alle Engines erfüllen denselben Vertrag (`src/stufe1/engine.ts`): Sie melden **
 | `html` | html-validate | 6 | 4.1.1, 1.3.1 — Gültigkeit des **Quelltexts** |
 | `sprache` | franc-min | 1 | 3.1.2 |
 | `pixel` | sharp | 4 | 1.4.3, 1.4.11 auf Verläufen und Bildern |
-| `ocr` | tesseract.js | 1 | 1.4.5 |
+| `ocr` | tesseract.js | 1 | 1.4.5 — **nur als Hinweis**, nie als belegter Verstoß |
 | `eigen` | — | 25 | Verhalten: Tastatur, Viewports, Formulare, Vergleiche |
+
+**`ocr` belegt nichts.** 1.4.5 nimmt Bilder aus, bei denen die bildliche Darstellung *wesentlich* ist — Logos, Wortmarken, Bildschirmfotos. Ob ein Bild darunter fällt, entscheidet sich an seinem Zweck, und den sieht eine Texterkennung nicht; sie sieht Buchstaben. Ein erkanntes Bild eines Textes erzeugt deshalb einen Hinweis und damit `pruefung_erforderlich`, nie `nicht_erfuellt`. Dieselbe Regel wie bei der Sprachmodell-Stufe: Was das Werkzeug nicht belegen kann, legt es vor.
 
 **Die Reihenfolge ist bindend.** Zuerst laufen die Engines, die nur lesen; `eigen` kommt zuletzt. Der Tastatur-Durchlauf verschiebt den Fokus, die Formularprüfung löst Zustandsänderungen aus, die Darstellungsprüfung verändert den Viewport. Wer danach misst, prüft eine Seite, die das Werkzeug selbst umgebaut hat.
 

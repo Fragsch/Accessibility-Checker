@@ -26,7 +26,7 @@ import { crawle } from '../scan/crawl.js';
 import { Protokoll } from '../protokoll.js';
 import { oeffneDatenbank } from '../db/index.js';
 import type { Database } from 'better-sqlite3';
-import { listeScans } from '../db/scan-speichern.js';
+import { lesSeitenabbild, listeScans } from '../db/scan-speichern.js';
 import { istEntwurf } from '../scan/statusableitung.js';
 import { projektWurzel, protokollDatei } from '../plattform/pfade.js';
 import { erkenneHardware, schlageModellVor } from '../plattform/hardware.js';
@@ -290,6 +290,36 @@ export function baueServer(optionen: ServerOptionen = {}): FastifyInstance {
     if (!geloescht) return antwort.code(404).send({ fehler: `Scan ${anfrage.params.id} ist nicht bekannt.` });
     return { geloescht: true };
   });
+
+  /*
+    Das Bildschirmfoto einer geprueften Seite.
+
+    Eigene Route und nicht Teil des Scanzustands: Der wird waehrend eines Laufs
+    im Sekundentakt abgefragt, und ein eingebettetes Bild vervielfachte jede
+    dieser Antworten. So holt die Oberflaeche das Bild genau dann, wenn sie es
+    zeigt — und der Browser kann es zwischenspeichern.
+
+    `immutable` mit einem Jahr: Das Abbild einer geprueften Seite aendert sich
+    nie wieder. Es entsteht einmal waehrend des Laufs und ist von da an ein
+    Beleg; ein Beleg, der sich noch aendern koennte, waere keiner.
+  */
+  server.get<{ Params: { id: string; nummer: string } }>(
+    '/api/scan/:id/seite/:nummer/abbild',
+    async (anfrage, antwort) => {
+      const scanId = Number(anfrage.params.id);
+      const nummer = Number(anfrage.params.nummer);
+      if (!Number.isInteger(scanId) || !Number.isInteger(nummer) || nummer < 0) {
+        return antwort.code(400).send({ fehler: 'Scan- oder Seitennummer ist keine Zahl.' });
+      }
+
+      const abbild = lesSeitenabbild(db, scanId, nummer);
+      if (!abbild) {
+        return antwort.code(404).send({ fehler: `Zu Seite ${nummer + 1} von Scan ${scanId} gibt es kein Abbild.` });
+      }
+
+      return antwort.header('content-type', 'image/png').header('cache-control', 'private, max-age=31536000, immutable').send(abbild);
+    },
+  );
 
   // -------------------------------------------------- Ereignisstrom (SSE)
 

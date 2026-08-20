@@ -1,0 +1,66 @@
+@use 'variablen' as v;
+@use 'werkzeug' as w;
+
+// ---------------------------------------------------------------------------
+// Das Bildschirmfoto der geprueften Seite.
+//
+// Es ist ein Beleg und kein Schmuck: Es soll zeigen, was die Engines vorfanden,
+// und dafuer muss man darauf etwas lesen koennen.
+// ---------------------------------------------------------------------------
+
+/*
+  Das Abbild in der Uebersicht.
+
+  `contain` und nicht `cover`: Ein Zuschnitt schnitt genau das weg, worum es
+  geht. Der erste Entwurf zeigte die oberen 18 rem — bei einem Cookie-Hinweis,
+  der mittig im Bild steht, war danach nur eine dunkle Flaeche zu sehen und
+  kein Wort davon zu lesen. Ein Beleg, von dem der entscheidende Teil fehlt,
+  belegt nichts.
+
+  Lieber schmaler als beschnitten: Ist das Bild breiter als hoch genug, bleibt
+  seitlich Flaeche frei. Das ist der ehrlichere Kompromiss — man sieht den
+  ganzen Ausschnitt, den auch die Engines vor sich hatten.
+*/
+.abbild {
+  @include w.karte-flach;
+
+  margin: 0 0 v.$abstand-gross;
+  padding: 0;
+  overflow: hidden;
+
+  img {
+    display: block;
+    width: 100%;
+    max-height: 26rem;
+    object-fit: contain;
+    // Die Flaeche steht schon, bevor das Bild geladen ist — sonst springt der
+    // Inhalt darunter nach unten, sobald es eintrifft.
+    background: var(--flaeche-leise);
+  }
+
+  figcaption {
+    padding: v.$abstand-klein v.$abstand-mittel;
+    border-top: var(--rahmen) solid var(--linie);
+    color: var(--schrift-leise);
+    font-size: v.$groesse-klein;
+  }
+}
+
+/*
+  Die Vorschau in der Liste der bisherigen Pruefungen.
+
+  Klein genug, dass die Zeile eine Zeile bleibt, und gross genug, um eine Seite
+  wiederzuerkennen — mehr soll sie nicht leisten. `width` und `height` stehen
+  fest, damit die Spalte ihre Breite behaelt, waehrend die Bilder nacheinander
+  eintreffen.
+*/
+.vorschaubild {
+  display: block;
+  width: 8rem;
+  height: 5rem;
+  object-fit: cover;
+  object-position: top;
+  border: var(--rahmen) solid var(--linie);
+  border-radius: var(--radius-klein);
+  background: var(--flaeche-leise);
+}

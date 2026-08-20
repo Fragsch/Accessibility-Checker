@@ -118,6 +118,7 @@ export function speichereSeitenErgebnis(
   scanId: number,
   reihenfolge: number,
   ergebnis: SeitenErgebnis,
+  abbild: Buffer | null = null,
 ): void {
   const schreiben = db.transaction(() => {
     const seiten = db
@@ -126,12 +127,15 @@ export function speichereSeitenErgebnis(
     const seitenId = seiten[reihenfolge]?.id;
     if (seitenId === undefined) throw new Error(`Scan ${scanId} hat keine Seite mit der Nummer ${reihenfolge + 1}`);
 
-    db.prepare(`UPDATE scan_seite SET url = ?, titel = ?, status = ? WHERE id = ?`).run(
-      ergebnis.url,
-      ergebnis.titel,
-      ergebnis.zustand,
-      seitenId,
-    );
+    /*
+      Das Abbild nur schreiben, wenn eines vorliegt. `COALESCE` haelt ein
+      frueher aufgenommenes Bild fest, statt es durch NULL zu ersetzen: Eine
+      Seite kann in einem zweiten Durchgang ohne Bild fortgeschrieben werden,
+      und dann ist das alte Bild immer noch der bessere Beleg als keiner.
+    */
+    db.prepare(
+      `UPDATE scan_seite SET url = ?, titel = ?, status = ?, abbild = COALESCE(?, abbild) WHERE id = ?`,
+    ).run(ergebnis.url, ergebnis.titel, ergebnis.zustand, abbild, seitenId);
 
     const bewertungEinfuegen = db.prepare(
       `INSERT INTO bewertung (scan_seite_id, kriterium, status, herkunft) VALUES (?, ?, ?, ?)`,
@@ -220,6 +224,14 @@ export interface ScanUebersicht {
   profilName: string | null;
   /** Der Scan enthaelt Belege aus einem geschuetzten Bereich (S-22). */
   geschuetzt: boolean;
+  /**
+   * Zur ersten Seite liegt ein Bildschirmfoto vor.
+   *
+   * Genau eines je Scan, nicht alle: In der Liste dient es dem Wiedererkennen,
+   * und dafuer genuegt die Seite, mit der die Pruefung begann. Ein Streifen aus
+   * dreissig Vorschaubildern je Zeile waere keine Liste mehr.
+   */
+  hatAbbild: boolean;
 }
 
 export function listeScans(db: Database, hoechstzahl = 50): ScanUebersicht[] {
@@ -227,10 +239,16 @@ export function listeScans(db: Database, hoechstzahl = 50): ScanUebersicht[] {
     .prepare(
       `SELECT s.*,
               (SELECT COUNT(*) FROM scan_seite WHERE scan_id = s.id) AS seiten,
-              (SELECT name FROM profil WHERE id = s.profil_id) AS profil_name
+              (SELECT name FROM profil WHERE id = s.profil_id) AS profil_name,
+              (SELECT abbild IS NOT NULL FROM scan_seite
+                WHERE scan_id = s.id ORDER BY id LIMIT 1) AS hat_abbild
        FROM scan s ORDER BY s.id DESC LIMIT ?`,
     )
-    .all(hoechstzahl) as (ScanZeile & { seiten: number; profil_name: string | null })[];
+    .all(hoechstzahl) as (ScanZeile & {
+    seiten: number;
+    profil_name: string | null;
+    hat_abbild: number | null;
+  })[];
 
   return zeilen.map((z) => ({
     scanId: z.id,
@@ -242,7 +260,24 @@ export function listeScans(db: Database, hoechstzahl = 50): ScanUebersicht[] {
     profilId: z.profil_id,
     profilName: z.profil_name,
     geschuetzt: z.geschuetzt === 1,
+    hatAbbild: z.hat_abbild === 1,
   }));
+}
+
+/**
+ * Das Bildschirmfoto einer Seite, angesprochen ueber ihre Nummer im Scan.
+ *
+ * Ueber die Nummer und nicht ueber die Adresse: Eine Weiterleitung aendert die
+ * Adresse zwischen Auftrag und Ergebnis, und dieselbe Adresse kann in einem
+ * Profil mehrfach vorkommen. Die Reihenfolge ist die einzige Kennung, die
+ * beides uebersteht — dieselbe, ueber die auch `speichereSeitenErgebnis`
+ * zuordnet.
+ */
+export function lesSeitenabbild(db: Database, scanId: number, nummer: number): Buffer | null {
+  const zeile = db
+    .prepare(`SELECT abbild FROM scan_seite WHERE scan_id = ? ORDER BY id LIMIT 1 OFFSET ?`)
+    .get(scanId, nummer) as { abbild: Buffer | null } | undefined;
+  return zeile?.abbild ?? null;
 }
 
 /**
@@ -255,8 +290,21 @@ export function ladeScan(db: Database, scanId: number, kriterien: readonly Krite
   if (!scan) return null;
 
   const seitenZeilen = db
-    .prepare(`SELECT * FROM scan_seite WHERE scan_id = ? ORDER BY id`)
-    .all(scanId) as { id: number; url: string; bezeichnung: string | null; titel: string | null; status: string }[];
+    .prepare(
+      // Das Bild selbst bleibt draussen: Ein geladener Scan geht als JSON an
+      // die Oberflaeche, und dort haette es nichts zu suchen. Gebraucht wird
+      // hier nur die Auskunft, ob es eines gibt.
+      `SELECT id, url, bezeichnung, titel, status, abbild IS NOT NULL AS hat_abbild
+         FROM scan_seite WHERE scan_id = ? ORDER BY id`,
+    )
+    .all(scanId) as {
+    id: number;
+    url: string;
+    bezeichnung: string | null;
+    titel: string | null;
+    status: string;
+    hat_abbild: number;
+  }[];
 
   const seiten: SeitenErgebnis[] = seitenZeilen.map((zeile) => {
     const qualitaetshinweise = leseQualitaetshinweise(db, zeile.id);
@@ -268,6 +316,7 @@ export function ladeScan(db: Database, scanId: number, kriterien: readonly Krite
       fehler: null,
       bewertungen: leseBewertungen(db, zeile.id),
       ...(qualitaetshinweise.length > 0 ? { qualitaetshinweise } : {}),
+      hatAbbild: zeile.hat_abbild === 1,
     };
   });
 

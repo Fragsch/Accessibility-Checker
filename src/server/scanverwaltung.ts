@@ -437,7 +437,13 @@ export class Scanverwaltung {
           if (meldung.ergebnis) {
             seitenErgebnisse.push(meldung.ergebnis);
             try {
-              speichereSeitenErgebnis(this.#db, lauf.scanId, meldung.nummer - 1, meldung.ergebnis);
+              speichereSeitenErgebnis(
+                this.#db,
+                lauf.scanId,
+                meldung.nummer - 1,
+                meldung.ergebnis,
+                meldung.abbild ?? null,
+              );
             } catch (e) {
               this.#protokoll.fehler('scanverwaltung', `Seitenergebnis nicht gespeichert: ${(e as Error).message}`);
             }

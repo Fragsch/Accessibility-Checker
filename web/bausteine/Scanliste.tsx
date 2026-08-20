@@ -13,7 +13,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { ApiFehler, ladeScans, loescheScan } from '../api';
+import { ApiFehler, abbildAdresse, ladeScans, loescheScan } from '../api';
 import type { Rueckziel, ScanUebersicht } from '../typen';
 import { BETRIEBSART_TEXT, RUECKZIEL_TEXT } from '../typen';
 
@@ -85,6 +85,13 @@ export function Scanliste({ beiOeffnen, beiZurueck, ziel }: Eigenschaften): Reac
             <thead>
               <tr>
                 <th scope="col">Nummer</th>
+                {/*
+                  Die Vorschau traegt keine Ueberschrift, die etwas verspricht,
+                  was sie fuer eine Sprachausgabe nicht halten kann. Sie heisst,
+                  was sie ist; was auf ihr zu sehen ist, steht daneben in der
+                  Spalte "Umfang" als Adresse.
+                */}
+                <th scope="col">Vorschau</th>
                 <th scope="col">Begonnen</th>
                 <th scope="col">Umfang</th>
                 <th scope="col">Seiten</th>
@@ -96,6 +103,18 @@ export function Scanliste({ beiOeffnen, beiZurueck, ziel }: Eigenschaften): Reac
               {scans.map((scan) => (
                 <tr key={scan.scanId}>
                   <th scope="row">{scan.scanId}</th>
+                  <td>
+                    {scan.hatAbbild ? (
+                      <img
+                        className="vorschaubild"
+                        src={abbildAdresse(scan.scanId, 0)}
+                        alt={`Bildschirmfoto der ersten Seite aus Prüfung ${scan.scanId}`}
+                        loading="lazy"
+                      />
+                    ) : (
+                      <span className="hilfetext">kein Bild</span>
+                    )}
+                  </td>
                   <td>{new Date(scan.gestartetAm).toLocaleString('de-DE')}</td>
                   <td>
                     {BETRIEBSART_TEXT[scan.betriebsart]}

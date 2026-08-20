@@ -190,6 +190,20 @@ export function berichtAdresse(
   return `/api/scan/${scanId}/bericht?${felder.toString()}`;
 }
 
+/**
+ * Adresse des Bildschirmfotos einer geprueften Seite.
+ *
+ * Als Adresse und nicht als geladene Daten: Ein `img` mit dieser Quelle laedt
+ * das Bild selbst, zeigt es waehrend des Ladens noch nicht an und legt es
+ * danach in den Zwischenspeicher des Browsers. Das alles muesste man von Hand
+ * nachbauen, wenn man die Daten selbst holte.
+ *
+ * `nummer` ist die Stellung der Seite im Scan, von null an.
+ */
+export function abbildAdresse(scanId: number, nummer: number): string {
+  return `/api/scan/${scanId}/seite/${nummer}/abbild`;
+}
+
 /** Die Berichtsdaten als JSON — fuer die Vorschau in der Oberflaeche. */
 export async function ladeBerichtsdaten(
   scanId: number,
