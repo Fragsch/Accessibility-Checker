@@ -22,14 +22,28 @@ interface Eigenschaften {
   beiProfilverwaltung: () => void;
 }
 
+/**
+ * Eine Fehlermeldung samt dem Feld, das sie meint.
+ *
+ * Vorher trug das Formular nur den Meldungstext, und `aria-invalid` sass
+ * unbesehen am Adressfeld. Seit es mehr als ein Pflichtfeld gibt, waere das
+ * falsch: Wer den Namen vergisst, bekaeme das Adressfeld als fehlerhaft
+ * angesagt und suchte dort nach einem Fehler, den es nicht gibt (3.3.1).
+ */
+interface Feldfehler {
+  text: string;
+  feld: 'name' | 'adressen' | 'profil' | 'startadresse' | 'anmeldung';
+}
+
 export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Eigenschaften): React.ReactElement {
   const [betriebsart, setzeBetriebsart] = useState<Betriebsart>('einzelseite');
+  const [name, setzeName] = useState('');
   const [adressen, setzeAdressen] = useState('');
   const [standard, setzeStandard] = useState<Standard>('2.1');
   const [stufe2, setzeStufe2] = useState(false);
   const [profile, setzeProfile] = useState<Profil[]>([]);
   const [profilId, setzeProfilId] = useState<number | null>(null);
-  const [fehler, setzeFehler] = useState<string | null>(null);
+  const [fehler, setzeFehler] = useState<Feldfehler | null>(null);
 
   // Gesamtprüfung (K-08, K-09)
   const [startadresse, setzeStartadresse] = useState('');
@@ -59,20 +73,32 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
 
     const anmeldung = mitAnmeldung ? anmeldeadresse.trim() : '';
     if (mitAnmeldung && !anmeldung) {
-      setzeFehler('Bitte geben Sie die Adresse an, auf der Sie sich anmelden.');
+      setzeFehler({ feld: 'anmeldung', text: 'Bitte geben Sie die Adresse an, auf der Sie sich anmelden.' });
+      return;
+    }
+
+    /*
+      Der Name ist Pflicht, sobald der Auftrag aus freier Eingabe entsteht.
+      Beim Pruefprofil nicht: Dort traegt der Profilname die Kennzeichnung, und
+      ein zweiter Name daneben sagte dasselbe noch einmal.
+    */
+    const benennung = name.trim();
+    if (betriebsart !== 'profil' && !benennung) {
+      setzeFehler({ feld: 'name', text: 'Bitte geben Sie der Prüfung einen Namen.' });
       return;
     }
 
     const gemeinsam = {
       standard,
       stufe2,
+      ...(benennung ? { name: benennung } : {}),
       ...(mitAnmeldung ? { anmeldung: { url: anmeldung } } : {}),
     };
 
     if (betriebsart === 'gesamt') {
       const start = startadresse.trim();
       if (!start) {
-        setzeFehler('Bitte geben Sie die Adresse an, bei der der Crawl beginnen soll.');
+        setzeFehler({ feld: 'startadresse', text: 'Bitte geben Sie die Adresse an, bei der der Crawl beginnen soll.' });
         return;
       }
 
@@ -95,7 +121,7 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
 
     if (betriebsart === 'profil') {
       if (profilId === null) {
-        setzeFehler('Bitte wählen Sie ein Prüfprofil aus.');
+        setzeFehler({ feld: 'profil', text: 'Bitte wählen Sie ein Prüfprofil aus.' });
         return;
       }
       setzeFehler(null);
@@ -109,7 +135,7 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
       .filter(Boolean);
 
     if (urls.length === 0) {
-      setzeFehler('Bitte geben Sie mindestens eine Adresse an.');
+      setzeFehler({ feld: 'adressen', text: 'Bitte geben Sie mindestens eine Adresse an.' });
       return;
     }
 
@@ -126,7 +152,7 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
       */}
       <div className="feldgruppen">
         <fieldset className="feldgruppe">
-          <legend>Was soll geprüft werden? (K-02)</legend>
+          <legend>Was soll geprüft werden?</legend>
           <div className="auswahl">
             <label>
               <input
@@ -158,6 +184,42 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
           </div>
         </fieldset>
 
+        {/*
+          Der Name der Pruefung.
+
+          Er steht vor den Adressen, nicht dahinter: Wer eine Pruefung anlegt,
+          weiss in diesem Augenblick noch, wozu sie dient — spaeter in der
+          Liste weiss es niemand mehr. Beim Pruefprofil entfaellt das Feld,
+          weil der Profilname diese Aufgabe schon erfuellt.
+
+          `required` steht im Markup und nicht nur in der Pruefung beim
+          Abschicken: Eine Sprachausgabe sagt die Pflicht damit beim Betreten
+          des Feldes an und nicht erst, nachdem das Formular abgewiesen wurde
+          (3.3.2). Die Sternchen-Schreibweise bleibt weg — sie traegt fuer
+          sich genommen keine Bedeutung, und der Hinweis darunter sagt es in
+          Worten.
+        */}
+        {betriebsart !== 'profil' && (
+          <div className="feldgruppe">
+            <label htmlFor="pruefungsname">Name der Prüfung</label>
+            <input
+              id="pruefungsname"
+              type="text"
+              value={name}
+              onChange={(e) => setzeName(e.target.value)}
+              required
+              aria-describedby="pruefungsname-hilfe"
+              {...(fehler?.feld === 'name' ? { 'aria-invalid': true, 'aria-errormessage': 'auftrag-fehler' } : {})}
+              placeholder="Relaunch Startseite, Stand August"
+              maxLength={200}
+            />
+            <p className="hilfetext" id="pruefungsname-hilfe">
+              Pflichtangabe. Unter diesem Namen steht die Prüfung später in der Liste der bisherigen Prüfungen — ohne
+              ihn sind zwei Läufe über dieselbe Seite dort nicht zu unterscheiden.
+            </p>
+          </div>
+        )}
+
         {betriebsart === 'einzelseite' && (
           <div className="feldgruppe">
             <label htmlFor="adressen">Zu prüfende Adressen</label>
@@ -166,7 +228,7 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
               value={adressen}
               onChange={(e) => setzeAdressen(e.target.value)}
               aria-describedby="adressen-hilfe"
-              {...(fehler ? { 'aria-invalid': true, 'aria-errormessage': 'auftrag-fehler' } : {})}
+              {...(fehler?.feld === 'adressen' ? { 'aria-invalid': true, 'aria-errormessage': 'auftrag-fehler' } : {})}
               placeholder="beispiel.de"
               autoComplete="url"
               spellCheck={false}
@@ -217,6 +279,10 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
               type="text"
               value={startadresse}
               onChange={(e) => setzeStartadresse(e.target.value)}
+              required
+              {...(fehler?.feld === 'startadresse'
+                ? { 'aria-invalid': true, 'aria-errormessage': 'auftrag-fehler' }
+                : {})}
               placeholder="beispiel.de"
               autoComplete="url"
               spellCheck={false}
@@ -282,10 +348,20 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
               Ein Crawl ohne Pause ist aus Sicht des Zielservers von einem Angriff kaum zu unterscheiden.
             </p>
 
-            <label className="ankreuzfeld">
-              <input type="checkbox" checked={robots} onChange={(e) => setzeRobots(e.target.checked)} />
-              <code>robots.txt</code> beachten
-            </label>
+            {/*
+              Der Text steht in einem `span`: In der Pille ist jedes Kind ein
+              eigenes Flex-Element. Ohne die Huelle wuerden `code` und das Wort
+              dahinter zu zwei Elementen mit der Luecke der Pille dazwischen —
+              aus „robots.txt beachten" wuerde ein zerrissener Satz.
+            */}
+            <div className="auswahl">
+              <label>
+                <input type="checkbox" checked={robots} onChange={(e) => setzeRobots(e.target.checked)} />
+                <span>
+                  <code>robots.txt</code> beachten
+                </span>
+              </label>
+            </div>
           </fieldset>
         )}
       </div>
@@ -297,15 +373,17 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
       */}
       <fieldset className="feldgruppe">
         <legend>Geschützter Bereich</legend>
-        <label className="ankreuzfeld">
-          <input
-            type="checkbox"
-            checked={mitAnmeldung}
-            onChange={(e) => setzeMitAnmeldung(e.target.checked)}
-            aria-describedby="anmeldung-hilfe"
-          />
-          Vor der Prüfung anmelden
-        </label>
+        <div className="auswahl">
+          <label>
+            <input
+              type="checkbox"
+              checked={mitAnmeldung}
+              onChange={(e) => setzeMitAnmeldung(e.target.checked)}
+              aria-describedby="anmeldung-hilfe"
+            />
+            Vor der Prüfung anmelden
+          </label>
+        </div>
         <p className="hilfetext" id="anmeldung-hilfe">
           Das Werkzeug öffnet ein sichtbares Browserfenster und wartet. Sie melden sich selbst an. Zugangsdaten werden
           weder erfasst noch gespeichert.
@@ -319,6 +397,10 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
               type="text"
               value={anmeldeadresse}
               onChange={(e) => setzeAnmeldeadresse(e.target.value)}
+              required
+              {...(fehler?.feld === 'anmeldung'
+                ? { 'aria-invalid': true, 'aria-errormessage': 'auftrag-fehler' }
+                : {})}
               placeholder="beispiel.de/anmelden"
               autoComplete="url"
               spellCheck={false}
@@ -364,7 +446,7 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
       */}
       {fehler && (
         <p className="meldung meldung--fehler" id="auftrag-fehler" role="alert">
-          {fehler}
+          {fehler.text}
         </p>
       )}
 

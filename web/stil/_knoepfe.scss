@@ -52,12 +52,76 @@ button.zweitrangig {
   }
 }
 
+/*
+  Drittrangig: ohne Rahmen, ohne Flaeche, in gewoehnlicher Schriftstaerke.
+
+  Fuer Wege, die staendig danebenstehen — die Punkte der Kopfzeile. Drei
+  gerahmte Knoepfe nebeneinander behaupten drei gleich wichtige Handlungen;
+  gemeint ist eine (die neue Pruefung) und zwei Wege dorthin, wo man schon
+  gewesen ist. Der Rahmen faellt weg, damit der erstrangige Knopf daneben
+  wieder als der eine heraussticht.
+
+  Der Rahmen wird durchsichtig gesetzt, nicht entfernt: Er zaehlt zur
+  Aussenmasse, und ohne ihn saessen die Knoepfe eine Haarlinie hoeher als der
+  gerahmte daneben.
+
+  1.4.11 verlangt hier nichts nach: Die Vorschrift gilt fuer Formen, die zum
+  Erkennen des Bedienelements noetig sind — hier traegt die Beschriftung
+  selbst diese Last, und die haelt als Text ihre 4,5:1 (1.4.3). Der
+  Fokusrahmen bleibt unberuehrt und kommt weiterhin aus der Wurzelregel.
+*/
+button.drittrangig {
+  border-color: transparent;
+  background: none;
+  color: var(--schrift);
+  font-weight: 400;
+  /*
+    Das Polster der Pille ist hier zugleich der Abstand nach aussen: Ohne
+    Rahmen ist die sichtbare Kante der Text, und was rechts und links von ihm
+    steht, wirkt als Luecke zum Nachbarn. Es traegt deshalb ein rundes Mass,
+    mit dem sich weiterrechnen laesst — siehe `_kopfzeile.scss`.
+  */
+  padding: 0 var(--abstand);
+
+  // Ohne Rahmen braucht das Ueberfahren eine Antwort, sonst wirkt der Knopf
+  // tot. Die Toenung allein genuegt — ein Rahmen erst beim Schweben liesse
+  // die Zeile springen.
+  &:hover:not(:disabled) {
+    background: var(--flaeche-schwebe);
+    border-color: transparent;
+    color: var(--schrift);
+  }
+
+  // Sonst holte die Grundregel fuer deaktivierte Knoepfe Rahmen und Flaeche
+  // zurueck, und ausgerechnet der abgeschaltete Knopf saehe am kraeftigsten
+  // aus.
+  &:disabled {
+    border-color: transparent;
+    background: none;
+    color: var(--schrift-leise);
+  }
+}
+
 .knopfreihe {
   display: flex;
   flex-wrap: wrap;
   gap: var(--abstand-mittel);
   align-items: center;
   margin-top: v.$abstand-gross;
+}
+
+/*
+  Steht noch etwas darunter, braucht die Reihe nach unten denselben Abstand
+  wie nach oben. Sie hatte nur einen oberen — was folgte, stiess an sie an:
+  „Seite hinzufuegen" beruehrte die Kachel darunter, obwohl der Knopf zur
+  Liste darueber gehoert. Ohne Abstand nach unten sah er aus, als leite er
+  die naechste Kachel ein.
+
+  Nur wenn tatsaechlich etwas folgt: Als letzter Baustein gehoert der Rand
+  dem Innenabstand seines Kastens, nicht dem Knopf.
+*/
+.knopfreihe:not(:last-child) {
+  margin-bottom: v.$abstand-gross;
 }
 
 .knopfreihe--eng {
@@ -69,6 +133,10 @@ button.zweitrangig {
     min-height: var(--trefferflaeche-eng);
     padding: 0 0.85rem;
   }
+}
+
+.knopfreihe--eng:not(:last-child) {
+  margin-bottom: var(--abstand-mittel);
 }
 
 /*

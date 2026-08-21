@@ -22,6 +22,21 @@ export const FORMULAR_REGELN = ['fehlermeldung-erkennbar', 'fehlermeldung-vorhan
 /** Formulare, die auf keinen Fall abgeschickt werden. */
 const HEIKEL = /anmeld|login|signin|sign-in|passwor|kauf|bestell|checkout|zahlung|payment|loesch|delete|abmeld/i;
 
+/*
+  Woran eine Fehlermeldung als solche zu erkennen ist.
+
+  „unvollstaendig" und „nicht ausgefuellt" sind in Phase 8 dazugekommen. Die
+  Referenzseite `fehlerempfehlung-sauber.html` meldet vorbildlich
+  „Die Buchung ist unvollstaendig. So wird sie vollstaendig: …" — und wurde
+  trotzdem als 3.3.1 gefuehrt, weil kein Wort der Liste vorkam. Ein Fehlalarm,
+  der ausgerechnet die saubere Loesung bestraft haette.
+
+  Steht als Modulkonstante und nicht mehr in der Funktion: Seit auch der Text
+  eines `role="alert"` daran gemessen wird, brauchen ihn zwei Stellen.
+*/
+const HINWEIS_AUF_FEHLER =
+  /pflicht|erforderlich|ausf(ü|ue)llen|fehlt|fehlen|unvollst(ä|ae)ndig|nicht ausgef(ü|ue)llt|ung(ü|ue)ltig|nicht korrekt|bitte geben|bitte w(ä|ae)hlen|bitte erg(ä|ae)nzen|required|invalid|error/i;
+
 interface FormularBefund {
   meldungGefunden: boolean;
   meldungstext: string;
@@ -150,6 +165,23 @@ async function findeKandidaten(seite: import('playwright').Page): Promise<string
  * Verglichen wird der Text vorher und nachher: Was neu hinzugekommen ist, ist
  * die Reaktion des Formulars. Das ist verlaesslicher, als nach bestimmten
  * Klassennamen zu suchen — die heissen auf jeder Seite anders.
+ *
+ * Der Vergleich allein genuegt aber nicht, und das war lange nicht zu sehen:
+ * Stand die Fehlermeldung schon vor dem Absenden da — weil das Formular vorher
+ * bereits einmal abgewiesen wurde —, dann aendert derselbe Fehler ein zweites
+ * Mal nichts am Text. Die Regel meldete daraufhin, es gebe keine Meldung, und
+ * zwar ausgerechnet bei einem Formular, das gerade eine anzeigte.
+ *
+ * Aufgefallen ist das an der eigenen Oberflaeche, nachdem sie ihr erstes
+ * Pflichtfeld bekam: Bis dahin hatte sie keines, und ein Formular ohne
+ * Pflichtfeld sieht diese Regel gar nicht erst an.
+ *
+ * Deshalb wird zweitens nach einer *ausgezeichneten* Fehlermeldung gesehen —
+ * `aria-errormessage` an einem als ungueltig markierten Feld, sonst ein
+ * sichtbares `role="alert"`. Das ist keine Aufweichung: Gesucht wird dabei
+ * nicht nach irgendeinem Text, sondern nach genau den Auszeichnungen, mit
+ * denen ein Fehler programmatisch benannt wird. Ein Formular ohne
+ * Fehlerbehandlung hat sie nicht.
  */
 async function sendeLeerAb(seite: import('playwright').Page, selektor: string): Promise<FormularBefund | null> {
   const textVorher = await seite.evaluate(() => document.body.innerText);
@@ -179,8 +211,6 @@ async function sendeLeerAb(seite: import('playwright').Page, selektor: string): 
     trotzdem als 3.3.1 gefuehrt, weil kein Wort der Liste vorkam. Ein Fehlalarm,
     der ausgerechnet die saubere Loesung bestraft haette.
   */
-  const HINWEIS_AUF_FEHLER =
-    /pflicht|erforderlich|ausf(ü|ue)llen|fehlt|fehlen|unvollst(ä|ae)ndig|nicht ausgef(ü|ue)llt|ung(ü|ue)ltig|nicht korrekt|bitte geben|bitte w(ä|ae)hlen|bitte erg(ä|ae)nzen|required|invalid|error/i;
   const HINWEIS_AUF_EMPFEHLUNG =
     /bitte|beispiel|format|mindestens|h(ö|oe)chstens|muss .*(enthalten|beginnen|bestehen)|z\.\s?B\.|etwa|geben Sie/i;
 
@@ -199,7 +229,9 @@ async function sendeLeerAb(seite: import('playwright').Page, selektor: string): 
     }, selektor)
     .catch(() => '');
 
-  const text = meldungszeile ?? browserMeldung;
+  const ausgezeichnete = meldungszeile || browserMeldung ? '' : await ausgezeichneteFehlermeldung(seite, selektor);
+
+  const text = meldungszeile ?? (browserMeldung || ausgezeichnete);
 
   return {
     meldungGefunden: Boolean(text),
@@ -207,6 +239,65 @@ async function sendeLeerAb(seite: import('playwright').Page, selektor: string): 
     mitEmpfehlung: Boolean(text) && HINWEIS_AUF_EMPFEHLUNG.test(text),
     selektor,
   };
+}
+
+/**
+ * Eine Fehlermeldung, die nicht neu ist, aber ausdruecklich als solche
+ * ausgezeichnet.
+ *
+ * Zwei Wege, in dieser Reihenfolge:
+ *
+ * 1. Ein Feld mit `aria-invalid="true"`, dessen `aria-errormessage` oder
+ *    `aria-describedby` auf einen Text zeigt. Das ist die ausdrueckliche
+ *    Zuordnung „dieser Text ist der Fehler dieses Feldes" — deutlicher laesst
+ *    sich 3.3.1 nicht erfuellen, und ein Wortfilter waere hier fehl am Platz:
+ *    Was das Formular selbst als Fehlermeldung ausweist, ist eine.
+ * 2. Sonst ein sichtbares `role="alert"`. Das kann auch eine Erfolgsmeldung
+ *    tragen, deshalb muss der Text hier durch den Wortfilter.
+ *
+ * Unsichtbares zaehlt in beiden Faellen nicht: Eine Meldung, die niemand
+ * sieht, ist keine — auch wenn sie im Baum steht.
+ */
+async function ausgezeichneteFehlermeldung(
+  seite: import('playwright').Page,
+  selektor: string,
+): Promise<string> {
+  return seite
+    .evaluate(
+      ({ sel, wortfilterQuelle }) => {
+        const wortfilter = new RegExp(wortfilterQuelle, 'i');
+
+        function sichtbarerText(el: Element | null): string {
+          if (!(el instanceof HTMLElement)) return '';
+          if (el.offsetParent === null && getComputedStyle(el).position !== 'fixed') return '';
+          return (el.innerText || '').trim();
+        }
+
+        const formular = document.querySelector(sel);
+        if (!formular) return '';
+
+        for (const feld of Array.from(formular.querySelectorAll('[aria-invalid="true"]'))) {
+          const verweise = `${feld.getAttribute('aria-errormessage') ?? ''} ${
+            feld.getAttribute('aria-describedby') ?? ''
+          }`.trim();
+          for (const id of verweise.split(/\s+/).filter(Boolean)) {
+            const text = sichtbarerText(document.getElementById(id));
+            if (text) return text;
+          }
+        }
+
+        // Der Alarm darf auch ausserhalb des Formulars stehen — manche
+        // Oberflaechen sammeln Meldungen an einer Stelle der Seite.
+        for (const alarm of Array.from(document.querySelectorAll('[role="alert"]'))) {
+          const text = sichtbarerText(alarm);
+          if (text && wortfilter.test(text)) return text;
+        }
+
+        return '';
+      },
+      { sel: selektor, wortfilterQuelle: HINWEIS_AUF_FEHLER.source },
+    )
+    .catch(() => '');
 }
 
 /** Zeilen, die nach dem Absenden neu hinzugekommen sind. */

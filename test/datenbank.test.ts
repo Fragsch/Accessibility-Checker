@@ -187,7 +187,7 @@ describe('Datenbank', () => {
         !JSON.stringify(geladen).includes('tut-so-als-waere-es-ein-png'),
         'ein geladener Scan darf das Bild nicht mitschleppen',
       );
-      assert.equal(listeScans(db)[0]?.hatAbbild, true);
+      assert.equal(listeScans(db).scans[0]?.hatAbbild, true);
       db.close();
     });
 
@@ -200,6 +200,134 @@ describe('Datenbank', () => {
         n: number;
       };
       assert.equal(uebrig.n, 0, 'ein Bild aus einem geschuetzten Bereich darf nichts ueberdauern');
+      db.close();
+    });
+  });
+
+  /*
+    Die Liste der bisherigen Pruefungen.
+
+    Bis zur Namensvergabe gab `listeScans` unbesehen die fuenfzig juengsten
+    Laeufe zurueck; alles davor war ueber die Oberflaeche nicht erreichbar.
+    Geprueft wird hier beides, was an die Stelle getreten ist: das Blaettern
+    ueber `versatz` und die Suche.
+  */
+  describe('Liste der bisherigen Pruefungen', () => {
+    /** Legt `anzahl` Laeufe an, der aelteste zuerst. */
+    function fuelle(db: ReturnType<typeof oeffneDatenbank>, namen: (string | null)[]): number[] {
+      return namen.map((name, nummer) =>
+        legeScanAn(db, {
+          betriebsart: 'einzelseite',
+          standard: '2.1',
+          stufe2Aktiv: false,
+          werkzeugVersion: '0.1.0',
+          gestartetAm: `2026-01-0${(nummer % 9) + 1}T10:00:00.000Z`,
+          seiten: [{ url: 'https://example.org/' }],
+          name,
+        }),
+      );
+    }
+
+    it('zaehlt alle Treffer, auch die nicht ausgelieferten', () => {
+      const db = oeffneDatenbank({ pfad: ':memory:' });
+      fuelle(db, Array.from({ length: 120 }, (_, i) => `Lauf ${i + 1}`));
+
+      const erste = listeScans(db, { hoechstzahl: 50 });
+      assert.equal(erste.scans.length, 50, 'ein Abschnitt bringt hoechstens so viele Zeilen wie verlangt');
+      assert.equal(erste.gesamt, 120, 'gesamt zaehlt unabhaengig vom Ausschnitt — sonst weiss niemand, was fehlt');
+      db.close();
+    });
+
+    it('blaettert lueckenlos und ohne Dopplung', () => {
+      const db = oeffneDatenbank({ pfad: ':memory:' });
+      fuelle(db, Array.from({ length: 120 }, (_, i) => `Lauf ${i + 1}`));
+
+      const gesehen = new Set<number>();
+      for (let versatz = 0; versatz < 120; versatz += 50) {
+        for (const scan of listeScans(db, { hoechstzahl: 50, versatz }).scans) {
+          assert.ok(!gesehen.has(scan.scanId), `Scan ${scan.scanId} kam zweimal — beim Blaettern verrutscht`);
+          gesehen.add(scan.scanId);
+        }
+      }
+      assert.equal(gesehen.size, 120, 'ueber alle Abschnitte muss jede Pruefung genau einmal auftauchen');
+      db.close();
+    });
+
+    it('findet ueber den Namen, ohne Ruecksicht auf Gross- und Kleinschreibung', () => {
+      const db = oeffneDatenbank({ pfad: ':memory:' });
+      fuelle(db, ['Relaunch Startseite', 'Kontaktformular', 'relaunch Shop']);
+
+      const treffer = listeScans(db, { suche: 'RELAUNCH' });
+      assert.equal(treffer.gesamt, 2);
+      assert.deepEqual(
+        treffer.scans.map((s) => s.name).sort(),
+        ['Relaunch Startseite', 'relaunch Shop'],
+      );
+      db.close();
+    });
+
+    it('findet einen namenlosen Lauf ueber seine Nummer', () => {
+      const db = oeffneDatenbank({ pfad: ':memory:' });
+      const ids = fuelle(db, [null, null, null]);
+      const gesucht = ids[1]!;
+
+      /*
+        Namenlose Laeufe heissen in der Anzeige „Pruefung 2". Wer das abliest
+        und eingibt, muss die Zeile finden — sonst sucht er nach einem Text,
+        den die Anzeige erfunden hat und der nirgends gespeichert ist.
+      */
+      const treffer = listeScans(db, { suche: String(gesucht) });
+      assert.equal(treffer.gesamt, 1);
+      assert.equal(treffer.scans[0]?.scanId, gesucht);
+      db.close();
+    });
+
+    it('nimmt Prozentzeichen als Zeichen, nicht als Platzhalter', () => {
+      const db = oeffneDatenbank({ pfad: ':memory:' });
+      fuelle(db, ['Rabatt 20% Seite', 'Startseite']);
+
+      /*
+        Ohne Maskierung waere „%" der Platzhalter von LIKE und faende jeden
+        Lauf. Eine Suche, die bei einem Sonderzeichen alles zurueckgibt, sieht
+        aus wie ein Treffer und ist keiner.
+      */
+      const treffer = listeScans(db, { suche: '%' });
+      assert.equal(treffer.gesamt, 1, 'nur der Lauf mit dem Prozentzeichen im Namen darf passen');
+      assert.equal(treffer.scans[0]?.name, 'Rabatt 20% Seite');
+      db.close();
+    });
+
+    it('durchsucht auch den Namen des Profils', () => {
+      const db = oeffneDatenbank({ pfad: ':memory:' });
+      const profil = db
+        .prepare(`INSERT INTO profil (name, standard, viewports, angelegt_am) VALUES (?, '2.1', '[]', ?)`)
+        .run('Onlineshop', '2026-01-01T00:00:00.000Z');
+
+      legeScanAn(db, {
+        betriebsart: 'profil',
+        standard: '2.1',
+        stufe2Aktiv: false,
+        werkzeugVersion: '0.1.0',
+        gestartetAm: '2026-01-01T10:00:00.000Z',
+        seiten: [{ url: 'https://example.org/' }],
+        profilId: Number(profil.lastInsertRowid),
+      });
+
+      // Laeufe aus einem Profil tragen keinen eigenen Namen; in der Liste
+      // stehen sie unter dem des Profils und muessen darueber zu finden sein.
+      const treffer = listeScans(db, { suche: 'shop' });
+      assert.equal(treffer.gesamt, 1);
+      assert.equal(treffer.scans[0]?.profilName, 'Onlineshop');
+      db.close();
+    });
+
+    it('behandelt einen Namen aus Leerzeichen wie keinen', () => {
+      const db = oeffneDatenbank({ pfad: ':memory:' });
+      fuelle(db, ['   ']);
+
+      // Sonst stuende in der Liste eine leere Zeile, und der Rueckfall auf
+      // Profilname oder Nummer griffe nicht.
+      assert.equal(listeScans(db).scans[0]?.name, null);
       db.close();
     });
   });

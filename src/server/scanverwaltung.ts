@@ -72,6 +72,8 @@ export interface ScanAuftragEingang {
   urls: string[];
   standard: Standard;
   betriebsart?: Betriebsart;
+  /** Vom Menschen vergebener Name der Pruefung; fehlt bei Laeufen ohne Oberflaeche. */
+  name?: string;
   /** Sprachmodell-Stufe fuer diesen Lauf zuschalten (L-46). */
   stufe2Aktiv?: boolean;
   /** Abweichendes Modell; sonst der Vorschlag nach Hardware (L-29). */
@@ -221,6 +223,7 @@ export class Scanverwaltung {
       })),
       profilId: eingang.profilId ?? null,
       ...(eingang.modell ? { stufe2Modell: eingang.modell } : {}),
+      ...(eingang.name ? { name: eingang.name } : {}),
     });
 
     const lauf = new Lauf(scanId, eingang.standard, eingang.urls.length);

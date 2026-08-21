@@ -23,6 +23,17 @@ $farbe-flaeche: #ffffff !default;
 $farbe-flaeche-leise: #f5f6f8 !default;
 /// Dieselbe Flaeche unter dem Zeiger, eine Spur dunkler.
 $farbe-flaeche-schwebe: #eaecf1 !default;
+/*
+  Der Grund der Fusszeile: ein kaltes Mittelgrau.
+
+  Weisse Schrift darauf haelt 5,8:1 und damit 1.4.3 mit Reserve — auch fuer
+  die kleine Schriftgroesse, in der die Fusszeile gesetzt ist. Ein mittigeres
+  Grau waere moeglich (#6b7280 kaeme auf 4,83:1), liesse aber kaum Spielraum:
+  Wer die Schrift dort spaeter eine Stufe leiser stellt, faellt sofort durch.
+  Gegen den Seitengrund stehen 5,1:1, die Flaeche hebt sich also auch als
+  Flaeche deutlich ab.
+*/
+$farbe-fusszeile: #5f6672 !default;
 
 // ------------------------------------------------------------------- Schrift
 
@@ -204,6 +215,16 @@ $winkel-maske: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'
   `background-color` und damit weiterhin aus einer Variablen.
 */
 $info-maske: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7.1' fill='none' stroke='%23000' stroke-width='1.6'/%3E%3Ccircle cx='8' cy='4.7' r='1.05'/%3E%3Crect x='7.05' y='6.9' width='1.9' height='5.3' rx='0.95'/%3E%3C/svg%3E") !default;
+
+/*
+  Das Kreuz im Suchfeld — zwei gekreuzte Striche mit runden Enden.
+
+  Aus demselben Grund eine Maske wie beim Info-Zeichen: Ein „✕" im Inhalt
+  stuende im Zugaenglichkeitsbaum und wuerde als „Multiplikationszeichen"
+  oder gar nicht vorgelesen. Den Namen des Knopfes traegt sein Text, nicht
+  sein Bild.
+*/
+$kreuz-maske: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 4L12 12M12 4L4 12' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") !default;
 
 /*
   Weiche, sehr flache Schatten — Tiefe entsteht durch Flaeche, nicht durch

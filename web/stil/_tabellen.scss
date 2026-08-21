@@ -79,4 +79,42 @@
   tbody tr:hover {
     background: var(--flaeche-leise);
   }
+
+  /*
+    Eine Knopfreihe in einer Tabellenzelle bringt ihren oberen Abstand nicht
+    mit: Sie steht dort allein, und der Abstand kaeme zum Zellenpolster hinzu.
+    Die Knoepfe sassen dadurch anderthalb Zeilen unter dem Text der Nachbar-
+    zellen, obwohl die Zellen selbst oben ausgerichtet sind.
+  */
+  td > .knopfreihe {
+    margin-top: 0;
+  }
+}
+
+/*
+  Die Uhrzeit unter dem Datum.
+
+  Nebeneinander ist der Zeitpunkt die laengste Angabe der Zeile und zwingt
+  seine Spalte breiter, als der Inhalt es rechtfertigt. Untereinander steht
+  oben, was man sucht — das Datum —, und darunter leiser, was nur selten den
+  Ausschlag gibt.
+*/
+.zeitangabe {
+  display: block;
+  color: var(--schrift-leise);
+}
+
+/*
+  Die Zeile unter der Tabelle, die sagt, wie viel von wie viel zu sehen ist.
+
+  Mittig, weil sie zur ganzen Tabelle gehoert und nicht zu deren erster Spalte.
+  Linksbuendig las sie sich wie eine weitere Zeile der Liste, die nur ihren
+  Rahmen verloren hat.
+
+  Eigene Klasse statt einer Regel auf `.hilfetext`: Der Hilfetext steht sonst
+  ueberall unter einem Feld, dessen Beschriftung links beginnt — dort waere
+  mittig falsch.
+*/
+.zaehlzeile {
+  text-align: center;
 }

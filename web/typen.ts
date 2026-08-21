@@ -150,6 +150,15 @@ export interface Auftrag {
   betriebsart: Betriebsart;
   standard: Standard;
   stufe2: boolean;
+  /**
+   * Name der Pruefung.
+   *
+   * Bei freien Adressen und bei der Gesamtpruefung Pflicht — ohne ihn sind
+   * zwei Laeufe ueber dieselbe Seite in der Liste nicht zu unterscheiden. Bei
+   * einem Pruefprofil entfaellt er: Dort steht der Name des Profils dafuer
+   * ein, und ein zweiter daneben waere eine Angabe, die dasselbe sagt.
+   */
+  name?: string;
   urls?: string[];
   profilId?: number;
   crawl?: Crawlvorgabe;

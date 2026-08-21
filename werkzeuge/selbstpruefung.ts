@@ -57,7 +57,15 @@ const ANSICHTEN: Ansicht[] = [
   },
   {
     name: 'Auftrag — mit Fehlermeldung',
+    /*
+      Der Name wird vorher ausgefuellt, damit die Meldung die des Adressfeldes
+      ist und nicht die des Namensfeldes davor. Gemessen werden soll ein
+      Formular, das schon eine Pflichtangabe hinter sich hat und an der
+      naechsten haengt — dort steht die Fehlermeldung neben ausgefuellten
+      Feldern, und genau dieser Zustand ist der schwierigere.
+    */
     vorbereiten: async (seite) => {
+      await seite.getByLabel('Name der Prüfung').fill('Selbstprüfung');
       await seite.getByRole('button', { name: 'Prüfung starten' }).click();
       await seite.getByText('Bitte geben Sie mindestens eine Adresse an.').waitFor();
     },
@@ -67,6 +75,7 @@ const ANSICHTEN: Ansicht[] = [
     vorbereiten: async (seite) => {
       const beispiel = pathToFileURL(path.join(projektWurzel(), 'test', 'referenzseiten', 'mangelhaft.html')).href;
 
+      await seite.getByLabel('Name der Prüfung').fill('Selbstprüfung');
       await seite.getByLabel('Zu prüfende Adressen').fill(beispiel);
       await seite.getByRole('button', { name: 'Prüfung starten' }).click();
 
@@ -90,6 +99,7 @@ const ANSICHTEN: Ansicht[] = [
     vorbereiten: async (seite) => {
       const beispiel = pathToFileURL(path.join(projektWurzel(), 'test', 'referenzseiten', 'mangelhaft.html')).href;
 
+      await seite.getByLabel('Name der Prüfung').fill('Selbstprüfung');
       await seite.getByLabel('Zu prüfende Adressen').fill(beispiel);
       await seite.getByRole('button', { name: 'Prüfung starten' }).click();
       await seite.getByRole('heading', { name: /^Ergebnis/ }).waitFor({ timeout: 120_000 });
@@ -130,6 +140,7 @@ const ANSICHTEN: Ansicht[] = [
       const mangelhaft = pathToFileURL(path.join(projektWurzel(), 'test', 'referenzseiten', 'mangelhaft.html')).href;
       const sauber = pathToFileURL(path.join(projektWurzel(), 'test', 'referenzseiten', 'sauber.html')).href;
 
+      await seite.getByLabel('Name der Prüfung').fill('Selbstprüfung');
       await seite.getByLabel('Zu prüfende Adressen').fill(`${mangelhaft}\n${sauber}`);
       await seite.getByRole('button', { name: 'Prüfung starten' }).click();
       await seite.getByRole('heading', { name: /^Ergebnis/ }).waitFor({ timeout: 180_000 });
@@ -143,6 +154,7 @@ const ANSICHTEN: Ansicht[] = [
   {
     name: 'Bericht — Vorschau und Ausgabewege',
     vorbereiten: async (seite) => {
+      await seite.getByLabel('Name der Prüfung').fill('Selbstprüfung');
       await seite.getByLabel('Zu prüfende Adressen').fill(referenzseite('mangelhaft.html'));
       await seite.getByRole('button', { name: 'Prüfung starten' }).click();
       await seite.getByRole('heading', { name: /^Ergebnis/ }).waitFor({ timeout: 120_000 });
@@ -194,7 +206,8 @@ function referenzseite(datei: string): string {
 
 /** Fuehrt einen Scan durch die Oberflaeche und liefert dessen Kennung. */
 async function erzeugeBericht(seite: Page): Promise<number> {
-  await seite.getByLabel('Zu prüfende Adressen').fill(referenzseite('mangelhaft.html'));
+  await seite.getByLabel('Name der Prüfung').fill('Selbstprüfung');
+      await seite.getByLabel('Zu prüfende Adressen').fill(referenzseite('mangelhaft.html'));
   await seite.getByRole('button', { name: 'Prüfung starten' }).click();
   await seite.getByRole('heading', { name: /^Ergebnis/ }).waitFor({ timeout: 120_000 });
 

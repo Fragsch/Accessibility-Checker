@@ -149,9 +149,22 @@ export async function meldeAnmeldungFertig(scanId: number): Promise<void> {
   await hole(`/api/scan/${scanId}/anmeldung-fertig`, { method: 'POST' });
 }
 
-export async function ladeScans(): Promise<ScanUebersicht[]> {
-  const antwort = await hole<{ scans: ScanUebersicht[] }>('/api/scans');
-  return antwort.scans;
+/**
+ * Ein Abschnitt der bisherigen Prüfungen.
+ *
+ * `gesamt` sind die Treffer insgesamt — daran erkennt die Liste, ob es noch
+ * etwas nachzuladen gibt, und kann sagen, wie viel sie gerade nicht zeigt.
+ */
+export async function ladeScans(
+  auswahl: { suche?: string; anzahl?: number; versatz?: number } = {},
+): Promise<{ scans: ScanUebersicht[]; gesamt: number }> {
+  const frage = new URLSearchParams();
+  if (auswahl.suche?.trim()) frage.set('suche', auswahl.suche.trim());
+  if (auswahl.anzahl !== undefined) frage.set('anzahl', String(auswahl.anzahl));
+  if (auswahl.versatz !== undefined) frage.set('versatz', String(auswahl.versatz));
+
+  const anhang = frage.toString();
+  return hole<{ scans: ScanUebersicht[]; gesamt: number }>(`/api/scans${anhang ? `?${anhang}` : ''}`);
 }
 
 /** Löscht einen Scan samt aller Belege (S-24). */

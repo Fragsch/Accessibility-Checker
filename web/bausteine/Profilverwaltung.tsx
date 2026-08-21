@@ -376,7 +376,15 @@ export function Profilverwaltung({ beiFertig }: Eigenschaften): React.ReactEleme
                       onClick={() => setzeZeilen((bisher) => bisher.filter((_, i) => i !== nummer))}
                       disabled={zeilen.length === 1}
                     >
-                      Zeile {nummer + 1} entfernen
+                      {/*
+                        „Seite", nicht „Zeile": Die Karte darueber traegt die
+                        Adresse einer Seite des Profils, und der Knopf darunter
+                        heisst „Seite hinzufuegen". Die Nummer bleibt — sie
+                        unterscheidet die sonst gleich lautenden Knoepfe fuer
+                        eine Sprachausgabe (4.1.2) und benennt dieselbe Zahl
+                        wie die Beschriftung „Adresse N" im Feld darueber.
+                      */}
+                      Seite {nummer + 1} entfernen
                     </button>
                   </div>
                 </div>

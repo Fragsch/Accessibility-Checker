@@ -1,0 +1,24 @@
+-- Fassung 4 — ein Name je Pruefung.
+--
+-- Bisher trug ein Scan in der Liste nur seine Nummer, den Zeitpunkt und die
+-- Betriebsart. Wer eine Seite mehrmals prueft — vor und nach einer Aenderung,
+-- oder zwei Ausbaustufen nebeneinander —, sieht dort mehrere Zeilen, die sich
+-- in nichts unterscheiden ausser der Uhrzeit. Genau die weiss aber niemand
+-- mehr, wenn er einen Tag spaeter nachsehen will, welcher Lauf welcher war.
+--
+-- Der Name ist deshalb in der Oberflaeche ein Pflichtfeld: Er entsteht in dem
+-- Augenblick, in dem der Mensch noch weiss, was er vorhat.
+--
+-- In der Datenbank bleibt die Spalte trotzdem `NULL`-faehig, und zwar aus zwei
+-- Gruenden. Erstens haben alle bereits gespeicherten Scans keinen Namen; eine
+-- `NOT NULL`-Spalte muesste ihnen einen erfinden, und eine erfundene Angabe in
+-- einem Pruefwerkzeug ist schlimmer als eine fehlende. Zweitens laufen Scans
+-- auch ohne Oberflaeche — ueber `npm run scan`, die Verifikation und die
+-- Selbstpruefung —, und dort gibt es niemanden, der einen Namen vergeben
+-- koennte.
+--
+-- Scans aus einem Pruefprofil brauchen die Spalte in der Regel nicht: Sie
+-- tragen den Namen des Profils, und der steht schon in `profil.name`. Die
+-- Anzeige greift auf diesen zurueck, wenn hier nichts steht.
+
+ALTER TABLE scan ADD COLUMN name TEXT;

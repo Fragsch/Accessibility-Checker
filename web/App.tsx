@@ -494,13 +494,22 @@ export function App(): React.ReactElement {
           )}
         </main>
 
-        <footer className="fusszeile">
-          <p>
+      </div>
+
+      {/*
+        Die Fusszeile steht ausserhalb der Spalte, damit ihre Flaeche ueber die
+        volle Fensterbreite laeuft. Das Jahr kommt aus der Uhr des Rechners —
+        ein eingetragenes veraltet, und niemand bemerkt es.
+      */}
+      <footer className="fusszeile">
+        <div className="fusszeile__inhalt">
+          <p className="fusszeile__hinweis">
             Das Werkzeug ersetzt keine zertifizierte Prüfung. Solange Kriterien den Status „Prüfung erforderlich“
             tragen, ist das Ergebnis ein Entwurf.
           </p>
-        </footer>
-      </div>
+          <p className="fusszeile__urheber">© {new Date().getFullYear()} Frank Gschwandtner</p>
+        </div>
+      </footer>
     </>
   );
 }

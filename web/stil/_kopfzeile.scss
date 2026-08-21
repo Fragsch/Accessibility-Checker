@@ -66,13 +66,35 @@
   position: relative;
 }
 
+/*
+  Nebeneinander traegt kein Zwischenraum den Abstand — er steckt vollstaendig
+  im Polster der Knoepfe.
+
+  Der Grund ist, dass zwei ungleiche Kanten aufeinandertreffen: Bei einem
+  drittrangigen Knopf endet das Sichtbare am Text, bei „Neue Pruefung" an
+  seiner Flaeche. Mit einem Zwischenraum `g` und einem Polster `p` laegen
+  zwischen zwei Beschriftungen `2p + g`, zwischen der letzten Beschriftung und
+  der Knopfkante aber nur `p + g` — die erste Luecke sah damit fast doppelt so
+  weit aus wie die zweite. Gleich werden beide nur, wenn `g` verschwindet:
+  Dann steht ueberall `2p`, weil der erstrangige Knopf das fehlende zweite
+  Polster als Aussenabstand nachreicht.
+*/
 .kopfnav__liste {
   display: flex;
   align-items: center;
-  gap: var(--abstand-klein);
+  gap: 0;
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+/*
+  Das zweite Polster fuer den einen Knopf, der seines innen nicht zeigen kann.
+  Der Rahmen zaehlt mit: Beim drittrangigen Knopf ist er durchsichtig und
+  gehoert damit optisch zur Luecke, beim erstrangigen ist er die Kante selbst.
+*/
+.kopfnav__liste button:not(.drittrangig) {
+  margin-left: calc(var(--abstand) + var(--rahmen));
 }
 
 /*
@@ -88,19 +110,49 @@
     display: inline-flex;
   }
 
+  /*
+    Untereinander gilt die Rechnung von oben nicht: Die Punkte stossen mit
+    ihren waagerechten Kanten aneinander, und die sind bei allen gleich. Hier
+    trennt sie wieder ein Zwischenraum, und der Aussenabstand des
+    erstrangigen Knopfes entfaellt — er wuerde ihn allein einruecken.
+  */
   .kopfnav__liste {
     display: none;
     position: absolute;
     top: calc(100% + var(--abstand-klein));
     right: 0;
     z-index: 1;
+    gap: var(--abstand-klein);
     flex-direction: column;
     align-items: stretch;
-    min-width: 16rem;
+    /*
+      So breit, dass kein Punkt umbricht — aber nie breiter als das Fenster.
+
+      Vorher stand hier ein festes Mass von 16rem, und „Was dieses Werkzeug
+      findet" ueberschritt es um wenige Pixel: Der Punkt lief zweizeilig, die
+      Zeile darunter begann unter dem Text statt an einer Kante, und der
+      Wortabstand riss die Beschriftung auseinander. `max-content` misst
+      stattdessen den laengsten Punkt und macht das Menue genau so breit.
+
+      Bewusst kein `nowrap` auf den Knoepfen: Reicht die Fensterbreite doch
+      einmal nicht — bei 320 Pixeln und 400 Prozent Vergroesserung —, muss der
+      Text umbrechen duerfen. Sonst schoebe das Menue die Seite in die Breite
+      und erzwaenge seitliches Scrollen (1.4.10). Die Obergrenze laesst genau
+      diesen Rueckfall zu.
+    */
+    min-width: max-content;
+    max-width: calc(100vw - 2 * #{v.$seitenrand});
     padding: var(--abstand-klein);
     background: var(--flaeche);
     border: var(--rahmen) solid var(--linie);
-    border-radius: var(--radius);
+    /*
+      Konzentrisch zu den Knoepfen darin: Der Radius der Huelle ist der Radius
+      des Kindes plus der Abstand dazwischen. Die Knoepfe sind Pillen, ihr
+      wirksamer Radius ist also die halbe Trefferflaeche. Mit dem kleineren
+      `--radius` lief die Ecke der Blase quer zur Rundung des ersten und
+      letzten Knopfes, und der Zwischenraum wurde in den Ecken sichtbar enger.
+    */
+    border-radius: calc(var(--trefferflaeche) / 2 + var(--abstand-klein));
     box-shadow: var(--schatten-blase);
   }
 
@@ -108,12 +160,23 @@
     display: flex;
   }
 
-  // Im Menue steht jeder Punkt auf voller Breite und linksbuendig — eine Liste
-  // liest sich an einer Kante entlang, nicht ueber vier Mitten hinweg.
-  .kopfnav__liste button {
+  /*
+    Im Menue steht jeder Punkt auf voller Breite und linksbuendig — eine Liste
+    liest sich an einer Kante entlang, nicht ueber vier Mitten hinweg. Dazu
+    gehoert dasselbe Polster fuer alle: Sonst begaenne die Beschriftung des
+    erstrangigen Knopfes anderthalb Pixel weiter innen als die uebrigen, und
+    die gemeinsame Kante waere keine.
+
+    Der doppelte Klassenname hebt die Spezifitaet ueber die Regeln fuer den
+    breiten Zustand. Ohne ihn behielte der erstrangige Knopf hier seinen
+    Aussenabstand und stuende als einziger eingerueckt.
+  */
+  .kopfnav .kopfnav__liste button {
     width: 100%;
     justify-content: flex-start;
     // Auch die zweite Zeile eines umgebrochenen Punktes beginnt an der Kante.
     text-align: left;
+    margin-left: 0;
+    padding: 0 var(--abstand);
   }
 }

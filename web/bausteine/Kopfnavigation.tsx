@@ -83,13 +83,18 @@ export function Kopfnavigation({
       </button>
 
       <ul className="kopfnav__liste" id={listenId}>
+        {/*
+          Drittrangig: Beides sind Wege zurueck zu etwas Vorhandenem. Nur
+          „Neue Pruefung" ist die Handlung, um die es hier geht, und die
+          behaelt als einzige einen Knopf, der wie einer aussieht.
+        */}
         <li>
-          <button type="button" className="zweitrangig" onClick={() => fuehreAus(beiScans)}>
+          <button type="button" className="drittrangig" onClick={() => fuehreAus(beiScans)}>
             Bisherige Prüfungen
           </button>
         </li>
         <li>
-          <button type="button" className="zweitrangig" onClick={() => fuehreAus(beiAbdeckung)}>
+          <button type="button" className="drittrangig" onClick={() => fuehreAus(beiAbdeckung)}>
             Was dieses Werkzeug findet
           </button>
         </li>

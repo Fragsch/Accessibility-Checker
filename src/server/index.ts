@@ -81,6 +81,15 @@ const scanAnfrage = z.object({
   urls: z.array(z.string().min(1)).max(200).default([]),
   standard: z.enum(['2.1', '2.2']).default('2.1'),
   betriebsart: z.enum(['einzelseite', 'profil', 'gesamt']).optional(),
+  /**
+   * Name der Prüfung, damit sie in der Liste wiederzufinden ist.
+   *
+   * Hier optional, in der Oberfläche Pflicht. Die Schnittstelle bedient auch
+   * das Befehlszeilenwerkzeug, die Verifikation und die Selbstprüfung — dort
+   * gibt es niemanden, der einen Namen vergeben könnte, und ein erzwungenes
+   * Feld hieße nur, dass diese Läufe einen erfundenen mitschicken.
+   */
+  name: z.string().max(200).optional(),
   /** Scan aus einem gespeicherten Prüfprofil (K-03). */
   profilId: z.number().int().positive().optional(),
   /** Gesamtprüfung: Seitenliste aus einem Crawl (K-08, K-09). */
@@ -122,6 +131,19 @@ const profilAnfrage = z.object({
 
 const standardAnfrage = z.object({
   standard: z.enum(['2.1', '2.2']).default('2.1'),
+});
+
+/**
+ * Ausschnitt und Suchbegriff für die Liste der bisherigen Prüfungen.
+ *
+ * `coerce`, weil Abfrageparameter immer als Zeichenkette ankommen. Die
+ * Obergrenze von 200 je Abruf ist keine Schikane, sondern Rücksicht auf die
+ * Vorschaubilder: Jede Zeile lädt eines nach.
+ */
+const scanlisteAnfrage = z.object({
+  suche: z.string().max(200).optional(),
+  anzahl: z.coerce.number().int().min(1).max(200).default(50),
+  versatz: z.coerce.number().int().min(0).default(0),
 });
 
 /**
@@ -252,6 +274,7 @@ export function baueServer(optionen: ServerOptionen = {}): FastifyInstance {
       ...(anmeldung ? { anmeldung } : {}),
       ...(auftrag.modell ? { modell: auftrag.modell } : {}),
       ...(auftrag.betriebsart ? { betriebsart: auftrag.betriebsart } : {}),
+      ...(auftrag.name?.trim() ? { name: auftrag.name.trim() } : {}),
     });
 
     return antwort.code(201).send({
@@ -263,7 +286,31 @@ export function baueServer(optionen: ServerOptionen = {}): FastifyInstance {
     });
   });
 
-  server.get('/api/scans', async () => ({ scans: listeScans(db) }));
+  /**
+   * Die bisherigen Prüfungen, durchsuchbar und in Abschnitten.
+   *
+   * Bis Phase 8 gab diese Route unbesehen die fünfzig jüngsten Läufe zurück,
+   * und mehr war über die Oberfläche nicht erreichbar. Das fiel nicht auf,
+   * solange die Zeilen namenlos waren und ohnehin niemand darin suchte —
+   * seit jede Prüfung einen Namen trägt, ist das Wiederfinden der Zweck der
+   * Ansicht, und eine feste Kappung steht ihm im Weg.
+   *
+   * `gesamt` zählt die Treffer unabhängig von `anzahl` und `versatz`: Nur
+   * damit kann die Oberfläche sagen, wie viel sie gerade nicht zeigt.
+   */
+  server.get('/api/scans', async (anfrage, antwort) => {
+    const gelesen = scanlisteAnfrage.safeParse(anfrage.query);
+    if (!gelesen.success) return antwort.code(400).send({ fehler: 'Ungültige Angaben zur Liste.' });
+
+    const { suche, anzahl, versatz } = gelesen.data;
+    const liste = listeScans(db, {
+      hoechstzahl: anzahl,
+      versatz,
+      ...(suche ? { suche } : {}),
+    });
+
+    return { ...liste, anzahl, versatz };
+  });
 
   server.get<{ Params: { id: string } }>('/api/scan/:id', async (anfrage, antwort) => {
     const scanId = Number(anfrage.params.id);

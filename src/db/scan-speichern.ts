@@ -36,6 +36,15 @@ export interface ScanAnlage {
   werkzeugVersion: string;
   gestartetAm: string;
   seiten: { url: string; bezeichnung?: string | undefined }[];
+  /**
+   * Vom Menschen vergebener Name der Pruefung.
+   *
+   * In der Oberflaeche Pflicht, hier optional: Laeufe aus der Befehlszeile,
+   * der Verifikation und der Selbstpruefung haben niemanden, der einen Namen
+   * vergeben koennte. Fehlt er, faellt die Anzeige auf den Profilnamen und
+   * zuletzt auf die Nummer zurueck.
+   */
+  name?: string | null | undefined;
   /** Profil, aus dem der Auftrag stammt (K-03). `null` bei freier Eingabe. */
   profilId?: number | null | undefined;
   /** Modell der Sprachmodell-Stufe, sofern eingeschaltet (L-29). */
@@ -56,8 +65,8 @@ export function legeScanAn(db: Database, anlage: ScanAnlage): number {
     const scan = db
       .prepare(
         `INSERT INTO scan (profil_id, betriebsart, standard, gestartet_am, beendet_am,
-                           stufe2_aktiv, stufe2_modell, geschuetzt, werkzeug_version)
-         VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?)`,
+                           stufe2_aktiv, stufe2_modell, geschuetzt, werkzeug_version, name)
+         VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?, ?)`,
       )
       .run(
         a.profilId ?? null,
@@ -68,6 +77,10 @@ export function legeScanAn(db: Database, anlage: ScanAnlage): number {
         a.stufe2Modell ?? null,
         a.geschuetzt ? 1 : 0,
         a.werkzeugVersion,
+        // Ein Name aus Leerzeichen ist keiner: Er saehe in der Liste aus wie
+        // eine leere Zeile und verdeckte den Rueckfall auf Profilname oder
+        // Nummer.
+        a.name?.trim() || null,
       );
 
     const scanId = Number(scan.lastInsertRowid);
@@ -209,11 +222,21 @@ interface ScanZeile {
   stufe2_aktiv: number;
   geschuetzt: number;
   werkzeug_version: string;
+  name: string | null;
 }
 
 /** Kurzangaben zu einem Scan, ohne die Bewertungen. */
 export interface ScanUebersicht {
   scanId: number;
+  /**
+   * Der vergebene Name, sofern einer vergeben wurde.
+   *
+   * Kein Rueckfall auf Profilname oder Nummer an dieser Stelle: Was hier
+   * steht, hat ein Mensch geschrieben. Womit eine namenlose Pruefung
+   * angezeigt wird, entscheidet die Anzeige — sie kennt den Zusammenhang und
+   * kann den Ersatz als solchen kenntlich machen.
+   */
+  name: string | null;
   betriebsart: Betriebsart;
   standard: Standard;
   gestartetAm: string;
@@ -234,7 +257,67 @@ export interface ScanUebersicht {
   hatAbbild: boolean;
 }
 
-export function listeScans(db: Database, hoechstzahl = 50): ScanUebersicht[] {
+/** Womit die Liste eingegrenzt wird. */
+export interface Scanauswahl {
+  /** Wie viele Zeilen hoechstens. */
+  hoechstzahl?: number | undefined;
+  /** Wie viele Zeilen uebersprungen werden — fuer das Nachladen. */
+  versatz?: number | undefined;
+  /** Suchbegriff; leer oder fehlend heisst: alle. */
+  suche?: string | undefined;
+}
+
+/** Was eine Abfrage zurueckgibt: die Zeilen und wie viele es insgesamt gaebe. */
+export interface Scanliste {
+  scans: ScanUebersicht[];
+  /**
+   * Treffer insgesamt, unabhaengig von `hoechstzahl` und `versatz`.
+   *
+   * Ohne diese Zahl kann die Oberflaeche nicht sagen, ob es noch etwas
+   * nachzuladen gibt — und auch nicht, wie viel sie gerade verschweigt. Genau
+   * das war der Mangel der festen Grenze von fuenfzig: Sie liess offen, ob
+   * dahinter nichts mehr kam oder dreihundert Laeufe.
+   */
+  gesamt: number;
+}
+
+/**
+ * Wonach gesucht wird.
+ *
+ * Ueber den Namen, den Namen des Profils — und ueber die Nummer, sofern die
+ * Eingabe eine ist. Die Nummer gehoert dazu, weil namenlose Laeufe in der
+ * Liste als „Pruefung 362" erscheinen: Wer diese Zeichenfolge abliest und
+ * eingibt, soll die Zeile auch finden. Ohne sie suchte er nach einem Text,
+ * den die Anzeige erfunden hat und der in der Datenbank nirgends steht.
+ *
+ * Nicht ueber die geprueften Adressen. Das waere ein Verbund ueber
+ * `scan_seite` und faende bei einer Gesamtpruefung dreissig Zeilen zu einem
+ * Lauf — eine Suche, die mehr Treffer erzeugt, als es Pruefungen gibt, hilft
+ * beim Wiederfinden nicht.
+ */
+function sucheBedingung(suche: string): { klausel: string; werte: unknown[] } {
+  const begriff = `%${suche.replace(/[%_\\]/g, (z) => `\\${z}`)}%`;
+  const nummer = /^\s*\d+\s*$/.test(suche) ? Number(suche) : null;
+
+  return {
+    klausel:
+      `WHERE (s.name LIKE ? ESCAPE '\\'` +
+      ` OR (SELECT name FROM profil WHERE id = s.profil_id) LIKE ? ESCAPE '\\'` +
+      (nummer === null ? '' : ' OR s.id = ?') +
+      ')',
+    werte: nummer === null ? [begriff, begriff] : [begriff, begriff, nummer],
+  };
+}
+
+export function listeScans(db: Database, auswahl: Scanauswahl = {}): Scanliste {
+  const hoechstzahl = Math.min(Math.max(auswahl.hoechstzahl ?? 50, 1), 500);
+  const versatz = Math.max(auswahl.versatz ?? 0, 0);
+  const suche = (auswahl.suche ?? '').trim();
+
+  const { klausel, werte } = suche ? sucheBedingung(suche) : { klausel: '', werte: [] };
+
+  const gesamt = (db.prepare(`SELECT COUNT(*) AS n FROM scan s ${klausel}`).get(...werte) as { n: number }).n;
+
   const zeilen = db
     .prepare(
       `SELECT s.*,
@@ -242,26 +325,30 @@ export function listeScans(db: Database, hoechstzahl = 50): ScanUebersicht[] {
               (SELECT name FROM profil WHERE id = s.profil_id) AS profil_name,
               (SELECT abbild IS NOT NULL FROM scan_seite
                 WHERE scan_id = s.id ORDER BY id LIMIT 1) AS hat_abbild
-       FROM scan s ORDER BY s.id DESC LIMIT ?`,
+       FROM scan s ${klausel} ORDER BY s.id DESC LIMIT ? OFFSET ?`,
     )
-    .all(hoechstzahl) as (ScanZeile & {
+    .all(...werte, hoechstzahl, versatz) as (ScanZeile & {
     seiten: number;
     profil_name: string | null;
     hat_abbild: number | null;
   })[];
 
-  return zeilen.map((z) => ({
-    scanId: z.id,
-    betriebsart: z.betriebsart as Betriebsart,
-    standard: z.standard as Standard,
-    gestartetAm: z.gestartet_am,
-    beendetAm: z.beendet_am,
-    seiten: z.seiten,
-    profilId: z.profil_id,
-    profilName: z.profil_name,
-    geschuetzt: z.geschuetzt === 1,
-    hatAbbild: z.hat_abbild === 1,
-  }));
+  return {
+    gesamt,
+    scans: zeilen.map((z) => ({
+      scanId: z.id,
+      name: z.name,
+      betriebsart: z.betriebsart as Betriebsart,
+      standard: z.standard as Standard,
+      gestartetAm: z.gestartet_am,
+      beendetAm: z.beendet_am,
+      seiten: z.seiten,
+      profilId: z.profil_id,
+      profilName: z.profil_name,
+      geschuetzt: z.geschuetzt === 1,
+      hatAbbild: z.hat_abbild === 1,
+    })),
+  };
 }
 
 /**

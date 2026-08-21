@@ -1,6 +1,6 @@
 {
   "beschreibung": "Gemessene Abdeckung je Erfolgskriterium (PRD 10). Erzeugt von werkzeuge/verifikation.ts — nicht von Hand pflegen, sondern neu messen.",
-  "gemessenAm": "2026-08-20",
+  "gemessenAm": "2026-08-21",
   "standard": "2.2",
   "werkzeug": "accessibility-checker 0.1.0",
   "referenzseiten": [

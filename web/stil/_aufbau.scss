@@ -5,7 +5,29 @@
 // Der Rahmen der Seite: Spalte, Kopf, Fuss.
 // ---------------------------------------------------------------------------
 
+/*
+  Die Seite fuellt mindestens das Fenster.
+
+  Erst seit die Fusszeile eine eigene Flaeche traegt, ist das noetig: Bei einer
+  kurzen Ansicht — dem leeren Pruefauftrag etwa — endete der farbige Streifen
+  sonst auf halber Hoehe, und darunter stuende der Seitengrund. Solange die
+  Fusszeile nur ein grauer Satz unter einer Haarlinie war, fiel das nicht auf.
+
+  `100dvh` statt `100vh`: Auf Mobilgeraeten zaehlt `vh` die eingeklappte
+  Adresszeile mit, und die Fusszeile saesse um deren Hoehe unterhalb des
+  sichtbaren Randes.
+*/
+#wurzel {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
 .seite {
+  // Nimmt den uebrigen Platz, damit die Fusszeile unten steht statt zu
+  // schweben.
+  flex: 1;
+  width: 100%;
   max-width: v.$seitenbreite;
   margin: 0 auto;
   padding: v.$abstand-riesig v.$seitenrand v.$abstand-riesig;
@@ -54,15 +76,63 @@ main > h2:focus-visible {
   outline-offset: 6px;
 }
 
+/*
+  Die Fusszeile.
+
+  Sie liegt ausserhalb der Spalte und laeuft ueber die volle Fensterbreite,
+  wie die Kopfzeile: Eine farbige Flaeche, die an der Spaltenkante endet,
+  saehe aus wie eine weitere Karte statt wie der Abschluss der Seite. Der
+  Inhalt haelt sich trotzdem an dieselbe Breite und dieselben Seitenraender
+  wie alles darueber — dafuer sorgt die innere Huelle.
+
+  Keine Trennlinie mehr: Die Flaeche grenzt sich selbst ab.
+*/
 .fusszeile {
-  border-top: var(--rahmen) solid var(--linie);
-  margin-top: v.$abstand-riesig;
-  padding-top: v.$abstand-gross;
-  color: var(--schrift-leise);
+  background: var(--fusszeile);
+  color: var(--flaeche);
   font-size: v.$groesse-klein;
+}
+
+/*
+  Nebeneinander und oben buendig: Der Hinweis ist zwei Zeilen lang, der
+  Urhebervermerk eine. An der Unterkante ausgerichtet stuende der kurze
+  Vermerk auf der Hoehe der zweiten Zeile und saehe aus, als gehoere er zu
+  ihr; oben buendig beginnen beide auf derselben Grundlinie.
+*/
+.fusszeile__inhalt {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: v.$abstand v.$abstand-riesig;
+  max-width: v.$seitenbreite;
+  margin: 0 auto;
+  padding: v.$abstand-gross v.$seitenrand;
 
   p {
     margin: 0;
-    max-width: 52rem;
+  }
+}
+
+// Der Hinweis darf Zeilen brauchen, der Vermerk soll keine verlieren.
+.fusszeile__hinweis {
+  max-width: 52rem;
+}
+
+.fusszeile__urheber {
+  flex-shrink: 0;
+}
+
+/*
+  Schmal: untereinander und mittig. Nebeneinander blieben fuer den Hinweis
+  wenige Woerter je Zeile, und der Vermerk stuende als schmale Spalte daneben.
+  Derselbe Bruchpunkt wie in der Kopfzeile — was dort zu eng fuer eine Reihe
+  ist, ist es hier auch.
+*/
+@media (max-width: v.$bruch-kopf) {
+  .fusszeile__inhalt {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--abstand);
   }
 }

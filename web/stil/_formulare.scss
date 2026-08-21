@@ -55,7 +55,8 @@
     Senkrechter Rhythmus im Kasten. Drei Abstufungen, von eng nach weit:
 
     - Beschriftung zu ihrem Feld: eng, die beiden gehoeren zusammen
-    - Hilfetext zu dem, was er erlaeutert: eine halbe Zeile
+    - Hilfetext zu dem, was er erlaeutert: knapper als eine ganze Zeile,
+      aber weit genug, dass er nicht am Bedienelement darueber klebt
     - alles andere: eine ganze Zeile
 
     Ohne diese Regel stossen Bloecke aneinander, die ihre Abstaende bisher
@@ -77,7 +78,25 @@
   }
 
   > .hilfetext {
-    margin-top: var(--abstand-klein);
+    margin-top: var(--abstand-mittel);
+  }
+
+  /*
+    Der Rand nach unten kommt vom Innenabstand des Kastens. Was der letzte
+    Baustein an eigenem Abstand mitbringt — der Aufklapper etwa — addierte
+    sich darauf, und der Kasten sieht unten weiter aus als oben.
+  */
+  > :last-child {
+    margin-bottom: 0;
+  }
+
+  /*
+    Im Kasten bestimmt der Kasten den Rhythmus: Der Abstand nach unten kommt
+    von der Regel oben, ein eigener der Knopfreihe addierte sich nur darauf.
+    Ausserhalb eines Kastens braucht sie ihn — siehe `_knoepfe.scss`.
+  */
+  > .knopfreihe:not(:last-child) {
+    margin-bottom: 0;
   }
 
   /*
@@ -216,6 +235,7 @@ label {
 
 input[type='text'],
 input[type='url'],
+input[type='search'],
 input[type='number'],
 input[type='file'],
 textarea,
@@ -225,9 +245,140 @@ select {
 
 input[type='text'],
 input[type='url'],
+input[type='search'],
 textarea,
 select {
   width: 100%;
+}
+
+/*
+  Das Suchfeld traegt dieselbe Form wie ein gewoehnliches Textfeld.
+
+  Es ist eines — nur mit einer Zugabe: Der Browser bietet ein Loeschkreuz und
+  die zuletzt gesuchten Begriffe an, und `type="search"` sagt einer
+  Sprachausgabe, wozu das Feld da ist. Beides ist Grund genug fuer den
+  eigenen Typ; keiner ist ein Grund, dass es anders aussieht als das Feld
+  darueber.
+
+  `appearance: none` ist dabei nicht Kosmetik: Ohne die Zeile zeichnet WebKit
+  das Feld als eigene Kapsel und ueberhoert dabei Polsterung und Mindesthoehe.
+  Aus 48 Pixeln Trefferflaeche wurden 21 — unter dem, was 2.5.5 verlangt, und
+  in einer Schriftgroesse, die niemand eingestellt hat.
+*/
+input[type='search'] {
+  appearance: none;
+
+  /*
+    Das eingebaute Loeschkreuz bleibt abgeschaltet.
+
+    Es liess sich nicht mit der Tastatur erreichen: Der Browser zeichnet es,
+    nimmt es aber nicht in die Tabulatorreihenfolge auf, und fokussierbar
+    machen laesst es sich nicht. Damit stand in der Oberflaeche ein
+    sichtbares Bedienelement, das nur mit der Maus zu bedienen war — in
+    einem Werkzeug, das genau das an fremden Seiten bemaengelt.
+
+    Dass die Escape-Taste dasselbe tut, war als Rechtfertigung zu bequem:
+    Sie ist eine Abkuerzung, die niemand sieht. An seiner Stelle steht jetzt
+    ein eigener Knopf, der einen Namen hat und angesprungen werden kann.
+  */
+  &::-webkit-search-cancel-button {
+    appearance: none;
+    display: none;
+  }
+}
+
+/*
+  Das Suchfeld mit seinem Loeschknopf.
+
+  Der Knopf liegt im Feld statt daneben: Daneben verschoebe er bei jedem
+  Erscheinen die Breite des Feldes, und das Feld ruckte unter dem Cursor
+  weg, waehrend man tippt.
+*/
+/*
+  Der Einzug des Knopfes im Feld — ringsum derselbe.
+
+  Er ist genau so breit, wie der Fokusring nach aussen braucht (Abstand plus
+  Staerke). Damit liegt der Ring im Feld statt darueber hinaus: Bei einem
+  groesseren Knopf schnitt er oben und unten ueber den Feldrand, und der Knopf
+  sass sichtbar zu gross in seinem Schlitz.
+*/
+$knopf-einzug: v.$fokus-abstand + v.$fokus-staerke;
+
+.suchfeld {
+  position: relative;
+  /*
+    Grid statt Block: Ein `input` ist inline, und darunter bliebe die Luft der
+    Zeilenschaltung stehen. Der Kasten waere ein paar Pixel hoeher als das
+    Feld — und der Knopf, der sich an dieser Hoehe misst, sasse daneben.
+  */
+  display: grid;
+
+  input[type='search'] {
+    /*
+      Platz fuer den Knopf, damit langer Text nicht darunter verschwindet.
+      Gerechnet, nicht gesetzt: Der Knopf endet `$knopf-einzug` vor dem
+      rechten Rand und ist so breit wie das Feld hoch ist, abzueglich des
+      Einzugs auf beiden Seiten. Bleibt eine kleine Luecke zum Text.
+    */
+    padding-right: calc(var(--trefferflaeche) - #{$knopf-einzug} + var(--abstand-klein));
+  }
+}
+
+.suchfeld__loeschen {
+  position: absolute;
+  top: $knopf-einzug;
+  right: $knopf-einzug;
+  /*
+    Quadratisch, und die Hoehe kommt vom Feld: die Innenhoehe abzueglich des
+    Einzugs oben und unten. Bei den 44 Pixeln, die `--trefferflaeche` vorgibt,
+    sind das 34 — deutlich ueber den 24 mal 24, die 2.5.8 verlangt.
+
+    `min-width` und `min-height` der Knopfregel werden dabei abgeraeumt; sie
+    setzen sonst eine eigene Groesse gegen die gerechnete.
+  */
+  min-width: 0;
+  min-height: 0;
+  width: auto;
+  height: calc(100% - 2 * #{$knopf-einzug});
+  aspect-ratio: 1;
+  padding: 0;
+  border-color: transparent;
+  /*
+    Die Ecke laeuft konzentrisch zur Ecke des Feldes: gleicher Mittelpunkt,
+    Radius um den Einzug kleiner. So folgt die Rundung des Knopfes der des
+    Schlitzes, statt als zweite, fremde Form darin zu liegen — bei gleichem
+    Radius wirkte sie auf der kleineren Flaeche runder, bei voller Rundung
+    lag ein Kreis in einem Rechteck.
+  */
+  border-radius: calc(var(--radius) - #{$knopf-einzug});
+  background: none;
+
+  &:hover:not(:disabled) {
+    background: var(--flaeche-schwebe);
+    border-color: transparent;
+  }
+
+  /*
+    Das Kreuz als Maske. Die Farbe ist die des leisen Textes und haelt damit
+    6,4:1 auf Weiss — 1.4.11 verlangt fuer die Form eines Bedienelements 3:1,
+    das ist mit Abstand erfuellt.
+  */
+  &::before {
+    content: '';
+    width: 0.85rem;
+    height: 0.85rem;
+    background-color: var(--schrift-leise);
+    -webkit-mask-image: v.$kreuz-maske;
+    mask-image: v.$kreuz-maske;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+  }
+
+  &:hover::before {
+    background-color: var(--schrift);
+  }
 }
 
 textarea {
@@ -308,9 +459,18 @@ input[type='checkbox'] {
 }
 
 /*
-  Ankreuzfeld mit Beschriftung daneben. Die Beschriftung umschliesst das Feld,
-  damit auch ein Klick auf den Text wirkt — und die Trefferflaeche gross genug
-  bleibt (2.5.5).
+  Ankreuzfeld mit Beschriftung daneben, ohne Rahmen. Die Beschriftung
+  umschliesst das Feld, damit auch ein Klick auf den Text wirkt — und die
+  Trefferflaeche gross genug bleibt (2.5.5).
+
+  Diese Form ist die Ausnahme, nicht die Regel: Sie gehoert in eine Liste, in
+  der viele Zeilen abzuhaken sind und jede Zeile mehrere Zeilen Text tragen
+  kann — bei den Seitenkandidaten eines Profils etwa. Ein Rahmen um jede
+  Zeile ergaebe dort eine Wand aus Kaesten.
+
+  Ein einzelner Schalter in einer Feldgruppe steht dagegen in `.auswahl` und
+  traegt die Pille wie jede andere Auswahl. Er ist eine Entscheidung, kein
+  Listeneintrag, und soll auch so aussehen.
 */
 .ankreuzfeld {
   display: flex;
