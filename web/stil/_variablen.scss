@@ -63,12 +63,27 @@ $farbe-linie-kraeftig: #808795 !default;
 
 // -------------------------------------------------------------------- Akzent
 
-/// Verweise, Fokusrahmen, aktive Auswahl. 6,7:1 auf Weiss, 5,9:1 auf dem Grund.
-$farbe-akzent: #1d4ed8 !default;
+/*
+  Ausgangspunkt war #2a78d6. Dieselbe Variable faerbt aber nicht nur Rahmen und
+  Fokusring, sondern auch Verweistexte — und dort gilt 4,5:1, nicht 3:1.
+  #2a78d6 kommt auf 4,4:1 gegen Weiss und 3,9:1 gegen den Grund; als Rahmen
+  reicht das, als Schrift nicht. Der Farbton bleibt deshalb erhalten und nur
+  die Helligkeit sinkt, bis der Wert gegen jeden Untergrund haelt, auf dem
+  Text steht: Weiss, Grund, leise Flaeche und Schwebeflaeche.
+
+  Der hellste Wert auf dieser Farbtonlinie, der das noch schafft, waere
+  #256bc0 mit 4,51:1 gegen die Schwebeflaeche. Eine Hundertstel Spielraum ist
+  keiner — eine spaetere Anpassung einer Flaechenfarbe reisst ihn.
+*/
+
+/// Verweise, Fokusrahmen, aktive Auswahl.
+/// 5,4:1 auf Weiss, 4,7:1 auf dem Grund, 4,6:1 auf der Schwebeflaeche.
+$farbe-akzent: #256abe !default;
 /// Dieselbe Farbe eine Stufe dunkler, fuer Schwebe- und Druckzustand.
-$farbe-akzent-dunkel: #163fae !default;
-/// Getoente Flaeche in der Akzentfarbe. Traegt dunkle Schrift.
-$farbe-akzent-leise: #e8eefc !default;
+/// 7,6:1 auf Weiss, 6,7:1 auf dem Grund.
+$farbe-akzent-dunkel: #1d5495 !default;
+/// Getoente Flaeche in der Akzentfarbe. Traegt dunkle Schrift — 15,9:1.
+$farbe-akzent-leise: #e8f1fc !default;
 
 // ------------------------------------------------------------------ Knoepfe
 
