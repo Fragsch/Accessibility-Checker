@@ -11,7 +11,7 @@
  * bewusst gewählte Seite ist mehr wert als eine gefundene.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import {
   ApiFehler,
@@ -24,6 +24,8 @@ import {
   schlageSeitenVor,
 } from '../api';
 import type { GefundeneSeite, Profil, Standard } from '../typen';
+import { Bestaetigung } from './Bestaetigung';
+import { Loeschknopf } from './Loeschknopf';
 
 interface Eigenschaften {
   beiFertig: () => void;
@@ -46,6 +48,27 @@ export function Profilverwaltung({ beiFertig }: Eigenschaften): React.ReactEleme
   const [meldung, setzeMeldung] = useState<string | null>(null);
   const [fehler, setzeFehler] = useState<string | null>(null);
 
+  /*
+    Das Profil, zu dem gerade nachgefragt wird — das ganze Profil, nicht nur
+    seine Nummer: Der Dialog nennt seinen Namen, und den muesste er sich sonst
+    aus der Liste zurueckholen, waehrend diese gerade neu geladen wird.
+  */
+  const [nachfrage, setzeNachfrage] = useState<Profil | null>(null);
+
+  /*
+    Der Fokus nach dem Loeschen.
+
+    Sonst uebernimmt das der Dialog: Er gibt den Fokus beim Schliessen dorthin
+    zurueck, wo er hergekommen ist. Nach einem Loeschen ist das der Knopf einer
+    Zeile, die es nicht mehr gibt — der Fokus faellt auf den Seitenanfang, und
+    wer mit der Tastatur arbeitet, steht ohne Vorwarnung wieder ganz oben.
+
+    Er geht deshalb auf die Meldung. Sie ist die Antwort auf die Handlung und
+    nennt das geloeschte Profil beim Namen.
+  */
+  const meldungsfeld = useRef<HTMLParagraphElement>(null);
+  const fokusAufMeldung = useRef(false);
+
   // Vorschlagsfunktion (K-06)
   const [startadresse, setzeStartadresse] = useState('');
   const [sucht, setzeSucht] = useState(false);
@@ -55,6 +78,12 @@ export function Profilverwaltung({ beiFertig }: Eigenschaften): React.ReactEleme
   useEffect(() => {
     void aktualisiere();
   }, []);
+
+  useEffect(() => {
+    if (!fokusAufMeldung.current || meldung === null) return;
+    fokusAufMeldung.current = false;
+    meldungsfeld.current?.focus();
+  }, [meldung]);
 
   async function aktualisiere(): Promise<void> {
     try {
@@ -127,9 +156,16 @@ export function Profilverwaltung({ beiFertig }: Eigenschaften): React.ReactEleme
   async function entferne(profil: Profil): Promise<void> {
     try {
       await loescheProfil(profil.id);
+      // Erst den Dialog zu, dann die Meldung: Solange er offen ist, ist alles
+      // dahinter `inert`, und der Fokus koennte gar nicht auf die Meldung.
+      setzeNachfrage(null);
+      fokusAufMeldung.current = true;
       setzeMeldung(`Profil „${profil.name}“ gelöscht.`);
       await aktualisiere();
     } catch (e) {
+      // Auch im Fehlerfall schliesst der Dialog: Die Fehlermeldung steht in
+      // der Ansicht dahinter, und die bleibt `inert`, solange er offen ist.
+      setzeNachfrage(null);
       setzeFehler(alsText(e));
     }
   }
@@ -216,8 +252,14 @@ export function Profilverwaltung({ beiFertig }: Eigenschaften): React.ReactEleme
 
   return (
     <section aria-label="Prüfprofile">
+      {/*
+        `tabIndex={-1}`: Nach dem Löschen ist der Knopf fort, an den der Dialog
+        den Fokus zurückgäbe. Er kommt stattdessen hierher — angesprungen wird
+        die Meldung nur aus dem Programm, in der Tabulatorreihenfolge steht sie
+        nicht.
+      */}
       {meldung && (
-        <p className="meldung" role="status">
+        <p className="meldung" role="status" tabIndex={-1} ref={meldungsfeld}>
           {meldung}
         </p>
       )}
@@ -261,9 +303,18 @@ export function Profilverwaltung({ beiFertig }: Eigenschaften): React.ReactEleme
                           <button type="button" className="zweitrangig" onClick={() => void exportiere(profil)}>
                             Exportieren<span className="nur-fuer-screenreader">: {profil.name}</span>
                           </button>
-                          <button type="button" className="zweitrangig" onClick={() => void entferne(profil)}>
-                            Löschen<span className="nur-fuer-screenreader">: {profil.name}</span>
-                          </button>
+                          {/*
+                            Nur als Sinnbild, und erst nach einer Rueckfrage.
+
+                            Bisher stand hier ein drittes beschriftetes Wort —
+                            die Zelle wurde damit die breiteste der Tabelle —
+                            und ein Druck darauf loeschte das Profil sofort.
+                            Ein Profil ist Handarbeit: eine kuratierte Auswahl
+                            von Seiten, die jemand einzeln zusammengetragen hat
+                            (K-03). Es ohne Rueckfrage zu verlieren, war der
+                            groessere der beiden Mangel.
+                          */}
+                          <Loeschknopf betreff={profil.name} beiKlick={() => setzeNachfrage(profil)} />
                         </div>
                       </td>
                     </tr>
@@ -449,6 +500,37 @@ export function Profilverwaltung({ beiFertig }: Eigenschaften): React.ReactEleme
           </div>
         </form>
       )}
+
+      {/*
+        Ein Dialog für die ganze Ansicht, nicht einer je Zeile: Offen ist immer
+        höchstens einer, und mehrere im Baum wären mehrfach dieselbe
+        Überschrift.
+
+        Er steht außerhalb der Verzweigung zwischen Liste und Formular. Beim
+        Wechsel dorthin würde er sonst mitsamt seinem Zustand ausgehängt — und
+        ein `dialog`, der aus dem Baum verschwindet statt sich zu schließen,
+        nimmt den Fokus mit ins Nichts.
+
+        Was die Folge nennt, ist nachgesehen und nicht vermutet: `scan.profil_id`
+        steht im Schema auf `ON DELETE SET NULL`. Die Prüfungen bleiben also,
+        nur ihr Bezug geht verloren — und mit ihm bei namenlosen Läufen die
+        Bezeichnung in der Liste, die sich aus dem Profilnamen speiste.
+      */}
+      <Bestaetigung
+        offen={nachfrage !== null}
+        titel="Profil löschen?"
+        betreff={nachfrage?.name ?? ''}
+        folge={
+          nachfrage
+            ? `wird mit ${nachfrage.seiten.length === 1 ? 'seiner einen Seite' : `seinen ${nachfrage.seiten.length} Seiten`} gelöscht. Bereits gelaufene Prüfungen bleiben erhalten, verlieren aber den Bezug zu diesem Profil. Das lässt sich nicht rückgängig machen.`
+            : ''
+        }
+        bestaetigenText="Ja, löschen"
+        beiBestaetigen={() => {
+          if (nachfrage) void entferne(nachfrage);
+        }}
+        beiAbbrechen={() => setzeNachfrage(null)}
+      />
     </section>
   );
 }

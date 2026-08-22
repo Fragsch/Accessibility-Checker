@@ -116,16 +116,51 @@ const ANSICHTEN: Ansicht[] = [
     },
   },
   {
-    name: 'Prüfprofile — Liste und Formular',
+    /*
+      Die Eingabemaske. Dort steht das meiste Markup der Profilverwaltung.
+      Liste und Maske sind Alternativen im selben Platz — was die eine zeigt,
+      verdeckt die andere. Sie brauchen deshalb je einen eigenen Eintrag.
+    */
+    name: 'Prüfprofile — Eingabemaske',
     vorbereiten: async (seite) => {
-      await seite.getByLabel('Gespeichertes Prüfprofil').check();
-      await seite.getByRole('button', { name: 'Profile verwalten' }).click();
-      await seite.getByRole('heading', { name: 'Gespeicherte Profile' }).waitFor();
-
-      // Auch die Eingabemaske messen: Dort steht das meiste Markup.
+      await oeffneProfilverwaltung(seite);
       await seite.getByRole('button', { name: 'Neues Profil anlegen' }).click();
       await seite.getByRole('heading', { name: 'Neues Profil' }).waitFor();
       await seite.getByRole('button', { name: 'Seite hinzufügen' }).click();
+    },
+  },
+  {
+    /*
+      Die Liste der gespeicherten Profile — mit einer Zeile darin.
+
+      Ohne Profil steht dort nur „Noch kein Profil angelegt", und die Tabelle
+      samt ihrer Knopfspalte wurde nie gemessen. Der Lauf legt sich deshalb
+      selbst eines an; die Datenbank der Selbstpruefung ist ohnehin ein
+      Wegwerfstueck.
+    */
+    name: 'Prüfprofile — gespeicherte Profile',
+    vorbereiten: async (seite) => {
+      await legeProfilAn(seite, 'Selbstprüfung');
+    },
+  },
+  {
+    /*
+      Der Dialog ist ein eigener Zustand und braucht einen eigenen Eintrag:
+      Geschlossen steht er zwar im Baum, aber weder sichtbar noch erreichbar.
+
+      Er legt sich sein eigenes Profil an, statt sich auf das der Ansicht
+      davor zu verlassen — ein Testfall, der von der Reihenfolge seiner
+      Nachbarn abhaengt, bricht beim ersten Umsortieren.
+
+      Geloescht wird nichts. Gemessen wird die offene Rueckfrage.
+    */
+    name: 'Prüfprofile — Rückfrage vor dem Löschen',
+    vorbereiten: async (seite) => {
+      await legeProfilAn(seite, 'Zum Löschen');
+
+      await seite.getByRole('button', { name: 'Löschen: Zum Löschen' }).click();
+      await seite.getByRole('dialog').waitFor();
+      await seite.getByRole('heading', { name: 'Profil löschen?' }).waitFor();
     },
   },
   {
@@ -222,6 +257,33 @@ const ANSICHTEN: Ansicht[] = [
 
 function referenzseite(datei: string): string {
   return pathToFileURL(path.join(projektWurzel(), 'test', 'referenzseiten', datei)).href;
+}
+
+/** Vom Pruefauftrag in die Profilverwaltung, bis deren Liste steht. */
+async function oeffneProfilverwaltung(seite: Page): Promise<void> {
+  await seite.getByLabel('Gespeichertes Prüfprofil').check();
+  await seite.getByRole('button', { name: 'Profile verwalten' }).click();
+  await seite.getByRole('heading', { name: 'Gespeicherte Profile' }).waitFor();
+}
+
+/**
+ * Legt ein Profil ueber die Oberflaeche an und laesst die Liste stehen.
+ *
+ * Ueber die Oberflaeche und nicht ueber die Schnittstelle: Was hier gemessen
+ * wird, soll auf demselben Weg entstanden sein, den ein Mensch nimmt.
+ */
+async function legeProfilAn(seite: Page, name: string): Promise<void> {
+  await oeffneProfilverwaltung(seite);
+
+  await seite.getByRole('button', { name: 'Neues Profil anlegen' }).click();
+  await seite.getByRole('heading', { name: 'Neues Profil' }).waitFor();
+  await seite.getByLabel('Name des Profils').fill(name);
+  await seite.getByLabel('Adresse 1').fill(referenzseite('sauber.html'));
+  await seite.getByLabel('Bezeichnung').fill('Referenzseite');
+  await seite.getByRole('button', { name: 'Profil speichern' }).click();
+
+  await seite.getByRole('heading', { name: 'Gespeicherte Profile' }).waitFor();
+  await seite.getByRole('button', { name: `Löschen: ${name}` }).waitFor();
 }
 
 /** Fuehrt einen Scan durch die Oberflaeche und liefert dessen Kennung. */

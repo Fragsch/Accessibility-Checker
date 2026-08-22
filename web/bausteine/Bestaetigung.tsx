@@ -20,7 +20,7 @@
  * man nicht bewusst gewählt hat, führt in die harmlose Richtung.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 
 interface Eigenschaften {
   /** Steuert `showModal()` und `close()`. Der Dialog bleibt im Baum. */
@@ -49,6 +49,18 @@ export function Bestaetigung({
   const dialog = useRef<HTMLDialogElement>(null);
   const abbrechen = useRef<HTMLButtonElement>(null);
 
+  /*
+    Eigene Kennungen je Dialog, nicht feste.
+
+    Zwei Ansichten setzen diesen Baustein ein. Stünden beide zugleich im Baum,
+    trügen Überschrift und Text zweimal dieselbe `id` — und `aria-labelledby`
+    griffe auf die erste, also womöglich auf den falschen Dialog. Ein Fehler,
+    der nur einer Sprachausgabe auffällt und dem Auge nie.
+  */
+  const kennung = useId();
+  const titelId = `${kennung}-titel`;
+  const textId = `${kennung}-text`;
+
   useEffect(() => {
     const element = dialog.current;
     if (!element) return;
@@ -73,8 +85,8 @@ export function Bestaetigung({
     <dialog
       className="dialog"
       ref={dialog}
-      aria-labelledby="bestaetigung-titel"
-      aria-describedby="bestaetigung-text"
+      aria-labelledby={titelId}
+      aria-describedby={textId}
       /*
         Escape. Der Browser schließt selbst und meldet es hier; ohne diese
         Zeile bliebe der Zustand oben auf „offen" stehen, und der Dialog ließe
@@ -93,8 +105,8 @@ export function Bestaetigung({
       }}
     >
       <div className="dialog__inhalt">
-        <h2 id="bestaetigung-titel">{titel}</h2>
-        <p id="bestaetigung-text">
+        <h2 id={titelId}>{titel}</h2>
+        <p id={textId}>
           <span className="dialog__betreff">{`„${betreff}“`}</span> {folge}
         </p>
         <div className="knopfreihe dialog__knoepfe">

@@ -17,17 +17,7 @@ import { ApiFehler, abbildAdresse, ladeScans, loescheScan } from '../api';
 import type { Rueckziel, ScanUebersicht } from '../typen';
 import { BETRIEBSART_TEXT, RUECKZIEL_TEXT } from '../typen';
 import { Bestaetigung } from './Bestaetigung';
-
-/**
- * Der Papierkorb als Pfad.
- *
- * Material Symbols (Apache 2.0) in ihrem Kasten von 960 Einheiten, unveraendert
- * wie geliefert — dieselbe Herkunft wie die vier Sinnbilder in
- * `Statuszeichen.tsx`. Als Pfad und nicht als Schriftzeichen, damit keine
- * Schriftlinie mitkommt, die sich nicht mittig setzen laesst.
- */
-const PAPIERKORB =
-  'M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z';
+import { Loeschknopf } from './Loeschknopf';
 
 interface Eigenschaften {
   beiOeffnen: (scanId: number) => void;
@@ -373,35 +363,13 @@ export function Scanliste({ beiOeffnen, beiZurueck, ziel }: Eigenschaften): Reac
                     ist in den Dialog gewandert, und der Papierkorb ersetzt das
                     zweite Wort. Damit bleibt die Spalte in jeder Lage einzeilig
                     und so schmal, wie sie sein muss.
-
-                    Der Name des Knopfes geht dabei nicht verloren, er wird
-                    genauer: Er nennt die Prüfung, um die es geht — „Löschen:
-                    Google, Startseite". In einer Liste aus zwölf gleich
-                    aussehenden Zeilen ist das der Unterschied zwischen einem
-                    Knopf und dem richtigen Knopf.
                   */}
                   <td>
                     <div className="knopfreihe knopfreihe--eng">
                       <button type="button" className="zweitrangig" onClick={() => beiOeffnen(scan.scanId)}>
                         Öffnen<span className="nur-fuer-screenreader">: {bezeichne(scan)}</span>
                       </button>
-                      <button
-                        type="button"
-                        className="zweitrangig gefaehrlich nur-symbol"
-                        onClick={() => setzeNachfrage(scan)}
-                      >
-                        {/*
-                          `aria-hidden`, weil der Knopf seinen Namen schon
-                          nebenan trägt. Ohne das stünde das Bild ein zweites
-                          Mal im Zugänglichkeitsbaum. `focusable="false"` für
-                          den älteren Edge, der SVG sonst in die
-                          Tabulatorreihenfolge nimmt.
-                        */}
-                        <svg className="symbol" viewBox="0 -960 960 960" aria-hidden="true" focusable="false">
-                          <path d={PAPIERKORB} />
-                        </svg>
-                        <span className="nur-fuer-screenreader">Löschen: {bezeichne(scan)}</span>
-                      </button>
+                      <Loeschknopf betreff={bezeichne(scan)} beiKlick={() => setzeNachfrage(scan)} />
                     </div>
                   </td>
                 </tr>
