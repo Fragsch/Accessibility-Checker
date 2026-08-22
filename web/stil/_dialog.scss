@@ -1,0 +1,84 @@
+@use 'variablen' as v;
+@use 'werkzeug' as w;
+
+// ---------------------------------------------------------------------------
+// Der Dialog.
+//
+// Als `dialog` mit `showModal()`, nicht als nachgebauter Kasten aus `div`.
+// Das Element bringt mit, was ein Modal ausmacht und was von Hand jedes Mal
+// falsch gebaut wird: Der Fokus bleibt darin gefangen (2.4.3), alles
+// dahinter wird `inert` und damit fuer Zeiger, Tastatur und Sprachausgabe
+// unerreichbar, Escape schliesst (2.1.2), und der Fokus kehrt beim Schliessen
+// dorthin zurueck, wo er hergekommen ist.
+//
+// Regel 6 verbietet fremde Komponenten, nicht die des Browsers.
+// ---------------------------------------------------------------------------
+
+.dialog {
+  /*
+    Kein Polster am `dialog` selbst — es traegt der Inhalt darin.
+
+    Der Grund ist nicht Kosmetik: Ein Klick auf den Hintergrund soll abbrechen,
+    und erkannt wird er daran, dass das Ziel des Klicks der `dialog` ist. Mit
+    eigenem Polster gehoerte der Rand innerhalb des Kastens ebenfalls dem
+    `dialog` — ein Klick daneben, aber noch im Dialog, braeche dann ab.
+  */
+  padding: 0;
+  border: 0;
+  max-width: 34rem;
+  // Auf schmalen Fenstern bleibt links und rechts eine Handbreit stehen,
+  // damit der Dialog nicht an die Kanten stoesst.
+  width: calc(100% - 2 * var(--abstand-gross));
+  border-radius: var(--radius-gross);
+  background: var(--flaeche);
+  color: var(--schrift);
+  box-shadow: var(--schatten-dialog);
+
+  &::backdrop {
+    background: var(--verdunkelung);
+  }
+}
+
+.dialog__inhalt {
+  padding: v.$abstand-gross;
+
+  // Die Ueberschrift ist der Name des Dialogs (`aria-labelledby`) und steht
+  // als erstes darin. Ihr eigener oberer Abstand kaeme zum Polster hinzu.
+  > :first-child {
+    margin-top: 0;
+  }
+
+  > :last-child {
+    margin-bottom: 0;
+  }
+}
+
+/*
+  Der Name dessen, worum es geht — hervorgehoben, aber nicht als Ueberschrift.
+
+  Ein Dialog, der nur „Wirklich loeschen?" fragt, verlaesst sich darauf, dass
+  man noch weiss, welche Zeile man angeklickt hat. Bei zwoelf gleich
+  aussehenden Zeilen weiss man das nicht mehr, sobald der Hintergrund
+  verdunkelt ist. Deshalb steht der Name hier noch einmal — und zwar so, dass
+  er sich vom Satz darum abhebt.
+*/
+.dialog__betreff {
+  font-weight: v.$staerke-halbfett;
+  overflow-wrap: anywhere;
+}
+
+/*
+  Die Knopfreihe des Dialogs steht rechts.
+
+  Sie ist der Abschluss einer Frage, kein Anfang: Das Auge liest den Satz
+  darueber zu Ende und findet die Antwort dort, wo es aufhoert. Auf schmalen
+  Fenstern bricht sie um und steht dann wieder links — rechtsbuendig
+  untereinander saehe aus wie eine Treppe.
+*/
+.dialog__knoepfe {
+  justify-content: flex-end;
+
+  @media (max-width: 28rem) {
+    justify-content: flex-start;
+  }
+}

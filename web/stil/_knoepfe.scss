@@ -4,9 +4,12 @@
 // ---------------------------------------------------------------------------
 // Knoepfe.
 //
-// Erstrangig ist fast schwarz auf hell, zweitrangig hell mit Rahmen. Beide
-// tragen Text, nie nur ein Zeichen; die Trefferflaeche bleibt ueber 24 mal 24
-// Pixeln (2.5.8).
+// Erstrangig ist fast schwarz auf hell, zweitrangig hell mit Rahmen. Die
+// Trefferflaeche bleibt ueber 24 mal 24 Pixeln (2.5.8).
+//
+// Sie tragen Text, mit einer Ausnahme: `.nur-symbol` am Ende dieser Datei.
+// Sie steht dort begruendet, und sie bleibt eine Ausnahme — ein Bild sagt nur
+// dann etwas, wenn es an einem Ort steht, an dem man es erwartet.
 // ---------------------------------------------------------------------------
 
 button {
@@ -137,6 +140,86 @@ button.drittrangig {
 
 .knopfreihe--eng:not(:last-child) {
   margin-bottom: var(--abstand-mittel);
+}
+
+/*
+  Der Knopf einer zerstoerenden Handlung.
+
+  In seiner gefuellten Form fuer die Bestaetigung im Dialog, in der gerahmten
+  fuer den Ausloeser in der Liste. Die gerahmte kommt ueber `.zweitrangig`
+  dazu — dieselbe Rangordnung wie sonst, nur in Rot.
+
+  Rot ist hier nicht der einzige Traeger (1.4.1): Der Knopf im Dialog traegt
+  „Ja, loeschen", der in der Liste den Papierkorb. Die Farbe sagt, wie ernst
+  es ist, nicht was geschieht.
+
+  Kontraste: #a4262c haelt 7,3:1 gegen Weiss — als Rahmen und Sinnbild weit
+  ueber den geforderten 3:1 (1.4.11), als Flaeche unter weisser Schrift ueber
+  den 4,5:1 fuer Text (1.4.3). Beim Schweben wird nachgedunkelt statt
+  aufgehellt; ein zerstoerender Knopf soll unter dem Zeiger nicht zurueck-
+  treten.
+*/
+button.gefaehrlich {
+  border-color: var(--gefahr);
+  background: var(--gefahr);
+  color: var(--knopf-schrift);
+
+  &:hover:not(:disabled) {
+    background: var(--gefahr-schwebe);
+    border-color: var(--gefahr-schwebe);
+  }
+}
+
+button.zweitrangig.gefaehrlich {
+  background: var(--flaeche);
+  border-color: var(--gefahr);
+  color: var(--gefahr);
+
+  &:hover:not(:disabled) {
+    background: var(--gefahr-leise);
+    border-color: var(--gefahr-schwebe);
+    color: var(--gefahr-schwebe);
+  }
+}
+
+/*
+  Ein Knopf, der allein sein Sinnbild traegt.
+
+  Die Ausnahme von der Regel dieser Datei, und sie hat einen Grund: In der
+  letzten Spalte der Pruefliste standen „Oeffnen" und „Loeschen" nebeneinander
+  und wurden auf schmaleren Fenstern zweizeilig — eine Zeile Knoepfe, die
+  hoeher baut als der Inhalt daneben. Der Papierkorb ist eines der wenigen
+  Sinnbilder, das ohne Beschriftung verstanden wird, und er steht hier an dem
+  Ort, an dem man ihn sucht.
+
+  Der Name geht dabei nicht verloren: Im Knopf steht weiterhin ein
+  `.nur-fuer-screenreader`-Text, und der nennt sogar mehr als vorher — den
+  Namen der Pruefung, um die es geht. Fuer eine Sprachausgabe aendert sich
+  nichts; verborgen wird der Text nur fuers Auge.
+
+  Kein `title`: Der Browser-Tooltip laesst sich nicht mit Escape schliessen,
+  nicht mit dem Zeiger erreichen und erscheint bei Berührungsbedienung gar
+  nicht — genau das verbietet 1.4.13. Dieselbe Ueberlegung steht in
+  `Statuszeichen.tsx`.
+
+  Quadratisch auf `--trefferflaeche-eng`: 36 Pixel, deutlich ueber den 24 aus
+  2.5.8. Die Regel steht bewusst nach `.knopfreihe--eng` — beide Selektoren
+  wiegen gleich schwer, und die spaetere gewinnt. Wer sie verschiebt, bekommt
+  wieder das Mindestmass des gewoehnlichen Knopfes.
+*/
+button.nur-symbol {
+  min-width: var(--trefferflaeche-eng);
+  width: var(--trefferflaeche-eng);
+  padding: 0;
+  flex-shrink: 0;
+
+  .symbol {
+    width: 1.15rem;
+    height: 1.15rem;
+    // `currentColor` haelt Sinnbild und Rahmen zusammen: Der Schwebezustand
+    // faerbt beide, ohne dass die Farbe ein zweites Mal dastuende.
+    fill: currentColor;
+  }
 }
 
 /*

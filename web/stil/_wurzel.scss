@@ -49,6 +49,12 @@
   --nicht-anwendbar: #{v.$farbe-nicht-anwendbar};
   --nicht-anwendbar-mittel: #{v.$farbe-nicht-anwendbar-mittel};
 
+  // Zerstoerende Handlung
+  --gefahr: #{v.$farbe-gefahr};
+  --gefahr-leise: #{v.$farbe-gefahr-leise};
+  --gefahr-schwebe: #{v.$farbe-gefahr-schwebe};
+  --verdunkelung: #{v.$farbe-verdunkelung};
+
   // Abstaende
   --abstand-winzig: #{v.$abstand-winzig};
   --abstand-klein: #{v.$abstand-klein};
@@ -65,6 +71,7 @@
   --rahmen: #{v.$rahmenstaerke};
   --schatten-karte: #{v.$schatten-karte};
   --schatten-blase: #{v.$schatten-blase};
+  --schatten-dialog: #{v.$schatten-dialog};
   --schatten-kopfzeile: #{v.$schatten-kopfzeile};
 
   // Trefferflaechen und Bewegung

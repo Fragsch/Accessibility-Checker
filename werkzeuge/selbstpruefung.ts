@@ -136,6 +136,25 @@ const ANSICHTEN: Ansicht[] = [
     },
   },
   {
+    /*
+      Der Dialog ist ein eigener Zustand und braucht deshalb einen eigenen
+      Eintrag: Geschlossen steht er zwar im Baum, aber weder sichtbar noch
+      erreichbar — die Ansicht darueber saehe ihn nie.
+
+      Geloescht wird dabei nichts. Gemessen wird die offene Rueckfrage; sie
+      wird nicht bestaetigt.
+    */
+    name: 'Bisherige Prüfungen — Rückfrage vor dem Löschen',
+    vorbereiten: async (seite) => {
+      await seite.getByRole('button', { name: 'Bisherige Prüfungen' }).click();
+      await seite.getByRole('heading', { name: 'Bisherige Prüfungen', level: 2 }).waitFor();
+
+      await seite.getByRole('button', { name: /^Löschen:/ }).first().click();
+      await seite.getByRole('dialog').waitFor();
+      await seite.getByRole('heading', { name: 'Prüfung löschen?' }).waitFor();
+    },
+  },
+  {
     name: 'Projektebene über zwei Seiten',
     vorbereiten: async (seite) => {
       const mangelhaft = pathToFileURL(path.join(projektWurzel(), 'test', 'referenzseiten', 'mangelhaft.html')).href;

@@ -140,6 +140,21 @@ $farbe-nicht-anwendbar: #5b6068 !default;
 /// 1,9:1 auf Weiss — nur als Fuellung hinter der kraeftigen Kante.
 $farbe-nicht-anwendbar-mittel: #b9bfc9 !default;
 
+// ------------------------------------------------------ Zerstoerende Handlung
+
+/*
+  Loeschen traegt denselben Rotton wie der Status „nicht erfuellt". Ein
+  zweites, eigenes Rot daneben liesse fragen, was der Unterschied bedeutet —
+  er bedeutete nichts. Rot heisst hier wie dort: hinsehen.
+
+  Eigene Namen bekommt es trotzdem, weil es etwas anderes aussagt. Wer den
+  Status je umfaerbt, soll nicht nebenbei den Loeschknopf mitfaerben muessen.
+*/
+$farbe-gefahr: $farbe-nicht-erfuellt !default;
+$farbe-gefahr-leise: $farbe-nicht-erfuellt-leise !default;
+/// Eine Stufe dunkler fuers Schweben. 8,9:1 gegen Weiss.
+$farbe-gefahr-schwebe: #8c2026 !default;
+
 // ------------------------------------------------------------------ Typografie
 
 $schrift-familie:
@@ -252,6 +267,21 @@ $schatten-karte: 0 1px 2px rgb(16 22 34 / 3%), 0 8px 18px -14px rgb(16 22 34 / 1
 /// Fuer das Aufklappmenue und den Hinweis am Statuspunkt — sie liegen ueber
 /// dem Inhalt und brauchen deshalb eine Spur mehr als eine Karte.
 $schatten-blase: 0 8px 16px rgb(16 22 34 / 18%) !default;
+
+/// Der Dialog liegt vor der ganzen Seite, nicht ueber einem Baustein. Er
+/// braucht deshalb mehr als eine Blase — und die Verdunkelung darunter tut
+/// den Rest.
+$schatten-dialog: 0 12px 32px rgb(16 22 34 / 28%) !default;
+
+/*
+  Die Verdunkelung hinter einem Dialog — dieselbe Tinte wie die Schatten.
+
+  55 Prozent: Genug, dass die Seite dahinter zurueckweicht und der Dialog
+  ohne Rahmen auskommt; wenig genug, dass man noch sieht, worauf man gerade
+  gewesen ist. Ganz undurchsichtig verloere man den Ort und faende sich nach
+  dem Abbrechen an einer Stelle wieder, die man nie verlassen hat.
+*/
+$farbe-verdunkelung: rgb(16 22 34 / 55%) !default;
 
 /*
   Der Schatten unter der stehenden Kopfzeile.

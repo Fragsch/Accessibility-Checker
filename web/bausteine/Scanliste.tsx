@@ -16,6 +16,18 @@ import { useEffect, useRef, useState } from 'react';
 import { ApiFehler, abbildAdresse, ladeScans, loescheScan } from '../api';
 import type { Rueckziel, ScanUebersicht } from '../typen';
 import { BETRIEBSART_TEXT, RUECKZIEL_TEXT } from '../typen';
+import { Bestaetigung } from './Bestaetigung';
+
+/**
+ * Der Papierkorb als Pfad.
+ *
+ * Material Symbols (Apache 2.0) in ihrem Kasten von 960 Einheiten, unveraendert
+ * wie geliefert — dieselbe Herkunft wie die vier Sinnbilder in
+ * `Statuszeichen.tsx`. Als Pfad und nicht als Schriftzeichen, damit keine
+ * Schriftlinie mitkommt, die sich nicht mittig setzen laesst.
+ */
+const PAPIERKORB =
+  'M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z';
 
 interface Eigenschaften {
   beiOeffnen: (scanId: number) => void;
@@ -57,7 +69,12 @@ export function Scanliste({ beiOeffnen, beiZurueck, ziel }: Eigenschaften): Reac
   const [gesamt, setzeGesamt] = useState(0);
   const [suche, setzeSuche] = useState('');
   const [laedt, setzeLaedt] = useState(true);
-  const [nachfrage, setzeNachfrage] = useState<number | null>(null);
+  /*
+    Die Pruefung, zu der gerade nachgefragt wird — die ganze Zeile, nicht nur
+    ihre Nummer: Der Dialog nennt ihren Namen, und den muesste er sich sonst
+    aus der Liste zurueckholen, waehrend diese gerade neu geladen wird.
+  */
+  const [nachfrage, setzeNachfrage] = useState<ScanUebersicht | null>(null);
   const [meldung, setzeMeldung] = useState<string | null>(null);
   const [fehler, setzeFehler] = useState<string | null>(null);
 
@@ -74,6 +91,21 @@ export function Scanliste({ beiOeffnen, beiZurueck, ziel }: Eigenschaften): Reac
   const zaehlzeile = useRef<HTMLParagraphElement>(null);
   const fokusAufZaehlzeile = useRef(false);
   const suchfeld = useRef<HTMLInputElement>(null);
+
+  /*
+    Der Fokus nach dem Loeschen.
+
+    Sonst uebernimmt das der Dialog: Er gibt den Fokus beim Schliessen dorthin
+    zurueck, wo er hergekommen ist. Nach einem Loeschen ist das der Knopf einer
+    Zeile, die es nicht mehr gibt — der Fokus faellt auf den Seitenanfang, und
+    wer mit der Tastatur arbeitet, steht ohne Vorwarnung wieder ganz oben.
+
+    Er geht deshalb auf die Meldung. Sie ist die Antwort auf die Handlung und
+    nennt die geloeschte Pruefung beim Namen; von dort aus geht es mit der
+    Tabulatortaste weiter in die Liste.
+  */
+  const meldungsfeld = useRef<HTMLParagraphElement>(null);
+  const fokusAufMeldung = useRef(false);
 
   /**
    * Leert die Suche und gibt den Fokus zurueck ins Feld.
@@ -110,6 +142,12 @@ export function Scanliste({ beiOeffnen, beiZurueck, ziel }: Eigenschaften): Reac
     fokusAufZaehlzeile.current = false;
     zaehlzeile.current?.focus();
   }, [scans.length]);
+
+  useEffect(() => {
+    if (!fokusAufMeldung.current || meldung === null) return;
+    fokusAufMeldung.current = false;
+    meldungsfeld.current?.focus();
+  }, [meldung]);
 
   /**
    * Holt einen Abschnitt.
@@ -155,14 +193,21 @@ export function Scanliste({ beiOeffnen, beiZurueck, ziel }: Eigenschaften): Reac
     }
   }
 
-  async function entferne(scanId: number): Promise<void> {
+  async function entferne(scan: ScanUebersicht): Promise<void> {
     try {
-      const geloescht = scans.find((s) => s.scanId === scanId);
-      await loescheScan(scanId);
+      await loescheScan(scan.scanId);
+      // Erst der Dialog zu, dann die Meldung: Solange er offen ist, ist alles
+      // dahinter `inert`, und der Fokus koennte gar nicht auf die Meldung.
       setzeNachfrage(null);
-      setzeMeldung(`„${geloescht ? bezeichne(geloescht) : `Prüfung ${scanId}`}“ wurde mit allen Belegen gelöscht.`);
+      fokusAufMeldung.current = true;
+      setzeMeldung(`„${bezeichne(scan)}“ wurde mit allen Belegen gelöscht.`);
       await aktualisiere();
     } catch (e) {
+      // Auch im Fehlerfall schliesst der Dialog: Die Fehlermeldung steht in
+      // der Ansicht dahinter, und die bleibt `inert`, solange er offen ist.
+      // Ein Dialog, der stehen bleibt und nicht sagt, was schiefging, sieht
+      // aus, als haette der Knopf nicht gewirkt.
+      setzeNachfrage(null);
       setzeFehler(e instanceof ApiFehler ? e.message : String(e));
     }
   }
@@ -177,8 +222,14 @@ export function Scanliste({ beiOeffnen, beiZurueck, ziel }: Eigenschaften): Reac
   */
   return (
     <section>
+      {/*
+        `tabIndex={-1}`: Nach dem Löschen ist der Knopf fort, an den der Dialog
+        den Fokus zurückgäbe. Er kommt stattdessen hierher — angesprungen wird
+        die Meldung nur aus dem Programm, in der Tabulatorreihenfolge steht sie
+        nicht.
+      */}
       {meldung && (
-        <p className="meldung" role="status">
+        <p className="meldung" role="status" tabIndex={-1} ref={meldungsfeld}>
           {meldung}
         </p>
       )}
@@ -313,31 +364,45 @@ export function Scanliste({ beiOeffnen, beiZurueck, ziel }: Eigenschaften): Reac
                     {scan.geschuetzt && <span className="vermerk"> geschützter Bereich</span>}
                   </td>
                   <td>WCAG {scan.standard}</td>
+                  {/*
+                    Zwei Knöpfe, einer davon nur als Sinnbild.
+
+                    Vorher standen hier zwei beschriftete, und sobald jemand
+                    „Löschen" drückte, wurden es drei plus eine Frage — die
+                    Zeile brach dann um und wuchs in die Höhe. Die Rückfrage
+                    ist in den Dialog gewandert, und der Papierkorb ersetzt das
+                    zweite Wort. Damit bleibt die Spalte in jeder Lage einzeilig
+                    und so schmal, wie sie sein muss.
+
+                    Der Name des Knopfes geht dabei nicht verloren, er wird
+                    genauer: Er nennt die Prüfung, um die es geht — „Löschen:
+                    Google, Startseite". In einer Liste aus zwölf gleich
+                    aussehenden Zeilen ist das der Unterschied zwischen einem
+                    Knopf und dem richtigen Knopf.
+                  */}
                   <td>
-                    {nachfrage === scan.scanId ? (
-                      <div className="knopfreihe knopfreihe--eng">
-                        <span id={`nachfrage-${scan.scanId}`}>Wirklich löschen?</span>
-                        <button
-                          type="button"
-                          onClick={() => void entferne(scan.scanId)}
-                          aria-describedby={`nachfrage-${scan.scanId}`}
-                        >
-                          Ja, löschen
-                        </button>
-                        <button type="button" className="zweitrangig" onClick={() => setzeNachfrage(null)}>
-                          Abbrechen
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="knopfreihe knopfreihe--eng">
-                        <button type="button" className="zweitrangig" onClick={() => beiOeffnen(scan.scanId)}>
-                          Öffnen<span className="nur-fuer-screenreader">: {bezeichne(scan)}</span>
-                        </button>
-                        <button type="button" className="zweitrangig" onClick={() => setzeNachfrage(scan.scanId)}>
-                          Löschen<span className="nur-fuer-screenreader">: {bezeichne(scan)}</span>
-                        </button>
-                      </div>
-                    )}
+                    <div className="knopfreihe knopfreihe--eng">
+                      <button type="button" className="zweitrangig" onClick={() => beiOeffnen(scan.scanId)}>
+                        Öffnen<span className="nur-fuer-screenreader">: {bezeichne(scan)}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="zweitrangig gefaehrlich nur-symbol"
+                        onClick={() => setzeNachfrage(scan)}
+                      >
+                        {/*
+                          `aria-hidden`, weil der Knopf seinen Namen schon
+                          nebenan trägt. Ohne das stünde das Bild ein zweites
+                          Mal im Zugänglichkeitsbaum. `focusable="false"` für
+                          den älteren Edge, der SVG sonst in die
+                          Tabulatorreihenfolge nimmt.
+                        */}
+                        <svg className="symbol" viewBox="0 -960 960 960" aria-hidden="true" focusable="false">
+                          <path d={PAPIERKORB} />
+                        </svg>
+                        <span className="nur-fuer-screenreader">Löschen: {bezeichne(scan)}</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -376,6 +441,32 @@ export function Scanliste({ beiOeffnen, beiZurueck, ziel }: Eigenschaften): Reac
           {RUECKZIEL_TEXT[ziel]}
         </button>
       </div>
+
+      {/*
+        Ein Dialog für die ganze Ansicht, nicht einer je Zeile: Offen ist immer
+        höchstens einer, und zwölf im Baum wären zwölfmal dieselbe Überschrift.
+
+        Er steht auch dann da, wenn nichts nachgefragt wird — geschlossen ist
+        ein `dialog` weder sichtbar noch erreichbar. Das ist der Unterschied
+        zwischen `open` und eingehängt: Nur ein Element, das schon im Baum
+        steht, kann `showModal()` sauber öffnen und beim Schließen den Fokus
+        dorthin zurückgeben, wo er hergekommen ist.
+
+        Die Folge nennt beim Namen, was verschwindet. „Wird gelöscht" allein
+        verschwiege, dass Bildschirmfotos und HTML-Ausschnitte mitgehen — und
+        genau die sind der Grund, warum es die Handlung überhaupt gibt (S-24).
+      */}
+      <Bestaetigung
+        offen={nachfrage !== null}
+        titel="Prüfung löschen?"
+        betreff={nachfrage ? bezeichne(nachfrage) : ''}
+        folge="wird mit allen Belegen gelöscht — Bildschirmfotos und HTML-Ausschnitte eingeschlossen. Das lässt sich nicht rückgängig machen."
+        bestaetigenText="Ja, löschen"
+        beiBestaetigen={() => {
+          if (nachfrage) void entferne(nachfrage);
+        }}
+        beiAbbrechen={() => setzeNachfrage(null)}
+      />
     </section>
   );
 }
