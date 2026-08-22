@@ -26,8 +26,7 @@ import type { EngineErgebnis, EngineKontext } from '../src/stufe1/engine.js';
 import { normalisiere } from '../src/stufe1/normalisierung.js';
 import { VIEWPORT_SCHREIBTISCH } from '../src/scan/browser.js';
 import { projektWurzel } from '../src/plattform/pfade.js';
-import { oeffneDatenbank } from '../src/db/index.js';
-import { loescheAntwortenZu } from '../src/stufe3/antworten.js';
+import { oeffneDatenbank, selbstpruefungDatenbankPfad, verwirfDatenbank } from '../src/db/index.js';
 import { baueServer } from '../src/server/index.js';
 import type { Befund, Standard } from '../src/typen/index.js';
 import type { Page } from 'playwright';
@@ -243,23 +242,29 @@ async function hauptlauf(): Promise<void> {
   /*
     Die Ausgangslage herstellen, statt sie vorauszusetzen.
 
-    Manuelle Antworten liegen je Adresse und Frage, nicht je Scan (M-04) — ein
-    neuer Scan derselben Seite erbt sie also. Jeder Lauf beantwortete bisher
-    eine weitere Frage der Referenzseite, und nach der neunzehnten war keine
-    mehr offen: Die Pruefliste zeigte nur noch beantwortete Fragen, der Lauf
-    fand seinen Knopf nicht und brach ab. Ein Pruefwerkzeug, das nach genuegend
-    eigenen Laeufen an sich selbst scheitert, misst die falsche Sache.
+    Der Lauf bedient die eigene Oberflaeche und startet dabei echte Scans. Die
+    gehoeren nicht in die Betriebsdatenbank: Dort liegen die Pruefungen des
+    Menschen, und ein knappes Dutzend davon ging zwischen mehreren hundert
+    Zeilen „Selbstpruefung" unter. Deshalb eine eigene Datei, und deshalb eine
+    frische je Lauf.
+
+    Frisch, nicht bloss eigen — aus einem zweiten Grund: Manuelle Antworten
+    liegen je Adresse und Frage, nicht je Scan (M-04), ein neuer Scan derselben
+    Seite erbt sie also. Jeder Lauf beantwortete eine weitere Frage der
+    Referenzseite, und nach der neunzehnten war keine mehr offen: Die
+    Pruefliste zeigte nur noch beantwortete Fragen, der Lauf fand seinen Knopf
+    nicht und brach ab. Ein Pruefwerkzeug, das nach genuegend eigenen Laeufen
+    an sich selbst scheitert, misst die falsche Sache. Eine leere Datenbank hat
+    nichts zu erben; das fruehere Aufraeumen in fremden Daten entfaellt damit.
   */
-  const db = oeffneDatenbank();
-  const verworfen = loescheAntwortenZu(db, referenzseite('mangelhaft.html'));
-  db.close();
-  if (verworfen > 0) {
-    console.log(`Frueher gegebene Antworten zur Referenzseite verworfen: ${verworfen}\n`);
-  }
+  const datenbankPfad = selbstpruefungDatenbankPfad();
+  verwirfDatenbank(datenbankPfad);
+
   const zuordnung = katalog.alleRegelZuordnungen(STANDARD);
   const geprueft = new Set(katalog.fuerStandard(STANDARD).map((k) => k.id));
 
-  const server = baueServer({ katalog, protokoll });
+  const db = oeffneDatenbank({ pfad: datenbankPfad });
+  const server = baueServer({ katalog, protokoll, db });
   const statisch = (await import('@fastify/static')).default;
   await server.register(statisch, { root: path.join(projektWurzel(), 'dist', 'web') });
   await server.listen({ port: PORT, host: '127.0.0.1' });
@@ -305,7 +310,11 @@ async function hauptlauf(): Promise<void> {
     }
   } finally {
     await browser.schliessen();
+    // Erst den Server, dann die Datenbank: Er haelt die Verbindung, die hier
+    // geschlossen wird, und eine noch laufende Anfrage fiele sonst auf eine
+    // geschlossene Datei.
     await server.close();
+    db.close();
   }
 
   console.log('');

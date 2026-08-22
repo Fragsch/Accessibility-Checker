@@ -32,6 +32,40 @@ export function standardDatenbankPfad(): string {
 }
 
 /**
+ * Datenbank der Selbstpruefung — getrennt von der Betriebsdatenbank.
+ *
+ * `npm run pruefe:selbst` bedient die eigene Oberflaeche und startet dabei
+ * echte Scans. Die landeten bis dahin dort, wo auch die Pruefungen des
+ * Menschen liegen: Nach einigen Dutzend Laeufen standen in „Bisherige
+ * Pruefungen" mehrere hundert Zeilen „Selbstpruefung" und dazwischen ein
+ * knappes Dutzend, das jemanden interessiert. Gesucht wird aber nach dem
+ * Dutzend.
+ *
+ * Ein Filter in der Liste haette das verdeckt, nicht behoben — die Zeilen
+ * blieben liegen, wuechsen weiter und gingen in jede Sicherung mit ein.
+ * Getrennte Dateien lassen die Vermischung gar nicht erst entstehen.
+ *
+ * Die Datei wird zu Beginn jedes Laufs verworfen: Was die Selbstpruefung
+ * schreibt, ist Beiwerk ihrer Messung und nach der Konsolenausgabe erledigt.
+ */
+export function selbstpruefungDatenbankPfad(): string {
+  return path.join(datenVerzeichnis(), 'selbstpruefung.db');
+}
+
+/**
+ * Loescht eine Datenbankdatei samt ihrer Begleitdateien.
+ *
+ * Im WAL-Betrieb liegen neben `x.db` noch `x.db-wal` und `x.db-shm`. Bliebe
+ * das Journal liegen, brauechte die naechste Verbindung es als Fortsetzung
+ * einer Datei, die es nicht mehr gibt.
+ */
+export function verwirfDatenbank(pfad: string): void {
+  for (const datei of [pfad, `${pfad}-wal`, `${pfad}-shm`]) {
+    fs.rmSync(datei, { force: true });
+  }
+}
+
+/**
  * Oeffnet die Datenbank und bringt sie auf den aktuellen Schemastand.
  * Eine neue Datei erhaelt das Grundschema, eine vorhandene die fehlenden
  * Migrationen — in aufsteigender Reihenfolge, in je einer Transaktion.

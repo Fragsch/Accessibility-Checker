@@ -237,8 +237,24 @@ accessibility-checker/
 │   ├── modellsatz/         ✓ Testsatz und Messergebnisse des Modellvergleichs
 │   └── abnahme/            ✓ Abnahmeprotokolle je Betriebssystem
 │
-└── daten/                      ← Datenbank, Belege und Protokoll; nicht versioniert
+└── daten/                      ← Datenbanken, Belege und Protokoll; nicht versioniert
+    ├── pruefungen.db           ← Betriebsdatenbank: was der Mensch geprüft hat
+    ├── selbstpruefung.db       ← was `npm run pruefe:selbst` dabei anlegt
+    └── protokoll.jsonl
 ```
+
+**Zwei Datenbankdateien, nicht eine.** `npm run pruefe:selbst` bedient die eigene
+Oberfläche und startet dabei echte Scans. Die schrieben bis dahin in
+`pruefungen.db` — nach einigen Dutzend Läufen standen dort 454 Zeilen
+„Selbstprüfung" und dazwischen zwölf, die jemanden interessierten. Deshalb
+bekommt die Selbstprüfung ihre eigene Datei, die sie zu Beginn jedes Laufs
+verwirft: Was sie schreibt, ist Beiwerk ihrer Messung und mit der
+Konsolenausgabe erledigt. Ein Filter in der Liste hätte das verdeckt, nicht
+behoben.
+
+Wer ein Werkzeug baut, das Scans anlegt, gibt `baueServer({ db })` mit. Ohne
+Angabe greift der Server auf `pruefungen.db` zu — das ist für den Betrieb
+richtig und für jedes Entwicklungswerkzeug falsch.
 
 ## 4. Datenmodell
 
