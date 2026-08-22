@@ -167,8 +167,16 @@ export function Scanliste({ beiOeffnen, beiZurueck, ziel }: Eigenschaften): Reac
     }
   }
 
+  /*
+    Kein eigener Titel und kein `aria-label`: Die Ansicht traegt ihre
+    Ueberschrift „Bisherige Pruefungen" schon in `App.tsx`, und der Fokus
+    springt nach dem Wechsel dorthin. Ein zweiter Titel gleichen Wortlauts
+    stuende doppelt auf dem Bildschirm, und ein gleichnamiger Bereich meldete
+    sich einer Sprachausgabe ein drittes Mal — dreimal derselbe Text, ohne dass
+    es drei Dinge gaebe.
+  */
   return (
-    <section aria-label="Bisherige Prüfungen">
+    <section>
       {meldung && (
         <p className="meldung" role="status">
           {meldung}
@@ -179,8 +187,6 @@ export function Scanliste({ beiOeffnen, beiZurueck, ziel }: Eigenschaften): Reac
           {fehler}
         </p>
       )}
-
-      <h3>Bisherige Prüfungen</h3>
 
       {/*
         Das Suchfeld steht auch dann da, wenn gerade nichts gefunden wurde:
@@ -202,7 +208,7 @@ export function Scanliste({ beiOeffnen, beiZurueck, ziel }: Eigenschaften): Reac
             value={suche}
             onChange={(e) => setzeSuche(e.target.value)}
             aria-describedby="scan-suche-hilfe"
-            placeholder="Name oder Nummer"
+            placeholder="Name der Prüfung"
           />
           {/*
             Der Loeschknopf steht nur da, wenn es etwas zu loeschen gibt.
@@ -220,9 +226,17 @@ export function Scanliste({ beiOeffnen, beiZurueck, ziel }: Eigenschaften): Reac
             </button>
           )}
         </div>
+        {/*
+          Der Hilfetext nennt nur, wonach die Liste auch sichtbar geordnet ist.
+          Er sprach frueher von der Nummer — die steht seit der Umstellung auf
+          Namen in keiner Spalte mehr, und ein Hinweis auf ein Merkmal, das
+          nirgends abzulesen ist, schickt zum Raten. Gesucht wird ueber das,
+          was in der Spalte „Name" steht; bei namenlosen Laeufen ist das
+          „Pruefung 362", und genau so eingegeben findet es die Zeile.
+        */}
         <p className="hilfetext" id="scan-suche-hilfe">
-          Gesucht wird über alle gespeicherten Prüfungen — auch über die, die unten noch nicht geladen sind. Der Name
-          des Profils zählt mit, ebenso die Nummer. Die Escape-Taste leert das Feld.
+          Gesucht wird über den Namen, wie er in der Spalte „Name“ steht — über alle gespeicherten Prüfungen, auch über
+          die, die unten noch nicht geladen sind. Die Escape-Taste leert das Feld.
         </p>
       </div>
 

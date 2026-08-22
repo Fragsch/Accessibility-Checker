@@ -266,7 +266,7 @@ describe('Datenbank', () => {
       db.close();
     });
 
-    it('findet einen namenlosen Lauf ueber seine Nummer', () => {
+    it('findet einen namenlosen Lauf unter dem Namen, den die Liste ihm gibt', () => {
       const db = oeffneDatenbank({ pfad: ':memory:' });
       const ids = fuelle(db, [null, null, null]);
       const gesucht = ids[1]!;
@@ -274,11 +274,27 @@ describe('Datenbank', () => {
       /*
         Namenlose Laeufe heissen in der Anzeige „Pruefung 2". Wer das abliest
         und eingibt, muss die Zeile finden — sonst sucht er nach einem Text,
-        den die Anzeige erfunden hat und der nirgends gespeichert ist.
+        den die Anzeige erfunden hat und der nirgends gespeichert ist. Die
+        blosse Nummer muss ebenso greifen: Sie ist ein Teil dieses Namens.
       */
-      const treffer = listeScans(db, { suche: String(gesucht) });
-      assert.equal(treffer.gesamt, 1);
-      assert.equal(treffer.scans[0]?.scanId, gesucht);
+      for (const eingabe of [`Prüfung ${gesucht}`, String(gesucht)]) {
+        const treffer = listeScans(db, { suche: eingabe });
+        assert.equal(treffer.gesamt, 1, `„${eingabe}" muss genau eine Zeile finden`);
+        assert.equal(treffer.scans[0]?.scanId, gesucht);
+      }
+      db.close();
+    });
+
+    it('findet einen benannten Lauf nicht unter „Pruefung <Nummer>"', () => {
+      const db = oeffneDatenbank({ pfad: ':memory:' });
+      const ids = fuelle(db, ['Relaunch Startseite']);
+
+      /*
+        Der Rueckfall gilt nur, wo die Liste ihn zeigt. Bei einem benannten
+        Lauf steht die Nummer in keiner Spalte — ein Treffer darauf kaeme aus
+        einem Merkmal, das niemand ablesen kann.
+      */
+      assert.equal(listeScans(db, { suche: `Prüfung ${ids[0]!}` }).gesamt, 0);
       db.close();
     });
 

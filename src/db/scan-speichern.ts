@@ -282,13 +282,18 @@ export interface Scanliste {
 }
 
 /**
- * Wonach gesucht wird.
+ * Wonach gesucht wird: nach dem, was in der Liste steht.
  *
- * Ueber den Namen, den Namen des Profils — und ueber die Nummer, sofern die
- * Eingabe eine ist. Die Nummer gehoert dazu, weil namenlose Laeufe in der
- * Liste als „Pruefung 362" erscheinen: Wer diese Zeichenfolge abliest und
- * eingibt, soll die Zeile auch finden. Ohne sie suchte er nach einem Text,
- * den die Anzeige erfunden hat und der in der Datenbank nirgends steht.
+ * Das ist der Name, ersatzweise der Name des Profils — und bei einem Lauf,
+ * der weder das eine noch das andere hat, die Zeichenfolge „Pruefung 362",
+ * unter der die Liste ihn fuehrt. Sie ist mitzusuchen, weil sie fuer den
+ * Lesenden der Name der Zeile ist; ohne sie suchte er nach einem Text, den
+ * die Anzeige erfunden hat und der in der Datenbank nirgends steht.
+ *
+ * Der Rueckfall gilt nur dort, wo die Anzeige ihn auch verwendet: Wer einen
+ * Namen traegt, ist ueber „Pruefung 362" nicht zu finden, denn diese
+ * Zeichenfolge steht bei ihm nirgends. Die Bedingung bildet deshalb genau
+ * die Reihenfolge von `bezeichne` in der Oberflaeche ab.
  *
  * Nicht ueber die geprueften Adressen. Das waere ein Verbund ueber
  * `scan_seite` und faende bei einer Gesamtpruefung dreissig Zeilen zu einem
@@ -297,15 +302,15 @@ export interface Scanliste {
  */
 function sucheBedingung(suche: string): { klausel: string; werte: unknown[] } {
   const begriff = `%${suche.replace(/[%_\\]/g, (z) => `\\${z}`)}%`;
-  const nummer = /^\s*\d+\s*$/.test(suche) ? Number(suche) : null;
 
   return {
     klausel:
       `WHERE (s.name LIKE ? ESCAPE '\\'` +
       ` OR (SELECT name FROM profil WHERE id = s.profil_id) LIKE ? ESCAPE '\\'` +
-      (nummer === null ? '' : ' OR s.id = ?') +
+      ` OR (s.name IS NULL AND (SELECT name FROM profil WHERE id = s.profil_id) IS NULL` +
+      `     AND ('Prüfung ' || s.id) LIKE ? ESCAPE '\\')` +
       ')',
-    werte: nummer === null ? [begriff, begriff] : [begriff, begriff, nummer],
+    werte: [begriff, begriff, begriff],
   };
 }
 

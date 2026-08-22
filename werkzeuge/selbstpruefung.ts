@@ -131,7 +131,7 @@ const ANSICHTEN: Ansicht[] = [
     name: 'Bisherige Prüfungen',
     vorbereiten: async (seite) => {
       await seite.getByRole('button', { name: 'Bisherige Prüfungen' }).click();
-      await seite.getByRole('heading', { name: 'Bisherige Prüfungen', level: 3 }).waitFor();
+      await seite.getByRole('heading', { name: 'Bisherige Prüfungen', level: 2 }).waitFor();
     },
   },
   {
