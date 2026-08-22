@@ -24,15 +24,15 @@
 /*
   Der Statuspunkt an einer Kriterienzeile.
 
-  Fuellung im Mittelton, Kante ein Pixel in der kraeftigen Statusfarbe — die
-  kommt ueber `currentColor` aus `.status--…` und muss deshalb nirgends
-  wiederholt werden. Die Kante ist es, die den Punkt auf Weiss sichtbar macht:
-  ueber 6:1, damit ueber der Schwelle von 1.4.11.
+  Flaeche in der leisen Toenung, Kante im Mittelton, Zeichen in der kraeftigen
+  Statusfarbe. Die kraeftige kommt ueber `currentColor` aus `.status--…` und
+  muss deshalb nirgends wiederholt werden; sie liegt auf ihrer Toenung bei rund
+  6:1 und traegt damit die Aussage weit ueber der Schwelle von 1.4.11.
 
-  Kein Zeichen im Punkt — so entschieden, damit die lange Liste ruhig bleibt.
-  Fuer Sehende traegt damit die Farbe die Aussage allein (1.4.1). Abgefedert
-  ist das durch den `title`, der den Status im Klartext einblendet, und durch
-  den ausgeschriebenen Status fuer die Sprachausgabe; beides steht in
+  Das Zeichen ist es, das den Punkt lesbar macht, nicht die Farbe: Ohne es
+  bliebe die Farbe der einzige Traeger, und das laesst 1.4.1 nicht zu.
+  Verstaerkt wird es durch den Hinweis, der den Status im Klartext einblendet,
+  und durch den ausgeschriebenen Namen fuer die Sprachausgabe; beides steht in
   `Statuszeichen.tsx`.
 */
 .statuspunkt {
@@ -50,9 +50,17 @@
   Flaeche in der leisen Toenung der Statuskachel, Kante einen Pixel im
   Mittelton. So hoch wie die Level-Marke daneben — beide holen ihre Groesse aus
   derselben Variablen.
+
+  Das Sinnbild sitzt mittig darin — und weil es ein Pfad ist und kein
+  Schriftzeichen, sitzt es dort wirklich: Ein Zeichen brachte seine
+  Schriftlinie mit, und die vier kamen aus zwei Schriften mit verschiedenen
+  Metriken; sie standen bis zu zwei Pixel zu hoch. Ein Pfad hat nur seinen
+  Kasten, und den setzt `align-items: center` genau in die Mitte.
 */
 .statuspunkt__punkt {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: var(--hoehe-marke);
   height: var(--hoehe-marke);
   border: var(--rahmen) solid;
@@ -80,6 +88,19 @@
 }
 
 /*
+  Das Sinnbild im Punkt.
+
+  `display: block`, damit unter dem Bild keine Zeile mitgerechnet wird: Ein
+  `inline`-SVG stuende auf der Schriftlinie und truege den Abstand darunter
+  wieder mit hinein, den der Pfad gerade losgeworden ist.
+*/
+.statuspunkt__sinnbild {
+  display: block;
+  width: v.$groesse-statuszeichen;
+  height: v.$groesse-statuszeichen;
+}
+
+/*
   Der Hinweis am Punkt.
 
   Er oeffnet nach oben und ist rechtsbuendig — der Punkt steht am rechten Rand
@@ -89,6 +110,9 @@
   bevor er ihn erreicht — genau das verlangt 1.4.13 nicht zu tun.
 */
 .statuspunkt__hinweis {
+  /// Der durchsichtige Rahmen, der den Abstand zum Punkt traegt.
+  $luecke: 0.4rem;
+
   position: absolute;
   z-index: 5;
   inset-block-end: 100%;
@@ -97,10 +121,23 @@
   width: max-content;
   max-width: 18rem;
   padding: var(--abstand-klein) var(--abstand-mittel);
-  border-bottom: 0.4rem solid transparent;
+  border-bottom: $luecke solid transparent;
   background: var(--knopf);
   background-clip: padding-box;
   border-radius: var(--radius-klein);
+  /*
+    Unten eine groessere Rundung, damit die sichtbare gleich gross bleibt.
+
+    Angegeben wird die Rundung des Rahmenkastens; gemalt ist nur der
+    Polsterkasten darin, und dessen Rundung zieht der Browser um die
+    Rahmenstaerke ab. Unten sind das 0,4rem gegen 0,5rem Rundung — es blieben
+    0,1rem, und die Blase stuende auf zwei fast rechten Ecken. Der zweite Wert
+    ist der senkrechte Halbmesser: Nur er faellt dem unteren Rahmen zum Opfer,
+    waagerecht ist keiner im Weg. Beide gleich zu erhoehen zoege die Ecken in
+    die Breite.
+  */
+  border-end-start-radius: var(--radius-klein) calc(var(--radius-klein) + #{$luecke});
+  border-end-end-radius: var(--radius-klein) calc(var(--radius-klein) + #{$luecke});
   /*
     `filter` statt `box-shadow`: Ein Schatten umschliesst den Rahmenkasten und
     zeichnete damit auch den durchsichtigen unteren Rahmen nach — als heller

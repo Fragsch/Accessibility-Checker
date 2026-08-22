@@ -294,6 +294,29 @@ $kopf-hoehe: $trefferflaeche + 2 * $kopf-polsterung !default;
 */
 $hoehe-marke: 1.6rem !default;
 
+/*
+  Kantenlaenge des Sinnbildes im Statuspunkt.
+
+  Sie gilt fuer den quadratischen Kasten des Pfades, nicht fuer die Tinte
+  darin: Haken, Kreuz, Fragezeichen und Strich fuellen ihn verschieden weit
+  aus — so sind sie gezeichnet, und so gehoeren sie zusammen. Der Kasten ist
+  gut zwei Drittel des Kreises; darueber wird es eng an der Kante, darunter
+  verliert der Strich sich in der Flaeche.
+*/
+$groesse-statuszeichen: 1.1rem !default;
+
+/*
+  Breite des Feldes, in dem die Level-Marke der Kriterienzeile steht.
+
+  Sie ist auf die breiteste Marke gelegt, die darin vorkommt — „Level AA"; im
+  Katalog gibt es kein drittes Wort. Fest ist das Feld, damit die Marken
+  untereinander an derselben Kante beginnen; die Marke selbst bleibt so breit
+  wie ihr Text. Gemessen sind das 71,4 Pixel fuer „Level AA"; das Feld liegt
+  knapp darueber, damit die Marke nicht am Rand klebt. Wer die Schriftgroesse
+  der Marke aendert, misst hier nach.
+*/
+$breite-level: 4.6rem !default;
+
 // ----------------------------------------------------------------- Bewegung
 
 /// Kurz und unauffaellig; bei `prefers-reduced-motion` wird alles abgeschaltet.

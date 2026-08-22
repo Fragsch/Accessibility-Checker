@@ -24,7 +24,16 @@ export function Kriteriumszeile({ kriterium, bewertung }: Eigenschaften): React.
         <summary>
           <span className="kriterium__kennung">{kriterium.id}</span>
           <span className="kriterium__titel">{kriterium.titel}</span>
-          <span className="kriterium__level">Level {kriterium.level}</span>
+          {/*
+            Die Marke steckt in einem Feld fester Breite, statt selbst eines zu
+            haben: So beginnen alle Marken an derselben Kante, und jede bleibt
+            doch nur so breit wie ihr Wort. Eine Marke, die auf „Level AA"
+            gedehnt ist, obwohl „Level A" darin steht, sieht aus wie ein Feld,
+            in dem etwas fehlt.
+          */}
+          <span className="kriterium__levelfeld">
+            <span className="kriterium__level">Level {kriterium.level}</span>
+          </span>
           <Statuszeichen status={bewertung.status} />
         </summary>
 

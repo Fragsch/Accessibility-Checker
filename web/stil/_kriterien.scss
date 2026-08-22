@@ -72,6 +72,27 @@
   font-weight: v.$staerke-halbfett;
 }
 
+/*
+  Das Feld, in dem die Level-Marke steht — rechts in der Zeile, kurz vor dem
+  Statuspunkt.
+
+  Fest ist das Feld, nicht die Marke. Von Haus aus richtet sich die Marke nach
+  ihrem Text: „Level AA" ist breiter als „Level A", und weil rechts von ihr
+  Punkt und Winkel stehen, wandert ihr linker Rand von Zeile zu Zeile. Ueber
+  fuenfzig Kriterien hinweg wird daraus eine ausgefranste Kante. Das Feld haelt
+  die Kante still; die Marke darin bleibt so breit wie ihr Wort.
+*/
+.kriterium__levelfeld {
+  display: inline-flex;
+  justify-content: flex-start;
+  flex: none;
+  // `min-width`, nicht `width`: Sollte eine Marke in einer anderen Schrift
+  // einmal breiter ausfallen als das Feld, waechst das Feld mit, statt die
+  // Marke in den Statuspunkt daneben laufen zu lassen. Die Kante verrutscht
+  // dann in dieser einen Zeile — sichtbar, aber heil.
+  min-width: v.$breite-level;
+}
+
 .kriterium__level {
   display: inline-flex;
   align-items: center;

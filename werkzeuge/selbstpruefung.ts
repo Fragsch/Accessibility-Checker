@@ -84,12 +84,14 @@ const ANSICHTEN: Ansicht[] = [
       /*
         Auch die nicht anwendbaren einblenden, damit jede Zeile im DOM steht.
 
-        Ohne Anker am Zeilenanfang: Die Beschriftung traegt vorweg den
-        Statuspunkt, und dessen Zeichen steht im Textinhalt — auch wenn es
-        `aria-hidden` ist und eine Sprachausgabe es ueberspringt. Playwright
-        vergleicht hier den Textinhalt, nicht den barrierefreien Namen.
+        Ueber die Rolle und nicht ueber die Beschriftung allein: „Nicht
+        anwendbar" heissen auch die Statuspunkte an den Zeilen — sie tragen den
+        Status als `aria-label`. Sobald die Zeilen eingeblendet sind, passt der
+        Name auf ein Kaestchen und auf jeden Punkt darunter, und die Suche
+        bliebe mehrdeutig. Der Ausdruck ohne Anker, weil hinter der
+        Beschriftung noch die Anzahl steht.
       */
-      await seite.getByLabel(/Nicht anwendbar/).check();
+      await seite.getByRole('checkbox', { name: /Nicht anwendbar/ }).check();
 
       await klappeAllesAuf(seite);
     },
