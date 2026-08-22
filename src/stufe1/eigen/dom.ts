@@ -231,6 +231,37 @@ function sammleImBrowser(gewuenscht: string[]): RohTreffer[] {
     const istAnmeldung = (element: Element): boolean =>
       /(an|ab|um)meldung/i.test(element.id) && !element.matches(ANDERER_ANLASS);
 
+    /*
+      Ein Text, auf den ein Eingabefeld selbst zeigt, ist keine Statusmeldung.
+
+      4.1.3 gilt fuer Meldungen, die *ohne* Fokuswechsel bemerkt werden
+      muessen — das steht so in der Begriffsbestimmung. Zeigt ein Feld ueber
+      `aria-describedby` oder `aria-errormessage` auf diesen Text, wird er mit
+      dem Feld vorgelesen, und Formulare setzen den Fokus beim Abweisen genau
+      dorthin. Hier zusaetzlich `role="alert"` zu verlangen, brachte denselben
+      Satz zweimal: einmal als Alarm, einmal als Beschreibung des Feldes.
+
+      Verlangt wird die ausdrueckliche Zuordnung durch ein Bedienelement, nicht
+      blosse Naehe: Ein Text neben einem Eingabefeld, auf den nichts zeigt,
+      bleibt ein Fund. Und die Ausnahme gilt nur fuer Formularfelder — ein
+      beliebiges Element mit `aria-describedby` sagt nichts darueber aus, ob
+      der beschriebene Text sich aendert.
+
+      Gefunden an der eigenen Oberflaeche, nachdem deren Fehlermeldungen von
+      einer Stelle je Formular an ihr jeweiliges Feld gewandert sind.
+    */
+    const FELD_MIT_BESCHREIBUNG = ['input', 'select', 'textarea']
+      .flatMap((tag) => [`${tag}[aria-describedby]`, `${tag}[aria-errormessage]`])
+      .join(', ');
+    const istFeldbeschreibung = (element: Element): boolean => {
+      if (!element.id) return false;
+      return Array.from(document.querySelectorAll(FELD_MIT_BESCHREIBUNG)).some((feld) =>
+        `${feld.getAttribute('aria-describedby') ?? ''} ${feld.getAttribute('aria-errormessage') ?? ''}`
+          .split(/\s+/)
+          .includes(element.id),
+      );
+    };
+
     const behandelt = new Set<Element>();
     const kandidaten = Array.from(document.querySelectorAll(`${MIT_INHALT}, ${EINDEUTIG_BENANNT}`)).filter(
       (element) => !istAnmeldung(element),
@@ -270,6 +301,9 @@ function sammleImBrowser(gewuenscht: string[]): RohTreffer[] {
         ihnen. Gefunden in Phase 8 an der eigenen Abdeckungsansicht.
       */
       if (element.closest('[role=note]')) continue;
+
+      // Beschreibung eines Feldes, nicht Meldung an die Seite — siehe oben.
+      if (istFeldbeschreibung(element)) continue;
 
       // Wiederkehrendes Muster: kein Einzelfall, also keine Meldung.
       if ((haeufigkeit.get(musterVon(element)) ?? 0) > 4) continue;

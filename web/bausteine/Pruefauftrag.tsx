@@ -12,7 +12,8 @@
 import { useEffect, useState } from 'react';
 
 import { ladeProfile } from '../api';
-import type { Auftrag, Betriebsart, Profil, Standard } from '../typen';
+import type { Auftrag, Betriebsart, Feldfehler, Profil, Standard } from '../typen';
+import { Feldmeldung, fehlerbezug, zeigeFehlerfeld } from './Feldfehler';
 import { Sprachmodell } from './Sprachmodell';
 
 interface Eigenschaften {
@@ -22,18 +23,18 @@ interface Eigenschaften {
   beiProfilverwaltung: () => void;
 }
 
-/**
- * Eine Fehlermeldung samt dem Feld, das sie meint.
- *
- * Vorher trug das Formular nur den Meldungstext, und `aria-invalid` sass
- * unbesehen am Adressfeld. Seit es mehr als ein Pflichtfeld gibt, waere das
- * falsch: Wer den Namen vergisst, bekaeme das Adressfeld als fehlerhaft
- * angesagt und suchte dort nach einem Fehler, den es nicht gibt (3.3.1).
- */
-interface Feldfehler {
-  text: string;
-  feld: 'name' | 'adressen' | 'profil' | 'startadresse' | 'anmeldung';
-}
+/*
+  Die Kennungen der Felder, die einen Fehler tragen koennen — dieselben, die
+  `label` und `id` verbinden. Sie stehen hier beisammen, damit `feld` in einer
+  Meldung nicht als loser Text irgendwo im Formular gesucht werden muss.
+*/
+const FELD = {
+  name: 'pruefungsname',
+  adressen: 'adressen',
+  profil: 'profil',
+  startadresse: 'startadresse',
+  anmeldung: 'anmeldeadresse',
+} as const;
 
 export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Eigenschaften): React.ReactElement {
   const [betriebsart, setzeBetriebsart] = useState<Betriebsart>('einzelseite');
@@ -64,6 +65,44 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
       .catch(() => setzeProfile([]));
   }, []);
 
+  /*
+    Der Fokus wandert auf das Feld, das den Fehler traegt.
+
+    In einem Effekt und nicht gleich beim Abschicken: Erst danach steht
+    `aria-invalid` am Feld und die Meldung darunter im Markup. Wer vorher
+    hinspringt, laesst die Sprachausgabe ein Feld vorlesen, das noch nichts von
+    seinem Fehler weiss.
+
+    `fehler` ist bei jedem Abschicken ein neues Objekt — auch der zweite
+    vergebliche Druck auf denselben Knopf fuehrt deshalb wieder hin.
+  */
+  useEffect(() => {
+    if (fehler?.feld) zeigeFehlerfeld(fehler.feld);
+  }, [fehler]);
+
+  /*
+    Ein behobener Fehler verschwindet, sobald er behoben ist.
+
+    Sonst steht die Meldung noch unter dem Feld, waehrend daneben schon die
+    Adresse getippt ist — sie widerspricht dem, was zu sehen ist.
+
+    Nur entfernt wird hier, nie hinzugefuegt. Wer beim Tippen nach dem dritten
+    Zeichen erfaehrt, seine Eingabe sei ungueltig, bekommt eine Bewertung fuer
+    etwas, das er noch gar nicht abgeschickt hat.
+  */
+  useEffect(() => {
+    if (!fehler?.feld) return;
+
+    const behoben =
+      (fehler.feld === FELD.name && name.trim() !== '') ||
+      (fehler.feld === FELD.adressen && adressen.trim() !== '') ||
+      (fehler.feld === FELD.profil && profilId !== null) ||
+      (fehler.feld === FELD.startadresse && startadresse.trim() !== '') ||
+      (fehler.feld === FELD.anmeldung && anmeldeadresse.trim() !== '');
+
+    if (behoben) setzeFehler(null);
+  }, [fehler, name, adressen, profilId, startadresse, anmeldeadresse]);
+
   // Der Standard gehoert zum Profil (K-13). Wer eines waehlt, soll sehen,
   // gegen welche Fassung gemessen wird — und sie nicht versehentlich aendern.
   const gewaehltesProfil = profile.find((p) => p.id === profilId) ?? null;
@@ -73,7 +112,7 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
 
     const anmeldung = mitAnmeldung ? anmeldeadresse.trim() : '';
     if (mitAnmeldung && !anmeldung) {
-      setzeFehler({ feld: 'anmeldung', text: 'Bitte geben Sie die Adresse an, auf der Sie sich anmelden.' });
+      setzeFehler({ feld: FELD.anmeldung, text: 'Bitte geben Sie die Adresse an, auf der Sie sich anmelden.' });
       return;
     }
 
@@ -84,7 +123,7 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
     */
     const benennung = name.trim();
     if (betriebsart !== 'profil' && !benennung) {
-      setzeFehler({ feld: 'name', text: 'Bitte geben Sie der Prüfung einen Namen.' });
+      setzeFehler({ feld: FELD.name, text: 'Bitte geben Sie der Prüfung einen Namen.' });
       return;
     }
 
@@ -98,7 +137,7 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
     if (betriebsart === 'gesamt') {
       const start = startadresse.trim();
       if (!start) {
-        setzeFehler({ feld: 'startadresse', text: 'Bitte geben Sie die Adresse an, bei der der Crawl beginnen soll.' });
+        setzeFehler({ feld: FELD.startadresse, text: 'Bitte geben Sie die Adresse an, bei der der Crawl beginnen soll.' });
         return;
       }
 
@@ -121,7 +160,7 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
 
     if (betriebsart === 'profil') {
       if (profilId === null) {
-        setzeFehler({ feld: 'profil', text: 'Bitte wählen Sie ein Prüfprofil aus.' });
+        setzeFehler({ feld: FELD.profil, text: 'Bitte wählen Sie ein Prüfprofil aus.' });
         return;
       }
       setzeFehler(null);
@@ -135,7 +174,7 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
       .filter(Boolean);
 
     if (urls.length === 0) {
-      setzeFehler({ feld: 'adressen', text: 'Bitte geben Sie mindestens eine Adresse an.' });
+      setzeFehler({ feld: FELD.adressen, text: 'Bitte geben Sie mindestens eine Adresse an.' });
       return;
     }
 
@@ -208,11 +247,11 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
               value={name}
               onChange={(e) => setzeName(e.target.value)}
               required
-              aria-describedby="pruefungsname-hilfe"
-              {...(fehler?.feld === 'name' ? { 'aria-invalid': true, 'aria-errormessage': 'auftrag-fehler' } : {})}
+              {...fehlerbezug(fehler, FELD.name, 'pruefungsname-hilfe')}
               placeholder="Relaunch Startseite, Stand August"
               maxLength={200}
             />
+            <Feldmeldung fehler={fehler} feld={FELD.name} />
             <p className="hilfetext" id="pruefungsname-hilfe">
               Pflichtangabe. Unter diesem Namen steht die Prüfung später in der Liste der bisherigen Prüfungen — ohne
               ihn sind zwei Läufe über dieselbe Seite dort nicht zu unterscheiden.
@@ -227,12 +266,12 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
               id="adressen"
               value={adressen}
               onChange={(e) => setzeAdressen(e.target.value)}
-              aria-describedby="adressen-hilfe"
-              {...(fehler?.feld === 'adressen' ? { 'aria-invalid': true, 'aria-errormessage': 'auftrag-fehler' } : {})}
+              {...fehlerbezug(fehler, FELD.adressen, 'adressen-hilfe')}
               placeholder="beispiel.de"
               autoComplete="url"
               spellCheck={false}
             />
+            <Feldmeldung fehler={fehler} feld={FELD.adressen} />
             <p className="hilfetext" id="adressen-hilfe">
               Eine Adresse je Zeile. Fehlt <code>https://</code>, wird es ergänzt.
             </p>
@@ -246,7 +285,7 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
               id="profil"
               value={profilId ?? ''}
               onChange={(e) => setzeProfilId(e.target.value ? Number(e.target.value) : null)}
-              aria-describedby="profil-hilfe"
+              {...fehlerbezug(fehler, FELD.profil, 'profil-hilfe')}
             >
               <option value="">Bitte wählen</option>
               {profile.map((profil) => (
@@ -255,6 +294,7 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
                 </option>
               ))}
             </select>
+            <Feldmeldung fehler={fehler} feld={FELD.profil} />
             <p className="hilfetext" id="profil-hilfe">
               {gewaehltesProfil
                 ? `Geprüft wird gegen WCAG ${gewaehltesProfil.standard} — so, wie im Profil hinterlegt. Das hält Wiederholungsläufe vergleichbar.`
@@ -280,13 +320,12 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
               value={startadresse}
               onChange={(e) => setzeStartadresse(e.target.value)}
               required
-              {...(fehler?.feld === 'startadresse'
-                ? { 'aria-invalid': true, 'aria-errormessage': 'auftrag-fehler' }
-                : {})}
+              {...fehlerbezug(fehler, FELD.startadresse)}
               placeholder="beispiel.de"
               autoComplete="url"
               spellCheck={false}
             />
+            <Feldmeldung fehler={fehler} feld={FELD.startadresse} />
 
             <label htmlFor="hoechsttiefe">Maximale Tiefe</label>
             <input
@@ -398,13 +437,12 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
               value={anmeldeadresse}
               onChange={(e) => setzeAnmeldeadresse(e.target.value)}
               required
-              {...(fehler?.feld === 'anmeldung'
-                ? { 'aria-invalid': true, 'aria-errormessage': 'auftrag-fehler' }
-                : {})}
+              {...fehlerbezug(fehler, FELD.anmeldung)}
               placeholder="beispiel.de/anmelden"
               autoComplete="url"
               spellCheck={false}
             />
+            <Feldmeldung fehler={fehler} feld={FELD.anmeldung} />
           </>
         )}
       </fieldset>
@@ -440,16 +478,13 @@ export function Pruefauftrag({ beschaeftigt, beiStart, beiProfilverwaltung }: Ei
       <Sprachmodell aktiv={stufe2} standard={gewaehltesProfil?.standard ?? standard} beiAenderung={setzeStufe2} />
 
       {/*
-        role="alert" ist hier keine Zierde: ohne einen Weg, die Meldung
-        anzusagen, bleibt aria-errormessage wirkungslos — wer nicht auf den
-        Bildschirm sieht, erfaehrt vom Fehler sonst nichts.
-      */}
-      {fehler && (
-        <p className="meldung meldung--fehler" id="auftrag-fehler" role="alert">
-          {fehler.text}
-        </p>
-      )}
+        Hier stand die Meldung frueher — eine fuer alle Felder, unten vor dem
+        Absendeknopf. Sie steht jetzt an dem Feld, das sie meint, und der Fokus
+        springt hin. Die Begruendung im Ganzen steht in `Feldfehler.tsx`.
 
+        Uebrig bleibt nichts: Jeder Fehler dieses Formulars gehoert zu einem
+        Feld. Das Formular kennt keinen, der zu keinem gehoert.
+      */}
       <div className="knopfreihe">
         <button type="submit" disabled={beschaeftigt}>
           {beschaeftigt ? 'Prüfung läuft …' : 'Prüfung starten'}

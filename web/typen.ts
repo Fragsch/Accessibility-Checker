@@ -249,3 +249,22 @@ export const PRINZIP_TEXT: Record<string, string> = {
   verstaendlichkeit: '3 — Verständlichkeit',
   robustheit: '4 — Robustheit',
 };
+
+/**
+ * Eine Fehlermeldung eines Formulars, samt dem Feld, das sie meint.
+ *
+ * Seit es in einem Formular mehr als ein Pflichtfeld gibt, genuegt der blosse
+ * Text nicht mehr: Wer den Namen vergisst, bekaeme sonst irgendein Feld als
+ * fehlerhaft angesagt und suchte dort nach einem Fehler, den es nicht gibt
+ * (3.3.1).
+ *
+ * `feld` ist die Kennung des Eingabefeldes im Markup — dieselbe, die `label`
+ * und `id` verbinden. Sie fehlt bei Fehlern, die zu keinem Feld gehoeren: Eine
+ * Datei, die kein lesbares JSON enthaelt, und eine Schnittstelle, die nicht
+ * antwortet, haben keine Stelle im Formular, an die man springen koennte.
+ * Solche Meldungen stehen weiterhin oben in der Ansicht.
+ */
+export interface Feldfehler {
+  text: string;
+  feld?: string;
+}

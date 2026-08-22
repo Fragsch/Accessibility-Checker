@@ -30,6 +30,41 @@
   background: var(--pruefung-erforderlich-leise);
 }
 
+/*
+  Die Fehlermeldung eines einzelnen Feldes — sie steht unter ihm, nicht
+  irgendwo in der Ansicht.
+
+  Kleiner als eine `.meldung`: Sie gehoert zu einem Feld, nicht zur Seite, und
+  ein Kasten in voller Groesse riss die Feldgruppe auseinander. Kante und
+  Toenung bleiben, denn sie unterscheiden die Meldung vom `.hilfetext`
+  darueber — der steht an derselben Stelle und saehe sonst gleich aus. Die
+  Farbe allein truege diesen Unterschied nicht (1.4.1).
+
+  #a4262c auf #fbebeb sind 6,3:1 — ueber den 4,5:1 fuer Text (1.4.3).
+*/
+.feldfehler {
+  padding: var(--abstand-klein) var(--abstand-mittel);
+  border-left: 4px solid var(--nicht-erfuellt);
+  border-radius: var(--radius-klein);
+  background: var(--nicht-erfuellt-leise);
+  color: var(--nicht-erfuellt);
+  font-size: v.$groesse-klein;
+  font-weight: v.$staerke-halbfett;
+}
+
+/*
+  Sie klebt an ihrem Feld.
+
+  Die Feldgruppe gibt allem, was auf ein Feld folgt, eine ganze Zeile Abstand.
+  Damit stuende die Meldung so weit weg wie der naechste Baustein — und der
+  Zusammenhang zum Feld waere genau das, was verloren geht. Die Regel steht
+  hier und nicht in `_formulare.scss`, weil sie gleich schwer wiegt wie die
+  dortige und diese Datei spaeter geladen wird.
+*/
+.feldgruppe > .feldfehler {
+  margin-top: var(--abstand-winzig);
+}
+
 .empfehlung {
   @include w.kasten(var(--akzent), var(--akzent-leise));
 

@@ -23,8 +23,9 @@ import {
   loescheProfil,
   schlageSeitenVor,
 } from '../api';
-import type { GefundeneSeite, Profil, Standard } from '../typen';
+import type { Feldfehler, GefundeneSeite, Profil, Standard } from '../typen';
 import { Bestaetigung } from './Bestaetigung';
+import { Feldmeldung, fehlerbezug, zeigeFehlerfeld } from './Feldfehler';
 import { Loeschknopf } from './Loeschknopf';
 
 interface Eigenschaften {
@@ -46,7 +47,7 @@ export function Profilverwaltung({ beiFertig }: Eigenschaften): React.ReactEleme
   const [standard, setzeStandard] = useState<Standard>('2.1');
   const [zeilen, setzeZeilen] = useState<Zeile[]>([{ ...LEERE_ZEILE }]);
   const [meldung, setzeMeldung] = useState<string | null>(null);
-  const [fehler, setzeFehler] = useState<string | null>(null);
+  const [fehler, setzeFehler] = useState<Feldfehler | null>(null);
 
   /*
     Das Profil, zu dem gerade nachgefragt wird — das ganze Profil, nicht nur
@@ -79,6 +80,48 @@ export function Profilverwaltung({ beiFertig }: Eigenschaften): React.ReactEleme
     void aktualisiere();
   }, []);
 
+  /*
+    Der Fokus wandert auf das Feld, das den Fehler traegt.
+
+    In einem Effekt und nicht gleich beim Abschicken: Erst danach steht
+    `aria-invalid` am Feld und die Meldung darunter im Markup.
+
+    Das war der eigentliche Mangel dieser Ansicht. Das Formular ist lang, der
+    Knopf „Profil speichern" steht ganz unten, und die Meldung erschien ganz
+    oben — ausserhalb des Bildes. Wer ohne Eingabe speicherte, sah gar nichts
+    geschehen und hielt den Knopf fuer kaputt.
+  */
+  useEffect(() => {
+    if (fehler?.feld) zeigeFehlerfeld(fehler.feld);
+  }, [fehler]);
+
+  /*
+    Ein behobener Fehler verschwindet, sobald er behoben ist.
+
+    Sonst steht die Meldung noch unter dem Feld, waehrend daneben schon der
+    Name getippt ist — sie widerspricht dem, was zu sehen ist, und wer sie
+    liest, sucht einen Fehler, den es nicht mehr gibt.
+
+    Geprueft wird die Bedingung, die den Fehler erzeugt hat, und nicht bloss,
+    ob im Feld etwas steht: „Ein Profil braucht mindestens eine Seite" gilt so
+    lange, wie keine der Zeilen eine Adresse traegt — auch wenn die erste,
+    an der die Meldung haengt, leer bleibt.
+
+    Nur entfernt wird hier, nie hinzugefuegt. Wer beim Tippen nach dem dritten
+    Zeichen erfaehrt, seine Eingabe sei ungueltig, bekommt eine Bewertung fuer
+    etwas, das er noch gar nicht abgeschickt hat.
+  */
+  useEffect(() => {
+    if (!fehler?.feld) return;
+
+    const behoben =
+      (fehler.feld === 'profil-name' && name.trim() !== '') ||
+      (fehler.feld === 'url-0' && zeilen.some((zeile) => zeile.url.trim() !== '')) ||
+      (fehler.feld === 'vorschlag-start' && startadresse.trim() !== '');
+
+    if (behoben) setzeFehler(null);
+  }, [fehler, name, zeilen, startadresse]);
+
   useEffect(() => {
     if (!fokusAufMeldung.current || meldung === null) return;
     fokusAufMeldung.current = false;
@@ -89,7 +132,7 @@ export function Profilverwaltung({ beiFertig }: Eigenschaften): React.ReactEleme
     try {
       setzeProfile(await ladeProfile());
     } catch (e) {
-      setzeFehler(alsText(e));
+      setzeFehler({ text: alsText(e) });
     }
   }
 
@@ -131,11 +174,17 @@ export function Profilverwaltung({ beiFertig }: Eigenschaften): React.ReactEleme
       }));
 
     if (!name.trim()) {
-      setzeFehler('Ein Profil braucht einen Namen.');
+      // „Bitte geben Sie …" und nicht „Ein Profil braucht …": Das eine sagt,
+      // was zu tun ist, das andere stellt eine Tatsache fest (3.3.3).
+      setzeFehler({ feld: 'profil-name', text: 'Bitte geben Sie dem Profil einen Namen.' });
       return;
     }
     if (seiten.length === 0) {
-      setzeFehler('Ein Profil braucht mindestens eine Seite.');
+      // Gemeint ist die erste Adresszeile: Dort faengt an, was fehlt.
+      setzeFehler({
+        feld: 'url-0',
+        text: 'Ein Profil braucht mindestens eine Seite. Bitte tragen Sie hier eine Adresse ein, etwa beispiel.de/kontakt.',
+      });
       return;
     }
 
@@ -149,7 +198,7 @@ export function Profilverwaltung({ beiFertig }: Eigenschaften): React.ReactEleme
       setzeBearbeitet(null);
       await aktualisiere();
     } catch (e) {
-      setzeFehler(alsText(e));
+      setzeFehler({ text: alsText(e) });
     }
   }
 
@@ -166,7 +215,7 @@ export function Profilverwaltung({ beiFertig }: Eigenschaften): React.ReactEleme
       // Auch im Fehlerfall schliesst der Dialog: Die Fehlermeldung steht in
       // der Ansicht dahinter, und die bleibt `inert`, solange er offen ist.
       setzeNachfrage(null);
-      setzeFehler(alsText(e));
+      setzeFehler({ text: alsText(e) });
     }
   }
 
@@ -182,7 +231,7 @@ export function Profilverwaltung({ beiFertig }: Eigenschaften): React.ReactEleme
       verweis.click();
       URL.revokeObjectURL(adresse);
     } catch (e) {
-      setzeFehler(alsText(e));
+      setzeFehler({ text: alsText(e) });
     }
   }
 
@@ -197,7 +246,7 @@ export function Profilverwaltung({ beiFertig }: Eigenschaften): React.ReactEleme
       setzeFehler(null);
       await aktualisiere();
     } catch (e) {
-      setzeFehler(e instanceof SyntaxError ? 'Die Datei enthält kein lesbares JSON.' : alsText(e));
+      setzeFehler({ text: e instanceof SyntaxError ? 'Die Datei enthält kein lesbares JSON.' : alsText(e) });
     } finally {
       ereignis.target.value = '';
     }
@@ -206,7 +255,7 @@ export function Profilverwaltung({ beiFertig }: Eigenschaften): React.ReactEleme
   /** Kandidatenliste aus einem einmaligen Crawl holen (K-06). */
   async function schlageVor(): Promise<void> {
     if (!startadresse.trim()) {
-      setzeFehler('Bitte geben Sie an, wo der Crawl beginnen soll.');
+      setzeFehler({ feld: 'vorschlag-start', text: 'Bitte geben Sie an, wo der Crawl beginnen soll.' });
       return;
     }
 
@@ -229,7 +278,7 @@ export function Profilverwaltung({ beiFertig }: Eigenschaften): React.ReactEleme
           '. Kreuzen Sie an, was ins Profil soll.',
       );
     } catch (e) {
-      setzeFehler(alsText(e));
+      setzeFehler({ text: alsText(e) });
     } finally {
       setzeSucht(false);
     }
@@ -263,9 +312,15 @@ export function Profilverwaltung({ beiFertig }: Eigenschaften): React.ReactEleme
           {meldung}
         </p>
       )}
-      {fehler && (
+      {/*
+        Oben steht nur noch, was zu keinem Feld gehoert — eine Datei ohne
+        lesbares JSON, eine Schnittstelle, die nicht antwortet. Dorthin kann
+        der Fokus nicht springen, weil es keine Stelle im Formular gibt, an der
+        etwas zu berichtigen waere. Alles Uebrige steht an seinem Feld.
+      */}
+      {fehler && !fehler.feld && (
         <p className="meldung meldung--fehler" role="alert">
-          {fehler}
+          {fehler.text}
         </p>
       )}
 
@@ -352,9 +407,12 @@ export function Profilverwaltung({ beiFertig }: Eigenschaften): React.ReactEleme
               type="text"
               value={name}
               onChange={(e) => setzeName(e.target.value)}
+              required
+              {...fehlerbezug(fehler, 'profil-name', 'profil-name-hilfe')}
               placeholder="Schnellprüfung"
             />
-            <p className="hilfetext">
+            <Feldmeldung fehler={fehler} feld="profil-name" />
+            <p className="hilfetext" id="profil-name-hilfe">
               Etwa „Schnellprüfung“ mit 5 Seiten oder „Vollabnahme“ mit 25. Mehrere Profile je Projekt sind vorgesehen.
             </p>
           </div>
@@ -398,9 +456,11 @@ export function Profilverwaltung({ beiFertig }: Eigenschaften): React.ReactEleme
                     type="text"
                     value={zeile.url}
                     onChange={(e) => aendereZeile(setzeZeilen, nummer, { url: e.target.value })}
+                    {...fehlerbezug(fehler, `url-${nummer}`)}
                     placeholder="beispiel.de/kontakt"
                     spellCheck={false}
                   />
+                  <Feldmeldung fehler={fehler} feld={`url-${nummer}`} />
 
                   <label htmlFor={`bezeichnung-${nummer}`}>Bezeichnung</label>
                   <input
@@ -459,8 +519,9 @@ export function Profilverwaltung({ beiFertig }: Eigenschaften): React.ReactEleme
               onChange={(e) => setzeStartadresse(e.target.value)}
               placeholder="beispiel.de"
               spellCheck={false}
-              aria-describedby="vorschlag-hilfe"
+              {...fehlerbezug(fehler, 'vorschlag-start', 'vorschlag-hilfe')}
             />
+            <Feldmeldung fehler={fehler} feld="vorschlag-start" />
             <p className="hilfetext" id="vorschlag-hilfe">
               Ein einmaliger Crawl sammelt Kandidaten. Was davon ins Profil kommt, entscheiden Sie.
             </p>

@@ -131,6 +131,28 @@ const ANSICHTEN: Ansicht[] = [
   },
   {
     /*
+      Die Eingabemaske mit einer Fehlermeldung am Feld.
+
+      Der Name wird vorher ausgefuellt, damit die Meldung die der Adresszeile
+      ist und nicht die des Namensfeldes davor: Gemessen werden soll ein
+      Formular, das schon eine Pflichtangabe hinter sich hat und an der
+      naechsten haengt. Dort steht die Meldung neben ausgefuellten Feldern,
+      und dieser Zustand ist der schwierigere — dieselbe Ueberlegung wie beim
+      Auftrag.
+    */
+    name: 'Prüfprofile — Eingabemaske mit Fehlermeldung',
+    vorbereiten: async (seite) => {
+      await oeffneProfilverwaltung(seite);
+      await seite.getByRole('button', { name: 'Neues Profil anlegen' }).click();
+      await seite.getByRole('heading', { name: 'Neues Profil' }).waitFor();
+
+      await seite.getByLabel('Name des Profils').fill('Ohne Adresse');
+      await seite.getByRole('button', { name: 'Profil speichern' }).click();
+      await seite.getByText(/^Ein Profil braucht mindestens eine Seite/).waitFor();
+    },
+  },
+  {
+    /*
       Die Liste der gespeicherten Profile — mit einer Zeile darin.
 
       Ohne Profil steht dort nur „Noch kein Profil angelegt", und die Tabelle
